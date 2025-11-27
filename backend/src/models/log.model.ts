@@ -1,0 +1,48 @@
+import mongoose, { model } from "mongoose";
+
+// Individual set data
+export interface ISetData {
+    set_number: number;
+    reps: number;
+    weight: number; // Weight in kg
+    notes?: string;
+}
+
+// Tracks actual workout session data
+export interface ILog {
+    user_id: mongoose.Schema.Types.ObjectId | string;
+    plan_id: mongoose.Schema.Types.ObjectId | string;
+    workout_id: mongoose.Schema.Types.ObjectId | string;
+    exercise_id: mongoose.Schema.Types.ObjectId | string;
+    sets: Array<ISetData>; // Array of set data
+    workout_date?: Date; // When the workout was performed
+    duration_minutes?: number; // Optional: how long the exercise took
+    notes?: string; // General notes about the exercise performance
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+const SetDataSchema = new mongoose.Schema({
+    set_number: { type: Number, required: true },
+    reps: { type: Number, required: true },
+    weight: { type: Number, required: true },
+    notes: { type: String, required: false },
+}, { _id: false }); // _id: false to prevent creating _id for subdocuments
+
+const LogSchema = new mongoose.Schema({
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    plan_id: { type: mongoose.Schema.Types.ObjectId, ref: "Plan", required: true },
+    workout_id: { type: mongoose.Schema.Types.ObjectId, ref: "Workout", required: true },
+    exercise_id: { type: mongoose.Schema.Types.ObjectId, ref: "Exercise", required: true },
+    sets: { type: [SetDataSchema], required: true },
+    workout_date: { type: Date, required: true, default: Date.now },
+    duration_minutes: { type: Number, required: false },
+    notes: { type: String, required: false },
+}, { timestamps: true });
+
+// Index for efficient querying
+LogSchema.index({ user_id: 1, workout_date: -1 });
+LogSchema.index({ user_id: 1, exercise_id: 1, workout_date: -1 });
+
+export default model<ILog>("Log", LogSchema);
+

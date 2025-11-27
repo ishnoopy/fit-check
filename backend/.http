@@ -1,0 +1,301 @@
+http://localhost:3000/api/users?name=John&age=30
+
+###
+http://localhost:3000/api/users/1
+
+###
+POST http://localhost:3000/api/users
+Content-Type: application/json
+Authorization: Bearer 123456
+
+{
+  "name": "John",
+  "age": 30
+}
+
+###
+PUT http://localhost:3000/api/users/1
+Content-Type: application/json
+Authorization: Bearer 123456
+
+{
+  "name": "Randy",
+  "age": 25
+}
+
+###
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "aldringuasa1@gmail.com",
+	"password": "12345678"
+}
+
+###
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "aldringuasa1@gmail.com",
+	"password": "12345678",
+  "first_name": "Aldrin",
+  "last_name": "Guasa",
+  "role": "admin"
+}
+
+### ==================== PLANS ==================== ###
+
+### Get All Plans
+GET http://localhost:3000/api/plans
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get Plan by ID
+GET http://localhost:3000/api/plans/69281b7eb315a1f36481914e
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+### Create Plan
+POST http://localhost:3000/api/plans
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+{
+  "title": "Gym Workout Plan",
+  "description": "My weekly gym routine",
+  "workouts": []
+}
+
+### Update Plan
+PUT http://localhost:3000/api/plans/69281b7eb315a1f36481914e
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+{
+  "title": "Updated Gym Workout Plan",
+  "description": "My updated weekly gym routine",
+  "workouts": [
+    "69281dbd503e6ac85469551a"
+  ]
+}
+
+### Delete Plan
+DELETE http://localhost:3000/api/plans/PLAN_ID_HERE
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### ==================== WORKOUTS ==================== ###
+
+### Get All Workouts
+GET http://localhost:3000/api/workouts
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get Workouts by Plan
+GET http://localhost:3000/api/workouts?plan_id=69281b7eb315a1f36481914e
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+### Get Workout by ID
+GET http://localhost:3000/api/workouts/WORKOUT_ID_HERE
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Create Workout
+POST http://localhost:3000/api/workouts
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+{
+  "plan_id": "69281b7eb315a1f36481914e",
+  "title": "Push Day",
+  "description": "Chest, shoulders, and triceps workout",
+  "exercises": [
+    "69281c36b315a1f364819150"
+  ]
+}
+
+### Update Workout
+PUT http://localhost:3000/api/workouts/69281dbd503e6ac85469551a
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+{
+  "title": "Push Day - Advanced",
+  "description": "Updated chest, shoulders, and triceps workout",
+  "exercises": [
+    "69281c36b315a1f364819150",
+    "69281dec503e6ac85469551c"
+  ]
+}
+
+### Delete Workout
+DELETE http://localhost:3000/api/workouts/WORKOUT_ID_HERE
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### ==================== EXERCISES ==================== ###
+
+### Get All Exercises
+GET http://localhost:3000/api/exercises
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get Exercise by ID
+GET http://localhost:3000/api/exercises/EXERCISE_ID_HERE
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Create Exercise
+POST http://localhost:3000/api/exercises
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+{
+  "name": "Incline Bench Press",
+  "description": "Compound chest exercise",
+  "notes": "Focus on proper form and controlled movement"
+}
+
+### Create Exercise - Squats
+POST http://localhost:3000/api/exercises
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "name": "Squats",
+  "description": "Lower body compound exercise",
+  "notes": "Keep back straight, knees aligned with toes"
+}
+
+### Create Exercise - Deadlift
+POST http://localhost:3000/api/exercises
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "name": "Deadlift",
+  "description": "Full body compound exercise",
+  "notes": "Maintain neutral spine throughout movement"
+}
+
+### Update Exercise
+PUT http://localhost:3000/api/exercises/EXERCISE_ID_HERE
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "name": "Barbell Bench Press",
+  "description": "Compound chest exercise with barbell",
+  "notes": "Focus on proper form, controlled movement, and full range of motion"
+}
+
+### Delete Exercise
+DELETE http://localhost:3000/api/exercises/EXERCISE_ID_HERE
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### ==================== LOGS ==================== ###
+
+### Get All Logs
+GET http://localhost:3000/api/logs
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get Logs by Date Range
+GET http://localhost:3000/api/logs?start_date=2025-11-01T00:00:00Z&end_date=2025-11-30T23:59:59Z
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get Logs by Exercise
+GET http://localhost:3000/api/logs?exercise_id=69281c36b315a1f364819150
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+### Get Log by ID
+GET http://localhost:3000/api/logs/LOG_ID_HERE
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get Exercise History
+GET http://localhost:3000/api/logs/exercise/69281c36b315a1f364819150/history
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+### Create Log - Full Workout
+POST http://localhost:3000/api/logs
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+
+{
+  "plan_id": "69281b7eb315a1f36481914e",
+  "workout_id": "69281dbd503e6ac85469551a",
+  "exercise_id": "69281c36b315a1f364819150",
+  "sets": [
+    {
+      "set_number": 1,
+      "reps": 10,
+      "weight": 60,
+      "notes": "Warm-up set"
+    },
+    {
+      "set_number": 2,
+      "reps": 8,
+      "weight": 80,
+      "notes": "Felt good"
+    },
+    {
+      "set_number": 3,
+      "reps": 6,
+      "weight": 100,
+      "notes": "Struggled on last rep"
+    }
+  ],
+  "workout_date": "2025-11-27T10:30:00Z",
+  "duration_minutes": 15,
+  "notes": "Great workout, felt strong today!"
+}
+
+### Create Log - Simple
+POST http://localhost:3000/api/logs
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "plan_id": "PLAN_ID_HERE",
+  "workout_id": "WORKOUT_ID_HERE",
+  "exercise_id": "EXERCISE_ID_HERE",
+  "sets": [
+    {
+      "set_number": 1,
+      "reps": 12,
+      "weight": 50
+    },
+    {
+      "set_number": 2,
+      "reps": 10,
+      "weight": 55
+    },
+    {
+      "set_number": 3,
+      "reps": 8,
+      "weight": 60
+    }
+  ]
+}
+
+### Update Log
+PUT http://localhost:3000/api/logs/LOG_ID_HERE
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "sets": [
+    {
+      "set_number": 1,
+      "reps": 10,
+      "weight": 65
+    },
+    {
+      "set_number": 2,
+      "reps": 8,
+      "weight": 85
+    },
+    {
+      "set_number": 3,
+      "reps": 6,
+      "weight": 105
+    }
+  ],
+  "notes": "Updated with correct weights"
+}
+
+### Delete Log
+DELETE http://localhost:3000/api/logs/LOG_ID_HERE
+Authorization: Bearer YOUR_TOKEN_HERE
