@@ -1,8 +1,8 @@
 import { compare, hash } from "bcrypt";
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
-import { createUser, findOne } from "../repositories/user.repository.js";
-import type { IUser } from "../models/user.model.js";
 import * as jose from "jose";
+import { BadRequestError, NotFoundError } from "../lib/errors.js";
+import type { IUser } from "../models/user.model.js";
+import { createUser, findOne } from "../repositories/user.repository.js";
 
 export async function loginService(email: string, password: string) {
 	const user = await findOne({ email });
@@ -17,7 +17,7 @@ export async function loginService(email: string, password: string) {
 		throw new BadRequestError("Invalid email and/or password");
 	}
 
-	const { password: _, ...userWithoutPassword } = user.toObject();
+	const { password: _, ...userWithoutPassword } = user;
 
 	const token = await new jose.SignJWT({
 		id: userWithoutPassword._id,
@@ -40,13 +40,13 @@ export async function registerService(payload: IUser) {
 	if (user) {
 		throw new BadRequestError("User already exists");
   }
-  
+
   // Hash password
   const hashedPassword = await hash(payload.password, 10);
 
 	// Create user
   const newUser = await createUser({ ...payload, password: hashedPassword });
-  
+
   const { password, ...userWithoutPassword } = newUser.toObject();
 
   return userWithoutPassword;

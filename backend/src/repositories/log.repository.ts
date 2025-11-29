@@ -31,11 +31,11 @@ export async function updateLog(id: string, log: Partial<ILog>) {
   return await LogModel.findByIdAndUpdate(id, log, { new: true })
     .populate('plan_id')
     .populate('workout_id')
-    .populate('exercise_id');
+    .populate('exercise_id').lean();
 }
 
 export async function deleteLog(id: string) {
-  return await LogModel.findByIdAndDelete(id);
+  return await LogModel.findByIdAndDelete(id).lean();
 }
 
 // Get logs by date range
@@ -50,7 +50,7 @@ export async function findByDateRange(userId: string, startDate: Date, endDate: 
     .populate('plan_id')
     .populate('workout_id')
     .populate('exercise_id')
-    .sort({ workout_date: -1 });
+    .sort({ workout_date: -1 }).lean();
 }
 
 // Get logs for a specific exercise
@@ -62,6 +62,6 @@ export async function findByExercise(userId: string, exerciseId: string) {
     .populate('plan_id')
     .populate('workout_id')
     .populate('exercise_id')
-    .sort({ workout_date: -1 });
+    .sort({ workout_date: -1 }).lean();
 }
 

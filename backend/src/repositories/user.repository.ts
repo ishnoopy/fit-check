@@ -2,11 +2,11 @@ import type { FilterQuery } from 'mongoose';
 import UserModel, { type IUser } from '../models/user.model.js';
 
 export async function findAll() {
-  return await UserModel.find();
+  return await UserModel.find().lean();
 }
 
 export async function findOne(where: FilterQuery<IUser>) {
-  return await UserModel.findOne(where);
+  return await UserModel.findOne(where).lean();
 }
 
 export async function createUser(user: IUser) {
