@@ -6,6 +6,8 @@ import { CustomError } from "../lib/errors.js";
 
 export async function errorMiddleware(err: Error, c: Context) {
 
+  console.error(err);
+
   if (err instanceof jose.errors.JWSInvalid) {
     return c.json(
       { message: "Invalid JWT token" },
