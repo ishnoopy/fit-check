@@ -4,7 +4,6 @@ import * as jose from "jose";
 import { UnauthorizedError } from "../lib/errors.js";
 export async function authMiddleware(c: Context, next: Next) {
   const token = getCookie(c, 'access_token');
-  console.log("token", token);
 
   if (!token) {
     throw new UnauthorizedError("Unauthorized");
