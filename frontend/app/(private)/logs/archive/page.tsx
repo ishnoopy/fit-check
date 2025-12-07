@@ -79,7 +79,7 @@ export default function LogsArchivePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-4xl mx-auto">
           <PageHeader
             title="Logs Archive"
@@ -98,7 +98,7 @@ export default function LogsArchivePage() {
   const logs = data?.data || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <BackButton href="/log" />
 
@@ -184,7 +184,7 @@ export default function LogsArchivePage() {
                             key={idx}
                             className="flex items-center gap-2 bg-muted/30 border border-border/50 rounded-lg p-2.5"
                           >
-                            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-foreground font-bold text-xs shrink-0 border border-border/30">
+                            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-linear-to-br from-blue-500/20 to-purple-500/20 text-foreground font-bold text-xs shrink-0 border border-border/30">
                               {set.set_number}
                             </div>
                             <span className="text-sm font-medium">

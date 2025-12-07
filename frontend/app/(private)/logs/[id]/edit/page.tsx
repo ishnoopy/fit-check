@@ -147,7 +147,7 @@ export default function EditLogPage() {
 
   if (error || !log) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <BackButton href="/logs/archive" />
           <PageHeader
@@ -160,7 +160,7 @@ export default function EditLogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-6">
         <BackButton href="/logs/archive" />
         <PageHeader
@@ -253,7 +253,7 @@ export default function EditLogPage() {
                                   transition={{ delay: idx * 0.05 }}
                                   className="flex gap-2 items-center bg-muted/30 border border-border/50 rounded-lg p-2.5 hover:bg-muted/50 transition-colors"
                                 >
-                                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-foreground font-bold text-sm shrink-0 border border-border/30">
+                                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-linear-to-br from-blue-500/20 to-purple-500/20 text-foreground font-bold text-sm shrink-0 border border-border/30">
                                     {idx + 1}
                                   </div>
                                   <Input

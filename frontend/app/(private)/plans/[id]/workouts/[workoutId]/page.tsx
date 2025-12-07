@@ -308,7 +308,7 @@ export default function WorkoutDetailPage() {
   // Loading State
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <BackButton href={`/plans/${id}`} />
           <PageHeader title="Loading..." subtitle="Loading workout details" />
@@ -321,7 +321,7 @@ export default function WorkoutDetailPage() {
   // Error State
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <BackButton href={`/plans/${id}`} />
           <PageHeader title="Error" subtitle="Failed to load workout" />
@@ -348,7 +348,7 @@ export default function WorkoutDetailPage() {
   // No Workout Found
   if (!workout) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <BackButton href={`/plans/${id}`} />
           <EmptyState
@@ -366,7 +366,7 @@ export default function WorkoutDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <BackButton href={`/plans/${id}`} />
 
@@ -390,7 +390,7 @@ export default function WorkoutDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 overflow-hidden relative">
+          <Card className="bg-linear-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
             <CardHeader className="relative">
               <CardTitle className="flex items-center gap-3 text-2xl">

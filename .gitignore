@@ -1,1 +1,23 @@
 .DS_Store
+
+# Environment files with secrets - NEVER COMMIT THESE
+.env
+.env.local
+.env.production
+.env.*.local
+**/.env
+
+# SSL certificates and keys
+deployed/letsencrypt/
+deployed/certbot/
+*.pem
+*.key
+*.crt
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Docker volumes
+mongo_data/

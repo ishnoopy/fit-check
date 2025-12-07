@@ -129,7 +129,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <PageHeader
           title="Profile"
@@ -145,7 +145,7 @@ export default function ProfilePage() {
           {/* BMI Card - Highlighted */}
           {bmi && (
             <motion.div variants={item}>
-              <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 overflow-hidden relative">
+              <Card className="bg-linear-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
                 <CardContent className="p-6 relative">
                   <div className="flex items-center justify-between">

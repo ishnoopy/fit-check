@@ -77,7 +77,7 @@ export default function RegisterPage() {
       : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-12 px-6">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 py-12 px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

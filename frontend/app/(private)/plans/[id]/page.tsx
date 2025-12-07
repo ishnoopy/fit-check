@@ -407,7 +407,7 @@ export default function PlanDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto space-y-8">
           <BackButton href="/plans" />
           <PageHeader title="Loading..." subtitle="Loading plan details" />
@@ -419,7 +419,7 @@ export default function PlanDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto space-y-8">
           <BackButton href="/plans" />
           <PageHeader title="Error" subtitle="Failed to load plan" />
@@ -445,7 +445,7 @@ export default function PlanDetailPage() {
 
   if (!plan) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto space-y-8">
           <BackButton href="/plans" />
           <EmptyState
@@ -463,7 +463,7 @@ export default function PlanDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <BackButton href="/plans" />
