@@ -36,6 +36,7 @@ import { api } from "@/lib/api";
 import { Plan, Workout } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  MutationFunction,
   QueryFunction,
   useMutation,
   useQuery,
@@ -78,7 +79,7 @@ const item = {
   show: { opacity: 1, x: 0 },
 };
 
-const workoutFormSchema = z.object({
+const addWorkoutFormSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   description: z.string().optional(),
   exercises: z
@@ -97,28 +98,35 @@ const editWorkoutFormSchema = z.object({
   description: z.string().optional(),
 });
 
-type WorkoutFormValues = z.infer<typeof workoutFormSchema>;
+type AddWorkoutFormValues = z.infer<typeof addWorkoutFormSchema>;
 type EditWorkoutFormValues = z.infer<typeof editWorkoutFormSchema>;
 
 export default function PlanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { activePlanId, setActivePlanId } = useGeneral();
   const queryClient = useQueryClient();
+  const router = useRouter();
+
+  // Add/Edit Workout Dialog State
   const [isAddWorkoutOpen, setIsAddWorkoutOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [nextStepsDialogOpen, setNextStepsDialogOpen] = useState(false);
   const [isEditWorkoutOpen, setIsEditWorkoutOpen] = useState(false);
   const [workoutToEdit, setWorkoutToEdit] = useState<Workout | null>(null);
+
+  // Delete Dialog State
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteType, setDeleteType] = useState<"plan" | "workout">("plan");
   const [itemToDelete, setItemToDelete] = useState<Workout | Plan | null>(null);
+
+  // Edit Plan Dialog State
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [editedDescription, setEditedDescription] = useState("");
-  const [nextStepsDialogOpen, setNextStepsDialogOpen] = useState(false);
 
-  const addWorkoutForm = useForm<WorkoutFormValues>({
-    resolver: zodResolver(workoutFormSchema),
+  const addWorkoutForm = useForm<AddWorkoutFormValues>({
+    resolver: zodResolver(addWorkoutFormSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -139,12 +147,10 @@ export default function PlanDetailPage() {
     },
   });
 
-  const router = useRouter();
-
   const getPlan: QueryFunction<{ data: Plan }> = () =>
-    api.get<{ data: Plan }>(`/api/plans/${id}`);
+    api.get(`/api/plans/${id}`);
 
-  const { data, isLoading, error } = useQuery<{ data: Plan }>({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["plan", id],
     queryFn: getPlan,
     enabled: !!id,
@@ -162,10 +168,18 @@ export default function PlanDetailPage() {
     }
   }, [plan]);
 
+  const updatePlan: MutationFunction<
+    { data: Plan },
+    { title?: string; description?: string }
+  > = (values) => {
+    return api.put(`/api/plans/${id}`, {
+      title: values.title || "",
+      description: values.description || "",
+    });
+  };
+
   const updatePlanMutation = useMutation({
-    mutationFn: (values: { title?: string; description?: string }) => {
-      return api.put(`/api/plans/${id}`, values);
-    },
+    mutationFn: updatePlan,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", id] });
       toast.success("Plan updated");
@@ -177,21 +191,23 @@ export default function PlanDetailPage() {
     },
   });
 
+  const createWorkoutWithExercises: MutationFunction<
+    { data: Workout },
+    AddWorkoutFormValues
+  > = (values) => {
+    return api.post("/api/workouts/with-exercises", {
+      plan_id: id,
+      ...values,
+    });
+  };
+
   const createWorkoutWithExercisesMutation = useMutation({
-    mutationFn: (values: WorkoutFormValues) => {
-      const payload = {
-        plan_id: id,
-        ...values,
-      };
-      return api.post<{ data: Workout }>(
-        "/api/workouts/with-exercises",
-        payload
-      );
-    },
-    onSuccess: (res) => {
-      console.log("🚀 ~ onSuccess: ~ res:", res);
+    mutationFn: createWorkoutWithExercises,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", id] });
       toast.success("Workout created successfully! 🎉");
+
+      // Reset the form and close the add workout dialog
       setCurrentStep(1);
       setIsAddWorkoutOpen(false);
       addWorkoutForm.reset();
@@ -200,20 +216,21 @@ export default function PlanDetailPage() {
       setNextStepsDialogOpen(true);
     },
     onError: (error) => {
-      console.log("🚀 ~ onError: ~ error:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to create workout"
       );
     },
   });
 
+  const updateWorkout: MutationFunction<
+    { data: Workout },
+    EditWorkoutFormValues & { workoutId: string }
+  > = (values) => {
+    return api.put(`/api/workouts/${values.workoutId}`, values);
+  };
+
   const updateWorkoutMutation = useMutation({
-    mutationFn: (values: EditWorkoutFormValues & { workoutId: string }) => {
-      return api.put(`/api/workouts/${values.workoutId}`, {
-        title: values.title,
-        description: values.description,
-      });
-    },
+    mutationFn: updateWorkout,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", id] });
       toast.success("Workout updated successfully");
@@ -228,8 +245,12 @@ export default function PlanDetailPage() {
     },
   });
 
+  const deletePlan: MutationFunction<void, string> = (planId) => {
+    return api.delete(`/api/plans/${planId}`);
+  };
+
   const deletePlanMutation = useMutation({
-    mutationFn: (planId: string) => api.delete(`/api/plans/${planId}`),
+    mutationFn: deletePlan,
     onSuccess: () => {
       toast.success("Plan deleted successfully");
       router.push("/plans");
@@ -241,8 +262,12 @@ export default function PlanDetailPage() {
     },
   });
 
+  const deleteWorkout: MutationFunction<void, string> = (workoutId) => {
+    return api.delete(`/api/workouts/${workoutId}`);
+  };
+
   const deleteWorkoutMutation = useMutation({
-    mutationFn: (workoutId: string) => api.delete(`/api/workouts/${workoutId}`),
+    mutationFn: deleteWorkout,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", id] });
       toast.success("Workout deleted successfully");
@@ -256,8 +281,7 @@ export default function PlanDetailPage() {
     },
   });
 
-  const handleAddWorkout = (values: WorkoutFormValues) => {
-    console.log("📋 Workout Form Data:", values);
+  const handleAddWorkout = (values: AddWorkoutFormValues) => {
     createWorkoutWithExercisesMutation.mutate(values);
   };
 
