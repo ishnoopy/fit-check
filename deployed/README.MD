@@ -7,6 +7,7 @@ This guide walks you through deploying the Fit-Check application on an AWS EC2 i
 - AWS Account
 - Domain name (e.g., from NameCheap)
 - SSH access to your server
+- [dnschecker.org](https://dnschecker.org) — Check if your DNS is propagated
 
 ---
 
