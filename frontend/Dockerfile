@@ -1,38 +1,43 @@
-# Use official Node.js image as the base
-FROM node:20 AS deps
-
-# Set working directory
+# --- Builder Stage ---
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-RUN \
-  if [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm && pnpm install; \
-  elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-  else echo "No lockfile found." && exit 1; \
-  fi
+# Install pnpm directly
+RUN npm install -g pnpm@9.15.0
 
-# Copy remaining application code
-FROM node:20 AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy package files and install dependencies
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Copy source code and build
 COPY . .
-# Build the Next.js app
-RUN npm run build
+RUN pnpm build
 
-# Production image, copy built assets and dependencies
-FROM node:20 AS runner
+# --- Production Stage ---
+FROM node:20-alpine AS runner
+
+# Create a non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001 -G nodejs
+
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Install pnpm directly
+RUN npm install -g pnpm@9.15.0
 
-# Copy only necessary files
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+# Copy package files and install production dependencies
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --prod --frozen-lockfile
 
+# Copy build output
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
