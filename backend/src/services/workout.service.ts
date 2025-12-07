@@ -1,7 +1,9 @@
 import { BadRequestError, NotFoundError } from "../lib/errors.js";
+import type { IExercise } from "../models/exercise.model.js";
 import type { IWorkout } from "../models/workout.model.js";
 import * as planRepository from "../repositories/plan.repository.js";
 import * as workoutRepository from "../repositories/workout.repository.js";
+import * as exerciseService from "./exercise.service.js";
 
 export async function getAllWorkoutsService(userId: string, planId?: string) {
   const filter: any = { user_id: userId };
@@ -26,6 +28,33 @@ export async function getWorkoutByIdService(id: string, userId: string) {
   }
 
   return workout;
+}
+
+export async function createWorkoutWithExercisesService(
+  payload: Omit<Partial<IWorkout>, "exercises"> & {
+    exercises: Array<Partial<IExercise>>;
+  },
+  userId: string
+) {
+  const workout = await workoutRepository.createWorkout({
+    ...payload,
+    user_id: userId,
+    exercises: [], // Always initialize empty since we're handling them separately
+  });
+
+  // Type guard to check if exercises are objects
+  if (payload.exercises && typeof payload.exercises[0] !== 'string') {
+    const exerciseObjects = payload.exercises as Array<Partial<IExercise>>;
+    for (const exercise of exerciseObjects) {
+      await exerciseService.createExerciseService({
+        ...exercise,
+        workout_id: workout._id.toString(),
+      }, userId);
+    }
+
+  }
+
+  return await workoutRepository.findById(workout._id.toString());
 }
 
 export async function createWorkoutService(payload: Partial<IWorkout>, userId: string) {

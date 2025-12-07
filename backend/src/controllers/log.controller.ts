@@ -33,7 +33,20 @@ const updateLogSchema = z.object({
 });
 
 const idParamSchema = z.object({
-  id: z.string().min(24).max(24),
+  id: z.string().length(24),
+});
+
+const getLogsQuerySchema = z.object({
+  id: z.string().length(24).optional(),
+  start_date: z.string().datetime().optional(),
+  end_date: z.string().datetime().optional(),
+  exercise_id: z.string().length(24).optional(),
+  plan_id: z.string().length(24).optional(),
+  workout_id: z.string().length(24).optional(),
+  latest: z
+    .string()
+    .transform((val) => val === "true")
+    .optional(),
 });
 
 export async function getLogs(c: Context) {
@@ -58,19 +71,19 @@ export async function getLogs(c: Context) {
   }, StatusCodes.OK);
 }
 
-export async function getLog(c: Context) {
-  const params = await idParamSchema.safeParseAsync(c.req.param());
+export async function getLogsByQuery(c: Context) {
+  const params = await getLogsQuerySchema.safeParseAsync(c.req.query());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const userId = c.get("user").id;
-  const log = await logService.getLogByIdService(params.data.id, userId);
+  const logs = await logService.getLogsByQueryService(params.data, userId);
 
   return c.json({
     success: true,
-    data: log,
+    data: logs,
   }, StatusCodes.OK);
 }
 
@@ -79,8 +92,9 @@ export async function createLog(c: Context) {
   const validation = await createLogSchema.safeParseAsync(body);
 
   if (!validation.success) {
-    throw new BadRequestError(validation.error.errors[0].message);
+    throw new BadRequestError(validation.error);
   }
+
 
   const userId = c.get("user").id;
 
@@ -104,15 +118,16 @@ export async function updateLog(c: Context) {
   const params = await idParamSchema.safeParseAsync(c.req.param());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const body = await c.req.json();
   const validation = await updateLogSchema.safeParseAsync(body);
 
   if (!validation.success) {
-    throw new BadRequestError(validation.error.errors[0].message);
+    throw new BadRequestError(validation.error);
   }
+
 
   const userId = c.get("user").id;
 
@@ -135,7 +150,7 @@ export async function deleteLog(c: Context) {
   const params = await idParamSchema.safeParseAsync(c.req.param());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const userId = c.get("user").id;
@@ -151,7 +166,7 @@ export async function getExerciseHistory(c: Context) {
   const params = await idParamSchema.safeParseAsync(c.req.param());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const userId = c.get("user").id;

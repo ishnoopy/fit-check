@@ -1,9 +1,10 @@
-import type { Next } from "hono";
-import type { Context } from "hono";
-import { UnauthorizedError } from "../lib/errors.js";
+import type { Context, Next } from "hono";
+import { getCookie } from "hono/cookie";
 import * as jose from "jose";
+import { UnauthorizedError } from "../lib/errors.js";
 export async function authMiddleware(c: Context, next: Next) {
-  const token = c.req.header("Authorization")?.replace("Bearer ", "");
+  const token = getCookie(c, 'access_token');
+  console.log("token", token);
 
   if (!token) {
     throw new UnauthorizedError("Unauthorized");

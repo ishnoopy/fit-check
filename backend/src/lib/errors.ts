@@ -3,19 +3,20 @@ import { ZodError } from "zod";
 
 export class CustomError extends Error {
   public statusCode: number;
+  public status: number;
 
-  constructor(public status: number, message: string | ZodError) {
-    // Format ZodError messages if message is a ZodError instance
+  constructor(status: number, message: string | ZodError) {
     if (message instanceof ZodError) {
-      const formattedMessage = message.errors.map(err => 
-        `${err.path.join('.')}: ${err.message}`
-      ).join(', ');
+      const formattedMessage = message.errors
+        .map(err => `${err.path.join(".")}: ${err.message}`)
+        .join(", ");
       super(formattedMessage);
     } else {
       super(message);
     }
-    
-    this.statusCode = status; // Add this line to set statusCode
+
+    this.status = status;
+    this.statusCode = status;
     Object.setPrototypeOf(this, CustomError.prototype);
     this.name = this.constructor.name;
   }
@@ -31,11 +32,13 @@ export class BadRequestError extends CustomError {
   constructor(message: string | ZodError) {
 
     if (message instanceof ZodError) {
-      const formattedMessage = message.errors.map(err => 
+      const formattedMessage = message.errors.map(err =>
         `${err.path.join('.')}: ${err.message}`
       ).join(', ');
+
       super(StatusCodes.BAD_REQUEST, formattedMessage);
     } else {
+      console.log("MESSAGE: ", message);
       super(StatusCodes.BAD_REQUEST, message);
     }
   }

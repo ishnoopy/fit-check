@@ -1,3 +1,4 @@
+import type { SortOrder } from "mongoose";
 import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { ILog } from "../models/log.model.js";
 import * as logRepository from "../repositories/log.repository.js";
@@ -38,6 +39,28 @@ export async function getLogByIdService(id: string, userId: string) {
   }
 
   return log;
+}
+
+export async function getLogsByQueryService(query: Record<string, unknown>, userId: string) {
+  let options: { limit?: number, sort?: Record<string, SortOrder> } = {};
+  if (query.start_date && query.end_date) {
+    query = {
+      ...query, createdAt: {
+        $gte: new Date(query.start_date as string),
+        $lte: new Date(query.end_date as string),
+      }
+    };
+
+    delete query.start_date;
+    delete query.end_date;
+  }
+
+
+  if (query.latest === true) {
+    delete query.latest;
+    options = { ...options, limit: 1, sort: { createdAt: -1 } };
+  }
+  return await logRepository.findByQuery(userId, query, options);
 }
 
 export async function createLogService(payload: Partial<ILog>, userId: string) {

@@ -1,10 +1,10 @@
-http://localhost:3000/api/users?name=John&age=30
+http://localhost:4000/api/users?name=John&age=30
 
 ###
-http://localhost:3000/api/users/1
+http://localhost:4000/api/users/1
 
 ###
-POST http://localhost:3000/api/users
+POST http://localhost:4000/api/users
 Content-Type: application/json
 Authorization: Bearer 123456
 
@@ -14,7 +14,7 @@ Authorization: Bearer 123456
 }
 
 ###
-PUT http://localhost:3000/api/users/1
+PUT http://localhost:4000/api/users/1
 Content-Type: application/json
 Authorization: Bearer 123456
 
@@ -24,7 +24,7 @@ Authorization: Bearer 123456
 }
 
 ###
-POST http://localhost:3000/api/auth/login
+POST http://localhost:4000/api/auth/login
 Content-Type: application/json
 
 {
@@ -33,7 +33,7 @@ Content-Type: application/json
 }
 
 ###
-POST http://localhost:3000/api/auth/register
+POST http://localhost:4000/api/auth/register
 Content-Type: application/json
 
 {
@@ -47,17 +47,17 @@ Content-Type: application/json
 ### ==================== PLANS ==================== ###
 
 ### Get All Plans
-GET http://localhost:3000/api/plans
+GET http://localhost:4000/api/plans
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Get Plan by ID
-GET http://localhost:3000/api/plans/69281b7eb315a1f36481914e
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+GET http://localhost:4000/api/plans/69281b7eb315a1f36481914e
+Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Create Plan
-POST http://localhost:3000/api/plans
+POST http://localhost:4000/api/plans
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+Authorization: Bearer YOUR_TOKEN_HERE
 
 {
   "title": "Gym Workout Plan",
@@ -66,9 +66,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExN
 }
 
 ### Update Plan
-PUT http://localhost:3000/api/plans/69281b7eb315a1f36481914e
+PUT http://localhost:4000/api/plans/69281b7eb315a1f36481914e
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+Authorization: Bearer YOUR_TOKEN_HERE
 
 {
   "title": "Updated Gym Workout Plan",
@@ -79,27 +79,27 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExN
 }
 
 ### Delete Plan
-DELETE http://localhost:3000/api/plans/PLAN_ID_HERE
+DELETE http://localhost:4000/api/plans/PLAN_ID_HERE
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### ==================== WORKOUTS ==================== ###
 
 ### Get All Workouts
-GET http://localhost:3000/api/workouts
+GET http://localhost:4000/api/workouts
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Get Workouts by Plan
-GET http://localhost:3000/api/workouts?plan_id=69281b7eb315a1f36481914e
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+GET http://localhost:4000/api/workouts?plan_id=69281b7eb315a1f36481914e
+Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Get Workout by ID
-GET http://localhost:3000/api/workouts/WORKOUT_ID_HERE
+GET http://localhost:4000/api/workouts/WORKOUT_ID_HERE
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Create Workout
-POST http://localhost:3000/api/workouts
+POST http://localhost:4000/api/workouts
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+Authorization: Bearer YOUR_TOKEN_HERE
 
 {
   "plan_id": "69281b7eb315a1f36481914e",
@@ -111,9 +111,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExN
 }
 
 ### Update Workout
-PUT http://localhost:3000/api/workouts/69281dbd503e6ac85469551a
+PUT http://localhost:4000/api/workouts/69281dbd503e6ac85469551a
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+Authorization: Bearer YOUR_TOKEN_HERE
 
 {
   "title": "Push Day - Advanced",
@@ -125,23 +125,23 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExN
 }
 
 ### Delete Workout
-DELETE http://localhost:3000/api/workouts/WORKOUT_ID_HERE
+DELETE http://localhost:4000/api/workouts/WORKOUT_ID_HERE
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### ==================== EXERCISES ==================== ###
 
 ### Get All Exercises
-GET http://localhost:3000/api/exercises
+GET http://localhost:4000/api/exercises
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Get Exercise by ID
-GET http://localhost:3000/api/exercises/EXERCISE_ID_HERE
+GET http://localhost:4000/api/exercises/EXERCISE_ID_HERE
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Create Exercise
-POST http://localhost:3000/api/exercises
+POST http://localhost:4000/api/exercises
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+Authorization: Bearer YOUR_TOKEN_HERE
 
 {
   "name": "Incline Bench Press",
@@ -150,7 +150,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExN
 }
 
 ### Create Exercise - Squats
-POST http://localhost:3000/api/exercises
+POST http://localhost:4000/api/exercises
 Content-Type: application/json
 Authorization: Bearer YOUR_TOKEN_HERE
 
@@ -161,7 +161,7 @@ Authorization: Bearer YOUR_TOKEN_HERE
 }
 
 ### Create Exercise - Deadlift
-POST http://localhost:3000/api/exercises
+POST http://localhost:4000/api/exercises
 Content-Type: application/json
 Authorization: Bearer YOUR_TOKEN_HERE
 
@@ -172,7 +172,7 @@ Authorization: Bearer YOUR_TOKEN_HERE
 }
 
 ### Update Exercise
-PUT http://localhost:3000/api/exercises/EXERCISE_ID_HERE
+PUT http://localhost:4000/api/exercises/EXERCISE_ID_HERE
 Content-Type: application/json
 Authorization: Bearer YOUR_TOKEN_HERE
 
@@ -183,35 +183,35 @@ Authorization: Bearer YOUR_TOKEN_HERE
 }
 
 ### Delete Exercise
-DELETE http://localhost:3000/api/exercises/EXERCISE_ID_HERE
+DELETE http://localhost:4000/api/exercises/EXERCISE_ID_HERE
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### ==================== LOGS ==================== ###
 
 ### Get All Logs
-GET http://localhost:3000/api/logs
+GET http://localhost:4000/api/logs
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Get Logs by Date Range
-GET http://localhost:3000/api/logs?start_date=2025-11-01T00:00:00Z&end_date=2025-11-30T23:59:59Z
+GET http://localhost:4000/api/logs?start_date=2025-11-01T00:00:00Z&end_date=2025-11-30T23:59:59Z
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Get Logs by Exercise
-GET http://localhost:3000/api/logs?exercise_id=69281c36b315a1f364819150
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+GET http://localhost:4000/api/logs?exercise_id=69281c36b315a1f364819150
+Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Get Log by ID
-GET http://localhost:3000/api/logs/LOG_ID_HERE
+GET http://localhost:4000/api/logs/69327f895697b38cff95efeb
 Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Get Exercise History
-GET http://localhost:3000/api/logs/exercise/69281c36b315a1f364819150/history
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+GET http://localhost:4000/api/logs/exercise/69281c36b315a1f364819150/history
+Authorization: Bearer YOUR_TOKEN_HERE
 
 ### Create Log - Full Workout
-POST http://localhost:3000/api/logs
+POST http://localhost:4000/api/logs
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExNjg3NyIsImVtYWlsIjoiYWxkcmluZ3Vhc2ExQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2NDIzOTczMn0.zfUGk62J5FPS1NDvBTi5DIg-tRCkLnji4wvHVMj2ghY
+Authorization: Bearer YOUR_TOKEN_HERE
 
 {
   "plan_id": "69281b7eb315a1f36481914e",
@@ -243,7 +243,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY5MjcyNGJkZjE5NDhiYWU2NTExN
 }
 
 ### Create Log - Simple
-POST http://localhost:3000/api/logs
+POST http://localhost:4000/api/logs
 Content-Type: application/json
 Authorization: Bearer YOUR_TOKEN_HERE
 
@@ -271,7 +271,7 @@ Authorization: Bearer YOUR_TOKEN_HERE
 }
 
 ### Update Log
-PUT http://localhost:3000/api/logs/LOG_ID_HERE
+PUT http://localhost:4000/api/logs/LOG_ID_HERE
 Content-Type: application/json
 Authorization: Bearer YOUR_TOKEN_HERE
 
@@ -297,5 +297,5 @@ Authorization: Bearer YOUR_TOKEN_HERE
 }
 
 ### Delete Log
-DELETE http://localhost:3000/api/logs/LOG_ID_HERE
+DELETE http://localhost:4000/api/logs/LOG_ID_HERE
 Authorization: Bearer YOUR_TOKEN_HERE

@@ -1,4 +1,4 @@
-import type { FilterQuery } from 'mongoose';
+import type { FilterQuery, SortOrder } from 'mongoose';
 import LogModel, { type ILog } from '../models/log.model.js';
 
 export async function findAll(where?: FilterQuery<ILog>) {
@@ -65,3 +65,13 @@ export async function findByExercise(userId: string, exerciseId: string) {
     .sort({ workout_date: -1 }).lean();
 }
 
+export async function findByQuery(userId: string, query: Record<string, unknown>, options?: { limit?: number, sort?: Record<string, SortOrder> }) {
+  const sort = options?.sort || { createdAt: -1 };
+  return await LogModel.find({ user_id: userId, ...query })
+    .populate('plan_id')
+    .populate('workout_id')
+    .populate('exercise_id')
+    .sort(sort)
+    .limit(options?.limit || 10)
+    .lean();
+}

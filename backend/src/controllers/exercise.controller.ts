@@ -5,6 +5,7 @@ import { BadRequestError } from "../lib/errors.js";
 import * as exerciseService from "../services/exercise.service.js";
 
 const createExerciseSchema = z.object({
+  workout_id: z.string().min(24).max(24).optional(),
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   notes: z.string().optional(),
@@ -35,7 +36,7 @@ export async function getExercise(c: Context) {
   const params = await idParamSchema.safeParseAsync(c.req.param());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const userId = c.get("user").id;
@@ -52,8 +53,9 @@ export async function createExercise(c: Context) {
   const validation = await createExerciseSchema.safeParseAsync(body);
 
   if (!validation.success) {
-    throw new BadRequestError(validation.error.errors[0].message);
+    throw new BadRequestError(validation.error);
   }
+
 
   const userId = c.get("user").id;
   const exercise = await exerciseService.createExerciseService(validation.data, userId);
@@ -68,15 +70,16 @@ export async function updateExercise(c: Context) {
   const params = await idParamSchema.safeParseAsync(c.req.param());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const body = await c.req.json();
   const validation = await updateExerciseSchema.safeParseAsync(body);
 
   if (!validation.success) {
-    throw new BadRequestError(validation.error.errors[0].message);
+    throw new BadRequestError(validation.error);
   }
+
 
   const userId = c.get("user").id;
   const exercise = await exerciseService.updateExerciseService(params.data.id, validation.data, userId);
@@ -91,7 +94,7 @@ export async function deleteExercise(c: Context) {
   const params = await idParamSchema.safeParseAsync(c.req.param());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const userId = c.get("user").id;

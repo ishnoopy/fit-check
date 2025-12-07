@@ -35,7 +35,7 @@ export async function getPlan(c: Context) {
   const params = await idParamSchema.safeParseAsync(c.req.param());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const userId = c.get("user").id;
@@ -52,7 +52,7 @@ export async function createPlan(c: Context) {
   const validation = await createPlanSchema.safeParseAsync(body);
 
   if (!validation.success) {
-    throw new BadRequestError(validation.error.errors[0].message);
+    throw new BadRequestError(validation.error);
   }
 
   const userId = c.get("user").id;
@@ -68,15 +68,16 @@ export async function updatePlan(c: Context) {
   const params = await idParamSchema.safeParseAsync(c.req.param());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const body = await c.req.json();
   const validation = await updatePlanSchema.safeParseAsync(body);
 
   if (!validation.success) {
-    throw new BadRequestError(validation.error.errors[0].message);
+    throw new BadRequestError(validation.error);
   }
+
 
   const userId = c.get("user").id;
   const plan = await planService.updatePlanService(params.data.id, validation.data, userId);
@@ -91,7 +92,7 @@ export async function deletePlan(c: Context) {
   const params = await idParamSchema.safeParseAsync(c.req.param());
 
   if (!params.success) {
-    throw new BadRequestError(params.error.errors[0].message);
+    throw new BadRequestError(params.error);
   }
 
   const userId = c.get("user").id;

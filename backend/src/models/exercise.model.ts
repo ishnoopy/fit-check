@@ -3,6 +3,7 @@ import mongoose, { model } from "mongoose";
 // e.g. Bench Press, Squats, Deadlift, etc.
 export interface IExercise {
     user_id: mongoose.Schema.Types.ObjectId | string;
+    workout_id?: mongoose.Schema.Types.ObjectId | string;
     name: string;
     description?: string;
     notes?: string;

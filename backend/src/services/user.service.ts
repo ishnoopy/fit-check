@@ -8,7 +8,7 @@ export async function loginService(email: string, password: string) {
 	const user = await findOne({ email });
 
 	if (!user) {
-		throw new NotFoundError("User not found");
+		throw new NotFoundError("Invalid email and/or password");
 	}
 
 	const isPasswordCorrect = await compare(password, user.password);
@@ -33,21 +33,21 @@ export async function loginService(email: string, password: string) {
 
 export async function registerService(payload: IUser) {
 
-  const { email } = payload;
+	const { email } = payload;
 	// Check if user already exists
 	const user = await findOne({ email });
 
 	if (user) {
 		throw new BadRequestError("User already exists");
-  }
+	}
 
-  // Hash password
-  const hashedPassword = await hash(payload.password, 10);
+	// Hash password
+	const hashedPassword = await hash(payload.password, 10);
 
 	// Create user
-  const newUser = await createUser({ ...payload, password: hashedPassword });
+	const newUser = await createUser({ ...payload, password: hashedPassword });
 
-  const { password, ...userWithoutPassword } = newUser.toObject();
+	const { password, ...userWithoutPassword } = newUser.toObject();
 
-  return userWithoutPassword;
+	return userWithoutPassword;
 }
