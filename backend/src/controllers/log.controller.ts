@@ -37,7 +37,7 @@ const idParamSchema = z.object({
 });
 
 const getLogsQuerySchema = z.object({
-  id: z.string().length(24).optional(),
+  _id: z.string().length(24).optional(),
   start_date: z.string().datetime().optional(),
   end_date: z.string().datetime().optional(),
   exercise_id: z.string().length(24).optional(),
