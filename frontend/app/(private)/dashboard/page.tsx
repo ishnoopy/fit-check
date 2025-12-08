@@ -3,6 +3,7 @@
 import { AppGuide } from "@/components/AppGuide";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
+import { ProfileCompletionDialog } from "@/components/ProfileCompletionDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getDayName } from "@/lib/store";
@@ -12,13 +13,6 @@ import { motion } from "framer-motion";
 import { CalendarPlus, Flame, Target, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "../../providers";
-
-interface Exercise {
-  id: string;
-  name: string;
-  sets: number;
-  reps: number;
-}
 
 const container = {
   hidden: { opacity: 0 },
@@ -237,6 +231,11 @@ export default function Home() {
             }}
           />
         </motion.div>
+
+        {/* Profile Completion Dialog */}
+        {!user?.profileCompleted && (
+          <ProfileCompletionDialog open={!user?.profileCompleted} />
+        )}
       </div>
     </div>
   );

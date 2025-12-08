@@ -64,7 +64,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const completeProfile = async (values: FormValues) => {
+const completeProfile = (values: FormValues) => {
   // Transform string fields to numbers
   const transformedValues = {
     ...values,
@@ -104,14 +104,11 @@ export function ProfileCompletionDialog({
 
   const completeProfileMutation = useMutation({
     mutationFn: completeProfile,
-    onSuccess: async () => {
+    onSuccess: () => {
       // Mark as completed to hide dialog immediately
       setIsCompleted(true);
 
-      // Invalidate and refetch the user query to update profileCompleted status
-      await queryClient.invalidateQueries({ queryKey: ["user"] });
-      await queryClient.refetchQueries({ queryKey: ["user"] });
-
+      queryClient.invalidateQueries({ queryKey: ["user"] });
       toast.success("Profile completed successfully! Welcome to FitCheck! 🎉");
     },
     onError: (error) => {
