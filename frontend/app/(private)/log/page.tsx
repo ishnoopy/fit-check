@@ -599,14 +599,16 @@ export default function LogPage() {
                       <AlertCircleIcon className="h-8 w-8 text-amber-500" />
                     </div>
                     <h3 className="font-semibold text-lg mb-2">
-                      No Workouts in This Plan
+                      Not seeing your exercises?
                     </h3>
                     <p className="text-sm text-muted-foreground mb-2 max-w-md mx-auto">
-                      Your active plan doesn&apos;t have any workouts yet.
+                      You may not have selected or activated a plan yet.
                     </p>
                     <p className="text-xs text-muted-foreground mb-6 max-w-md mx-auto px-4">
-                      💡 <strong>Tip:</strong> Go to your Plans page and add
-                      workouts with exercises to start logging your progress!
+                      💡 <strong>Quick reminder:</strong> Plans contain Workouts
+                      → Workouts contain Exercises. Make sure you&apos;ve
+                      created a plan, added workouts with exercises, and set it
+                      as active!
                     </p>
                     <Button variant="default" size="sm" asChild>
                       <Link href="/plans">Go to Plans</Link>
