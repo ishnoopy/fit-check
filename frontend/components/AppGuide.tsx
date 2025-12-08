@@ -9,102 +9,49 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
 import {
-  CheckCircle2,
   Calendar,
+  CheckCircle2,
+  ChevronRight,
   Dumbbell,
   FileText,
-  Star,
   Info,
+  Lightbulb,
+  Star,
 } from "lucide-react";
-import { motion } from "framer-motion";
 
 const steps = [
   {
-    number: 1,
     icon: FileText,
     title: "Create a Plan",
-    description:
-      "Start by creating a workout plan to organize your training routine",
-    tips: [
-      "Give your plan a clear name (e.g., 'Summer Body Program')",
-      "Add a description to remember your goals",
-      "You can create multiple plans for different purposes",
-    ],
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
   },
   {
-    number: 2,
     icon: Calendar,
-    title: "Create Workouts",
-    description: "Add workouts to your plan (e.g., Push Day, Pull Day, Leg Day)",
-    tips: [
-      "Each workout should focus on specific muscle groups or movements",
-      "Add a description to note the workout's focus",
-      "You'll be guided to add exercises right after creating a workout",
-    ],
+    title: "Add Workouts",
     color: "text-purple-500",
     bgColor: "bg-purple-500/10",
   },
   {
-    number: 3,
     icon: Dumbbell,
     title: "Add Exercises",
-    description:
-      "Add exercises to each workout with details like sets, reps, and notes",
-    tips: [
-      "Include exercise name (e.g., Bench Press, Squats)",
-      "Add descriptions for proper form reminders",
-      "Use notes for any special instructions",
-    ],
     color: "text-green-500",
     bgColor: "bg-green-500/10",
   },
   {
-    number: 4,
     icon: Star,
-    title: "Activate Your Plan",
-    description: "Set your preferred plan as active to start logging workouts",
-    tips: [
-      "Only one plan can be active at a time",
-      "Go to Plans and click 'Set as Active' on your chosen plan",
-      "You can switch active plans anytime",
-    ],
+    title: "Activate Plan",
     color: "text-amber-500",
     bgColor: "bg-amber-500/10",
   },
   {
-    number: 5,
     icon: CheckCircle2,
-    title: "Log Your Workouts",
-    description: "Track your progress by logging exercises from your active plan",
-    tips: [
-      "Select a workout from your active plan",
-      "Choose an exercise to log",
-      "Add sets with reps, weight, and optional notes",
-      "Use 'Copy from last' to quickly replicate previous workouts",
-    ],
+    title: "Log Workouts",
     color: "text-orange-500",
     bgColor: "bg-orange-500/10",
   },
 ];
-
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, x: -20 },
-  show: { opacity: 1, x: 0 },
-};
 
 export function AppGuide() {
   return (
@@ -113,89 +60,114 @@ export function AppGuide() {
         <Button
           variant="outline"
           size="icon"
-          className="rounded-full shadow-lg border-2 hover:shadow-xl transition-all"
+          className="rounded-full shadow-lg border-2 hover:shadow-xl transition-all hover:scale-105"
         >
           <Info className="h-5 w-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Info className="h-6 w-6 text-primary" />
+          <DialogTitle className="text-xl flex items-center gap-2">
+            <div className="p-2 bg-linear-to-br from-blue-500/20 to-purple-500/20 rounded-lg">
+              <Info className="h-5 w-5 text-primary" />
             </div>
-            How to Use FitCheck
+            Quick Start Guide
           </DialogTitle>
           <DialogDescription>
-            Follow these simple steps to get started with your fitness journey
-            🎯
+            Get up and running in 5 simple steps 🚀
           </DialogDescription>
         </DialogHeader>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="space-y-4 mt-4"
-        >
-          {steps.map((step) => (
-            <motion.div key={step.number} variants={item}>
-              <Card className="border-border/50 hover:border-primary/30 transition-colors">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div
-                        className={`w-12 h-12 rounded-full ${step.bgColor} flex items-center justify-center`}
-                      >
-                        <step.icon className={`h-6 w-6 ${step.color}`} />
-                      </div>
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs font-bold ${step.color} bg-background border border-current rounded-full px-2 py-0.5`}
-                        >
-                          STEP {step.number}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-lg">{step.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {step.description}
-                      </p>
-                      <div className="mt-3 space-y-1.5">
-                        {step.tips.map((tip, idx) => (
-                          <div key={idx} className="flex items-start gap-2">
-                            <div className="mt-0.5">
-                              <div
-                                className={`w-1.5 h-1.5 rounded-full ${step.color.replace(
-                                  "text",
-                                  "bg"
-                                )}`}
-                              />
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {tip}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
+        <div className="space-y-4 mt-2">
+          {/* Steps with Icons */}
+          <div className="space-y-2">
+            {steps.map((step, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-primary/30 transition-all hover:bg-accent/50 group"
+              >
+                <div
+                  className={`p-2 rounded-lg ${step.bgColor} group-hover:scale-110 transition-transform`}
+                >
+                  <step.icon className={`h-4 w-4 ${step.color}`} />
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-xs font-bold text-muted-foreground">
+                    {idx + 1}.
+                  </span>
+                  <span className="text-sm font-medium">{step.title}</span>
+                </div>
+              </div>
+            ))}
+          </div>
 
-        <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-          <p className="text-sm text-muted-foreground text-center">
-            <strong className="text-foreground">💡 Pro Tip:</strong> Take it
-            step by step! The app will guide you through each stage as you
-            progress.
-          </p>
+          {/* Structure Diagram */}
+          <div className="p-4 bg-linear-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/20 rounded-lg space-y-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-blue-500" />
+              <span className="text-sm font-semibold">How it works</span>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 py-2">
+              <div className="flex flex-col items-center gap-1">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <FileText className="h-4 w-4 text-blue-500" />
+                </div>
+                <span className="text-xs font-medium">Plan</span>
+              </div>
+
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+
+              <div className="flex flex-col items-center gap-1">
+                <div className="p-2 bg-purple-500/10 rounded-lg">
+                  <Calendar className="h-4 w-4 text-purple-500" />
+                </div>
+                <span className="text-xs font-medium">Workouts</span>
+              </div>
+
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+
+              <div className="flex flex-col items-center gap-1">
+                <div className="p-2 bg-green-500/10 rounded-lg">
+                  <Dumbbell className="h-4 w-4 text-green-500" />
+                </div>
+                <span className="text-xs font-medium">Exercises</span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border/30">
+              <p className="text-xs text-muted-foreground text-center">
+                Example:{" "}
+                <span className="font-medium text-foreground">
+                  &quot;Push/Pull/Legs&quot;
+                </span>{" "}
+                →{" "}
+                <span className="font-medium text-foreground">
+                  &quot;Push Day&quot;
+                </span>{" "}
+                →{" "}
+                <span className="font-medium text-foreground">
+                  &quot;Bench Press&quot;
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* Important Tip */}
+          <div className="p-3 bg-linear-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-xs leading-relaxed">
+                <strong className="text-foreground">Pro Tip:</strong>{" "}
+                <span className="text-muted-foreground">
+                  You must activate a plan before you can start logging
+                  workouts!
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
