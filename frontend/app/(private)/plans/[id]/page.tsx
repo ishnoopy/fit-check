@@ -801,15 +801,6 @@ export default function PlanDetailPage() {
                           Add exercises to your workout
                         </p>
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleAddExercise}
-                        className="gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Exercise
-                      </Button>
                     </div>
 
                     {fields.length === 0 ? (
@@ -892,6 +883,15 @@ export default function PlanDetailPage() {
                         ))}
                       </div>
                     )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleAddExercise}
+                      className="gap-2 "
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Exercise
+                    </Button>
                   </motion.div>
                 )}
 
