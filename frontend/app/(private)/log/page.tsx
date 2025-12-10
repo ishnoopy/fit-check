@@ -45,7 +45,7 @@ import {
   XIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -73,18 +73,29 @@ const createLog = async (values: FormValues) => {
   return api.post("/api/logs", values);
 };
 
+const getItemFromLocalStorage = (key: string) => {
+  const item = localStorage.getItem(key);
+  return item || null;
+};
+
 export default function LogPage() {
   const { activePlanId } = useGeneral();
-  const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
-  const [activeExercise, setActiveExercise] = useState<Exercise | null>(null);
+  const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(
+    getItemFromLocalStorage("activeWorkoutId")
+  );
+  const [activeExerciseId, setActiveExerciseId] = useState<string | null>(
+    getItemFromLocalStorage("activeExerciseId")
+  );
   const [copiedFromLast, setCopiedFromLast] = useState(false);
+
+  // Remove the currentFormValues state - we'll use form.watch() instead
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       plan_id: activePlanId || "",
-      workout_id: activeWorkout?._id || "",
-      exercise_id: activeExercise?._id || "",
+      workout_id: activeWorkoutId || "",
+      exercise_id: activeExerciseId || "",
       sets: [],
       workout_date: new Date().toISOString(),
       duration_minutes: 0,
@@ -92,14 +103,83 @@ export default function LogPage() {
     },
   });
 
+  // ✅ Watch all form values for changes
+  const formValues = form.watch();
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ Auto-save form data to localStorage with debouncing
+  useEffect(() => {
+    // Only save if we have an active exercise
+    if (!activeExerciseId) return;
+
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Debounce the save to avoid excessive writes
+    debounceTimerRef.current = setTimeout(() => {
+      const dataToSave = {
+        sets: formValues.sets,
+        duration_minutes: formValues.duration_minutes,
+        notes: formValues.notes,
+        exerciseId: activeExerciseId, // Include ID to verify it's for the right exercise
+      };
+      localStorage.setItem("draftLogData", JSON.stringify(dataToSave));
+    }, 500); // Save 500ms after user stops typing
+
+    // Cleanup
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [
+    formValues.sets,
+    formValues.duration_minutes,
+    formValues.notes,
+    activeExerciseId,
+  ]);
+
+  // ✅ Load saved draft when exercise changes
+  useEffect(() => {
+    if (!activeExerciseId) return;
+
+    const savedDraft = localStorage.getItem("draftLogData");
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+
+        // Only load if it's for the same exercise
+        if (parsed.exerciseId === activeExerciseId) {
+          if (parsed.sets && parsed.sets.length > 0) {
+            form.setValue("sets", parsed.sets);
+          }
+          if (parsed.duration_minutes) {
+            form.setValue("duration_minutes", parsed.duration_minutes);
+          }
+          if (parsed.notes) {
+            form.setValue("notes", parsed.notes);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to parse saved draft", error);
+      }
+    }
+  }, [activeExerciseId, form]);
+
   const queryClient = useQueryClient();
 
   const createLogMutation = useMutation({
     mutationFn: createLog,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["latestExerciseLog", activeExercise?._id],
+        queryKey: ["latestExerciseLog", activeExerciseId],
       });
+
+      // ✅ Clear the draft after successful save
+      localStorage.removeItem("draftLogData");
+
       toast.success("Log created successfully");
       form.reset();
     },
@@ -116,8 +196,8 @@ export default function LogPage() {
     }
     const payload = {
       plan_id: activePlanId || "",
-      workout_id: activeWorkout?._id || "",
-      exercise_id: activeExercise?._id || "",
+      workout_id: activeWorkoutId || "",
+      exercise_id: activeExerciseId || "",
       sets: values.sets || [],
       duration_minutes: values.duration_minutes || 0,
       notes: values.notes || "",
@@ -140,37 +220,52 @@ export default function LogPage() {
 
   const workouts = workoutsData?.data;
 
+  const activeWorkout = workouts?.find(
+    (workout: Workout) => workout._id === activeWorkoutId
+  );
+  const activeExercise = activeWorkout?.exercises.find(
+    (exercise: Exercise) => exercise._id === activeExerciseId
+  );
+
   const getLatestExerciseLog = async () => {
     return api.get<{ data: Log[] }>(
-      `/api/logs/query?exercise_id=${activeExercise?._id}&plan_id=${activePlanId}&workout_id=${activeWorkout?._id}&latest=true`
+      `/api/logs/query?exercise_id=${activeExerciseId}&plan_id=${activePlanId}&workout_id=${activeWorkoutId}&latest=true`
     );
   };
 
   const { data: latestExerciseLogData } = useQuery({
-    queryKey: ["latestExerciseLog", activeExercise?._id],
+    queryKey: ["latestExerciseLog", activeExerciseId],
     queryFn: getLatestExerciseLog,
-    enabled: !!activeExercise?._id && !!activePlanId && !!activeWorkout?._id,
+    enabled: !!activeExerciseId && !!activePlanId && !!activeWorkoutId,
   });
 
   const latestExerciseLog = latestExerciseLogData?.data[0];
 
   const handleWorkoutChange = (value: string) => {
-    setActiveWorkout(
-      workouts?.find((workout: Workout) => workout._id === value) || null
-    );
-    setActiveExercise(null);
+    const workout = workouts?.find((workout: Workout) => workout._id === value);
+    setActiveWorkoutId(workout?._id || null);
+    setActiveExerciseId(null);
     setCopiedFromLast(false);
+
+    // Set to local storage for data persistence
+    localStorage.setItem("activeWorkoutId", value);
   };
 
   const handleExerciseChange = (value: string) => {
-    setActiveExercise(
-      activeWorkout?.exercises.find(
-        (exercise: Exercise) => exercise._id === value
-      ) || null
-    );
+    setActiveExerciseId(value);
 
-    form.reset();
+    // Clear the form and draft when changing exercises
+    form.reset({
+      plan_id: activePlanId || "",
+      workout_id: activeWorkoutId || "",
+      exercise_id: value,
+      sets: [],
+      workout_date: new Date().toISOString(),
+      duration_minutes: 0,
+      notes: "",
+    });
     setCopiedFromLast(false);
+    localStorage.setItem("activeExerciseId", value);
   };
 
   const copyFromLastWorkout = () => {
@@ -255,7 +350,7 @@ export default function LogPage() {
                         </label>
                         <Select
                           onValueChange={handleWorkoutChange}
-                          value={activeWorkout?._id || ""}
+                          value={activeWorkoutId || ""}
                         >
                           <SelectTrigger className="h-11 border-border/50 hover:border-border transition-colors">
                             <SelectValue placeholder="Choose workout..." />
@@ -270,7 +365,7 @@ export default function LogPage() {
                         </Select>
                       </div>
 
-                      {activeWorkout && (
+                      {activeWorkoutId && (
                         <motion.div
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -279,8 +374,8 @@ export default function LogPage() {
                           <label className="text-sm font-medium text-muted-foreground">
                             Exercise
                           </label>
-                          {activeWorkout.exercises &&
-                          activeWorkout.exercises.length > 0 ? (
+                          {activeWorkout?.exercises &&
+                          activeWorkout?.exercises.length > 0 ? (
                             <Select
                               onValueChange={handleExerciseChange}
                               value={activeExercise?._id || ""}
@@ -565,6 +660,7 @@ export default function LogPage() {
                                 onClick={() => {
                                   form.reset();
                                   setCopiedFromLast(false);
+                                  localStorage.removeItem("draftLogData"); // ✅ Clear draft on reset
                                 }}
                               >
                                 Reset

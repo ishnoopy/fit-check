@@ -115,13 +115,22 @@ export default function Plans() {
   });
 
   const handleToggleActivePlan = (planId: string) => {
+    localStorage.removeItem("draftLogData");
     if (activePlanId === planId) {
       setActivePlanId(null);
       localStorage.removeItem("activePlanId");
+
+      // remove active workout and exercise from local storage
+      localStorage.removeItem("activeWorkoutId");
+      localStorage.removeItem("activeExerciseId");
       return;
     }
     setActivePlanId(planId);
     localStorage.setItem("activePlanId", planId);
+
+    // set active workout and exercise to local storage
+    localStorage.setItem("activeWorkoutId", "");
+    localStorage.setItem("activeExerciseId", "");
   };
 
   const createPlanMutation = useMutation({
