@@ -1,6 +1,8 @@
 "use client";
 
+import { DotBackground } from "@/components/DotBackground";
 import { Button } from "@/components/ui/button";
+import favicon from "@/public/favicon.ico";
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -9,6 +11,7 @@ import {
   Calendar,
   Dumbbell,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function LandingPage() {
@@ -32,14 +35,8 @@ export default function LandingPage() {
 
   return (
     <main className="min-h-screen bg-background relative overflow-hidden">
-      {/* Dot Pattern Background */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
-          backgroundSize: "32px 32px",
-        }}
-      />
+      {/* Dot Background Pattern */}
+      <DotBackground />
 
       {/* Header */}
       <motion.header
@@ -49,9 +46,13 @@ export default function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-background">
-              <Dumbbell className="h-5 w-5" />
-            </div>
+            <Image
+              src={favicon}
+              alt="FitCheck"
+              width={64}
+              height={64}
+              className="h-16 w-16"
+            />
             <span className="text-xl font-bold tracking-tight">FitCheck</span>
           </Link>
 
@@ -171,9 +172,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-                <Dumbbell className="h-4 w-4" />
-              </div>
+              <Image
+                src={favicon}
+                alt="FitCheck"
+                width={64}
+                height={64}
+                className="h-16 w-16"
+              />
               <span className="font-bold">FitCheck</span>
             </div>
             <p className="text-sm text-muted-foreground">

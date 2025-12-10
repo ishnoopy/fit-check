@@ -1,4 +1,5 @@
 import BottomNav from "@/components/BottomNav";
+import { DotBackground } from "@/components/DotBackground";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
@@ -37,6 +38,7 @@ export default async function RootLayout({
       <div
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen flex-col`}
       >
+        <DotBackground />
         <div className="flex-1">{children}</div>
         <BottomNav className="" />
       </div>

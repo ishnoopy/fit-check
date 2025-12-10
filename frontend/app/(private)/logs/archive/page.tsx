@@ -45,6 +45,12 @@ const deleteLog = async (logId: string) => {
   return api.delete(`/api/logs/${logId}`);
 };
 
+const fetchLogsByQuery = async (
+  query: string
+): Promise<{ success: boolean; data: Log[] }> => {
+  return api.get(`/api/logs/query?${query}`);
+};
+
 export default function LogsArchivePage() {
   const queryClient = useQueryClient();
   const [logToDelete, setLogToDelete] = useState<Log | null>(null);

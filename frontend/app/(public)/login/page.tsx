@@ -1,5 +1,6 @@
 "use client";
 
+import { DotBackground } from "@/components/DotBackground";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -67,7 +68,8 @@ export default function Login() {
       : null;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 flex items-center justify-center p-6 relative overflow-hidden">
+      <DotBackground />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -108,7 +110,7 @@ export default function Login() {
                   animate={{ opacity: 1, x: 0 }}
                   className="rounded-2xl border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3"
                 >
-                  <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                   <p className="text-destructive text-sm font-medium">
                     {errorMessage}
                   </p>
