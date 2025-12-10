@@ -233,8 +233,8 @@ export default function Home() {
         </motion.div>
 
         {/* Profile Completion Dialog */}
-        {!user?.profileCompleted && (
-          <ProfileCompletionDialog open={!user?.profileCompleted} />
+        {!user?.profileCompleted && user && (
+          <ProfileCompletionDialog open={!user.profileCompleted} />
         )}
       </div>
     </div>
