@@ -18,9 +18,16 @@ export async function googleOAuth(c: Context) {
 
 export async function handleGoogleOAuthCallback(c: Context) {
 	const code = c.req.query('code');
-	if (!code) {
-		throw new BadRequestError("Code is required");
+	const error = c.req.query('error');
+
+	if (error) {
+		return c.redirect(`${process.env.FRONTEND_URL}/login?error=${error}`, StatusCodes.TEMPORARY_REDIRECT);
 	}
+
+	if (!code) {
+		return c.redirect(`${process.env.FRONTEND_URL}/login?error=Code is required`, StatusCodes.TEMPORARY_REDIRECT);
+	}
+
 	const user = await OAuthService.handleGoogleOAuthCallback(code);
 
 	setCookie(c, 'access_token', user?.token, {

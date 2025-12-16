@@ -17,7 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -36,6 +36,8 @@ const login = async (values: FormValues) => {
 
 export default function Login() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -65,8 +67,8 @@ export default function Login() {
     loginMutation.error instanceof Error
       ? loginMutation.error.message
       : loginMutation.error
-      ? "An unexpected error occurred. Please try again."
-      : null;
+      ? error ?? "An unexpected error occurred. Please try again."
+      : error ?? null;
 
   const loginWithGoogle = async () => {
     try {
