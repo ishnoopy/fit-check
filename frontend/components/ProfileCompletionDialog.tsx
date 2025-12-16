@@ -26,10 +26,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
+import type { User } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, User } from "lucide-react";
+import { ArrowRight, Loader2, User2Icon } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -87,12 +88,16 @@ export function ProfileCompletionDialog({
 }: ProfileCompletionDialogProps) {
   const queryClient = useQueryClient();
   const [isCompleted, setIsCompleted] = useState(false);
+  const { data: user } = useQuery<{ data: User }>({
+    queryKey: ["user"],
+    queryFn: () => api.get("/api/auth/me"),
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
+      first_name: user?.data?.first_name || "",
+      last_name: user?.data?.last_name || "",
       age: "",
       gender: undefined,
       weight: "",
@@ -136,7 +141,7 @@ export function ProfileCompletionDialog({
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
             <div className="p-2 bg-primary/10 rounded-lg">
-              <User className="h-6 w-6 text-primary" />
+              <User2Icon className="h-6 w-6 text-primary" />
             </div>
             Complete Your Profile
           </DialogTitle>

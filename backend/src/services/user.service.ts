@@ -11,6 +11,14 @@ export async function loginService(email: string, password: string) {
 		throw new NotFoundError("Invalid email and/or password");
 	}
 
+	if (user?.authProvider === "google") {
+		throw new BadRequestError("Please login with Google");
+	}
+
+	if (!user.password) {
+		throw new BadRequestError("Please login with Google");
+	}
+
 	const isPasswordCorrect = await compare(password, user.password);
 
 	if (!isPasswordCorrect) {
@@ -31,7 +39,7 @@ export async function loginService(email: string, password: string) {
 	return { user: userWithoutPassword, token };
 }
 
-export async function registerService(payload: IUser) {
+export async function registerService(payload: Omit<IUser, 'password'> & { password: string }) {
 
 	const { email } = payload;
 	// Check if user already exists
@@ -47,7 +55,7 @@ export async function registerService(payload: IUser) {
 	// Create user
 	const newUser = await createUser({ ...payload, password: hashedPassword });
 
-	const { password, ...userWithoutPassword } = newUser.toObject();
+	const { password, ...userWithoutPassword } = newUser as IUser;
 
 	return userWithoutPassword;
 }

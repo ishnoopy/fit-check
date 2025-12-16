@@ -4,8 +4,34 @@ import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import { findOne } from "../repositories/user.repository.js";
+import * as OAuthService from "../services/oauth.service.js";
 import { loginService, registerService } from "../services/user.service.js";
 import { ROLES_LIST } from "../utils/constants/roles.js";
+
+export async function googleOAuth(c: Context) {
+	const url = await OAuthService.getGoogleOAuthUrl();
+	return c.json({
+		success: true,
+		data: url,
+	}, StatusCodes.OK);
+}
+
+export async function handleGoogleOAuthCallback(c: Context) {
+	const code = c.req.query('code');
+	if (!code) {
+		throw new BadRequestError("Code is required");
+	}
+	const user = await OAuthService.handleGoogleOAuthCallback(code);
+
+	setCookie(c, 'access_token', user?.token, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		maxAge: 60 * 60 * 1000, // 1 hour
+		sameSite: 'lax', // To allow frontend redirect to the dashboard
+	});
+
+	return c.redirect(`${process.env.FRONTEND_URL}/dashboard`, StatusCodes.TEMPORARY_REDIRECT);
+}
 
 export async function login(c: Context) {
 
@@ -26,8 +52,7 @@ export async function login(c: Context) {
 
 	setCookie(c, 'access_token', user.token, {
 		httpOnly: true,
-		// secure: process.env.NODE_ENV === 'production',
-		secure: false, // FOR THE MEAN TIME WHILE WE DO NOT HAVE A SSL CERTIFICATE
+		secure: process.env.NODE_ENV === 'production',
 		maxAge: 60 * 60 * 1000, // 1 hour
 		sameSite: 'strict',
 	});
@@ -40,7 +65,6 @@ export async function login(c: Context) {
 
 export async function me(c: Context) {
 	const user = c.get('user')
-
 	const userFullData = await findOne({ _id: user.id })
 
 	if (!userFullData) {

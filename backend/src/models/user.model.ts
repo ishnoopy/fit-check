@@ -1,10 +1,11 @@
 import mongoose, { model } from "mongoose";
 
 export interface IUser {
-  first_name?: string;
-  last_name?: string;
+  _id?: string;
+  first_name?: string | undefined | null;
+  last_name?: string | undefined | null;
   email: string;
-  password: string;
+  password?: string;
   role: string;
   profileCompleted: boolean;
   // Fitness-related fields
@@ -16,13 +17,18 @@ export interface IUser {
   activity_level?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
   createdAt?: Date;
   updatedAt?: Date;
+
+  // OAuth Fields
+  google_id?: string | null;
+  avatar?: string | null;
+  authProvider?: "local" | "google" | null;
 }
 
 const UserSchema = new mongoose.Schema({
-  first_name: { type: String },
-  last_name: { type: String },
+  first_name: { type: String, default: undefined },
+  last_name: { type: String, default: undefined },
   email: { type: String, required: true },
-  password: { type: String, required: true },
+  password: { type: String, required: false },
   role: { type: String, required: true },
   profileCompleted: { type: Boolean, default: false },
   // Fitness-related fields (optional)
@@ -38,6 +44,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"]
   },
+
+  // OAuth Fields
+  google_id: { type: String, unique: true, sparse: true },
+  avatar: { type: String },
+  authProvider: { type: String, enum: ["local", "google"], default: "local" },
 }, {
   timestamps: true
 });

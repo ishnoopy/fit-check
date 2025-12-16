@@ -9,6 +9,11 @@ export async function findOne(where: FilterQuery<IUser>) {
   return await UserModel.findOne(where).lean();
 }
 
-export async function createUser(user: IUser) {
-  return await UserModel.create(user);
+export async function createUser(user: Omit<IUser, '_id'>) {
+  const doc = await UserModel.create(user);
+  return doc.toObject();
+}
+
+export async function updateUser(id: string, user: Partial<IUser>) {
+  return await UserModel.findByIdAndUpdate(id, user, { new: true, lean: true });
 }
