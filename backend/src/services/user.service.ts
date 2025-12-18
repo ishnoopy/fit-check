@@ -28,7 +28,7 @@ export async function loginService(email: string, password: string) {
 	const { password: _, ...userWithoutPassword } = user;
 
 	const token = await new jose.SignJWT({
-		id: userWithoutPassword._id,
+		id: userWithoutPassword.id,
 		email: userWithoutPassword.email,
 		role: userWithoutPassword?.role,
 	})

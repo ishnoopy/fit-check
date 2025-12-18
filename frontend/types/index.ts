@@ -1,5 +1,5 @@
 export interface Plan {
-    _id: string;
+    id: string;
     title: string;
     description?: string;
     updatedAt: string;
@@ -7,7 +7,7 @@ export interface Plan {
 }
 
 export interface Workout {
-    _id: string;
+    id: string;
     title: string;
     description?: string;
     createdAt: string;
@@ -17,7 +17,7 @@ export interface Workout {
 
 
 export interface Exercise {
-    _id: string;
+    id: string;
     name: string;
     description?: string;
     notes?: string;
@@ -26,9 +26,9 @@ export interface Exercise {
 }
 
 export interface User {
-    _id: string;
-    first_name?: string;
-    last_name?: string;
+    id: string;
+    firstName?: string;
+    lastName?: string;
     email: string;
     role: string;
     profileCompleted: boolean;
@@ -36,30 +36,30 @@ export interface User {
     gender?: "male" | "female" | "other" | "prefer_not_to_say";
     weight?: number; // in kg
     height?: number; // in cm
-    fitness_goal?: "lose_weight" | "gain_muscle" | "maintain" | "improve_endurance" | "general_fitness";
-    activity_level?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
+    fitnessGoal?: "lose_weight" | "gain_muscle" | "maintain" | "improve_endurance" | "general_fitness";
+    activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
     createdAt?: string;
     updatedAt?: string;
 }
 
 export interface SetData {
-    set_number: number;
+    setNumber: number;
     reps: number;
     weight: number;
     notes?: string;
 }
 
 export interface Log {
-    _id: string;
-    user_id: string;
+    id: string;
+    userId: string;
     sets: SetData[];
-    workout_date: string;
-    duration_minutes?: number;
+    workoutDate: string;
+    durationMinutes?: number;
     notes?: string;
     createdAt: string;
     updatedAt: string;
     // Populated fields (from backend join)
-    exercise_id?: Exercise;
-    workout_id?: Workout;
-    plan_id?: Plan;
+    exerciseId?: Exercise;
+    workoutId?: Workout;
+    planId?: Plan;
 }

@@ -37,13 +37,13 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const formSchema = z.object({
-  first_name: z.string().min(1, { message: "First name is required" }),
-  last_name: z.string().min(1, { message: "Last name is required" }),
+  firstName: z.string().min(1, { message: "First name is required" }),
+  lastName: z.string().min(1, { message: "Last name is required" }),
   age: z.string().optional(),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
   weight: z.string().optional(),
   height: z.string().optional(),
-  fitness_goal: z
+  fitnessGoal: z
     .enum([
       "lose_weight",
       "gain_muscle",
@@ -52,7 +52,7 @@ const formSchema = z.object({
       "general_fitness",
     ])
     .optional(),
-  activity_level: z
+  activityLevel: z
     .enum([
       "sedentary",
       "lightly_active",
@@ -96,14 +96,14 @@ export function ProfileCompletionDialog({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      first_name: user?.data?.first_name || "",
-      last_name: user?.data?.last_name || "",
+      firstName: user?.data?.firstName || "",
+      lastName: user?.data?.lastName || "",
       age: "",
       gender: undefined,
       weight: "",
       height: "",
-      fitness_goal: undefined,
-      activity_level: undefined,
+      fitnessGoal: undefined,
+      activityLevel: undefined,
     },
   });
 
@@ -173,7 +173,7 @@ export function ProfileCompletionDialog({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="first_name"
+                  name="firstName"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Name *</FormLabel>
@@ -187,7 +187,7 @@ export function ProfileCompletionDialog({
 
                 <FormField
                   control={form.control}
-                  name="last_name"
+                  name="lastName"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Last Name *</FormLabel>
@@ -326,7 +326,7 @@ export function ProfileCompletionDialog({
 
               <FormField
                 control={form.control}
-                name="fitness_goal"
+                name="fitnessGoal"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Primary Fitness Goal</FormLabel>
@@ -358,7 +358,7 @@ export function ProfileCompletionDialog({
 
               <FormField
                 control={form.control}
-                name="activity_level"
+                name="activityLevel"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Activity Level</FormLabel>

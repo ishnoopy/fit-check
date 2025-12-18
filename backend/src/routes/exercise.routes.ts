@@ -6,7 +6,7 @@ const router = new Hono()
   .get("/exercises", authMiddleware, getExercises)
   .get("/exercises/:id", authMiddleware, getExercise)
   .post("/exercises", authMiddleware, createExercise)
-  .put("/exercises/:id", authMiddleware, updateExercise)
+  .patch("/exercises/:id", authMiddleware, updateExercise)
   .delete("/exercises/:id", authMiddleware, deleteExercise);
 
 export default router;

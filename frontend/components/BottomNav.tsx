@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@/app/providers";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +15,7 @@ import {
   UserIcon,
   WrenchIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -25,7 +27,7 @@ import {
 } from "./ui/dropdown-menu";
 
 interface Plan {
-  _id: string;
+  id: string;
   title: string;
   description?: string;
 }
@@ -38,6 +40,7 @@ export default function BottomNav({ className }: { className?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const { user } = useUser();
 
   // Check if user has any plans
   const { data: plansData } = useQuery({
@@ -85,12 +88,12 @@ export default function BottomNav({ className }: { className?: string }) {
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-lg",
+        "fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 sm:px-4 sm:pb-4",
         className
       )}
     >
-      <div className="mx-auto max-w-2xl px-4">
-        <div className="flex justify-around items-center py-3 gap-2">
+      <div className="mx-auto max-w-2xl bg-background/95 backdrop-blur-xl border border-border/50 rounded-full shadow-lg shadow-black/10 dark:shadow-black/30">
+        <div className="flex justify-around items-center py-3 gap-2 px-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const showPulse = item.showPulse && !isActive;
@@ -105,7 +108,7 @@ export default function BottomNav({ className }: { className?: string }) {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 rounded-2xl py-2 px-3 transition-colors relative",
+                    "flex flex-col items-center justify-center gap-1 rounded-full py-2 px-3 transition-colors relative",
                     isActive
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:text-foreground"
@@ -115,7 +118,7 @@ export default function BottomNav({ className }: { className?: string }) {
                   {showPulse && (
                     <>
                       <motion.div
-                        className="absolute inset-0 rounded-2xl bg-primary/20 border-2 border-primary/40"
+                        className="absolute inset-0 rounded-full bg-primary/20 border-2 border-primary/40"
                         animate={{
                           scale: [1, 1.1, 1],
                           opacity: [0.5, 0.8, 0.5],
@@ -127,7 +130,7 @@ export default function BottomNav({ className }: { className?: string }) {
                         }}
                       />
                       <motion.div
-                        className="absolute inset-0 rounded-2xl bg-primary/10 border border-primary/30"
+                        className="absolute inset-0 rounded-full bg-primary/10 border border-primary/30"
                         animate={{
                           scale: [1, 1.15, 1],
                           opacity: [0.3, 0.6, 0.3],
@@ -163,18 +166,39 @@ export default function BottomNav({ className }: { className?: string }) {
                     )}
                   </div>
 
-                  <span className="text-xs font-medium relative z-10">
+                  <span className="text-xs font-medium relative z-10 hidden sm:inline">
                     {item.label}
                   </span>
 
                   {isActive && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full mx-auto w-1/2"
+                      initial={false}
+                      animate={{
+                        opacity: [0.8, 1, 0.8],
+                        scaleY: [1, 1.2, 1],
+                      }}
                       transition={{
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 30,
+                        layout: {
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 30,
+                        },
+                        opacity: {
+                          duration: 2,
+                          ease: "easeInOut",
+                          repeat: Infinity,
+                        },
+                        scaleY: {
+                          duration: 2,
+                          ease: "easeInOut",
+                          repeat: Infinity,
+                        },
+                      }}
+                      style={{
+                        boxShadow:
+                          "0 2px 12px hsl(var(--primary) / 0.4), 0 0 20px hsl(var(--primary) / 0.2)",
                       }}
                     />
                   )}
@@ -189,20 +213,31 @@ export default function BottomNav({ className }: { className?: string }) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-2 px-3 transition-colors",
+                  "flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-2 px-3 transition-colors",
                   pathname === "/profile"
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <UserIcon className="h-5 w-5" />
-                <span className="text-xs font-medium">Profile</span>
+                {user?.avatar ? (
+                  <Image
+                    src={user.avatar}
+                    alt="Profile"
+                    width={30}
+                    height={30}
+                    className="rounded-full object-cover"
+                  />
+                ) : (
+                  <UserIcon className="h-5 w-5" />
+                )}
+                <span className="text-xs font-medium hidden sm:inline">
+                  Profile
+                </span>
               </motion.button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-2xl">
+            <DropdownMenuContent align="end" className="w-48 rounded-xl">
               <DropdownMenuItem asChild>
                 <Link href="/profile" className="cursor-pointer rounded-xl">
-                  <UserIcon className="mr-2 h-4 w-4" />
                   Profile
                 </Link>
               </DropdownMenuItem>

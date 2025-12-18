@@ -1,6 +1,5 @@
 "use client";
 
-import { DotBackground } from "@/components/DotBackground";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -79,7 +78,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 py-12 px-6 relative overflow-hidden">
-      <DotBackground />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

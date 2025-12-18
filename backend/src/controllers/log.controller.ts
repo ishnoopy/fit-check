@@ -2,33 +2,34 @@ import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { BadRequestError } from "../lib/errors.js";
-import type { ILog } from "../models/log.model.js";
+import type { ISetData } from "../models/log.model.js";
 import * as logService from "../services/log.service.js";
+import { toCamelCase } from "../utils/transformer.js";
 
-const setDataSchema = z.object({
-  set_number: z.number().int().positive(),
+const setDataSchema: z.ZodType<ISetData> = z.object({
+  setNumber: z.number().int().positive(),
   reps: z.number().int().positive(),
   weight: z.number().nonnegative(),
   notes: z.string().optional(),
 });
 
 const createLogSchema = z.object({
-  plan_id: z.string().length(24, "Invalid plan ID"),
-  workout_id: z.string().length(24, "Invalid workout ID"),
-  exercise_id: z.string().length(24, "Invalid exercise ID"),
+  planId: z.string().length(24, "Invalid plan ID"),
+  workoutId: z.string().length(24, "Invalid workout ID"),
+  exerciseId: z.string().length(24, "Invalid exercise ID"),
   sets: z.array(setDataSchema).min(1, "At least one set is required"),
-  workout_date: z.string().datetime().optional(),
-  duration_minutes: z.number().int().positive().optional(),
+  workoutDate: z.string().datetime().optional(),
+  durationMinutes: z.number().int().positive().optional(),
   notes: z.string().optional(),
 });
 
 const updateLogSchema = z.object({
-  plan_id: z.string().length(24).optional(),
-  workout_id: z.string().length(24).optional(),
-  exercise_id: z.string().length(24).optional(),
+  planId: z.string().length(24).optional(),
+  workoutId: z.string().length(24).optional(),
+  exerciseId: z.string().length(24).optional(),
   sets: z.array(setDataSchema).min(1).optional(),
-  workout_date: z.string().datetime().optional(),
-  duration_minutes: z.number().int().positive().optional(),
+  workoutDate: z.string().datetime().optional(),
+  durationMinutes: z.number().int().positive().optional(),
   notes: z.string().optional(),
 });
 
@@ -36,8 +37,9 @@ const idParamSchema = z.object({
   id: z.string().length(24),
 });
 
+// query params are in snake_case
 const getLogsQuerySchema = z.object({
-  _id: z.string().length(24).optional(),
+  id: z.string().length(24).optional(),
   start_date: z.string().datetime().optional(),
   end_date: z.string().datetime().optional(),
   exercise_id: z.string().length(24).optional(),
@@ -48,6 +50,8 @@ const getLogsQuerySchema = z.object({
     .transform((val) => val === "true")
     .optional(),
 });
+
+export type ICreateLogPayload = z.infer<typeof createLogSchema>;
 
 export async function getLogs(c: Context) {
   const userId = c.get("user").id;
@@ -78,8 +82,10 @@ export async function getLogsByQuery(c: Context) {
     throw new BadRequestError(params.error);
   }
 
+  const query = toCamelCase(params.data);
+
   const userId = c.get("user").id;
-  const logs = await logService.getLogsByQueryService(params.data, userId);
+  const logs = await logService.getLogsByQueryService(query, userId);
 
   return c.json({
     success: true,
@@ -101,8 +107,8 @@ export async function createLog(c: Context) {
   // Convert workout_date string to Date if provided
   const logData = {
     ...validation.data,
-    workout_date: validation.data.workout_date
-      ? new Date(validation.data.workout_date)
+    workoutDate: validation.data.workoutDate
+      ? new Date(validation.data.workoutDate)
       : new Date(),
   };
 
@@ -128,14 +134,13 @@ export async function updateLog(c: Context) {
     throw new BadRequestError(validation.error);
   }
 
-
   const userId = c.get("user").id;
 
   // Convert workout_date string to Date if provided
-  const { workout_date, ...restData } = validation.data;
-  const logData: Partial<ILog> = {
+  const { workoutDate, ...restData } = validation.data;
+  const logData = {
     ...restData,
-    ...(workout_date && { workout_date: new Date(workout_date) }),
+    ...(workoutDate && { workoutDate: new Date(workoutDate) }),
   };
 
   const log = await logService.updateLogService(params.data.id, logData, userId);

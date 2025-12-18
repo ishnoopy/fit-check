@@ -63,7 +63,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 interface Plan {
-  _id: string;
+  id: string;
   title: string;
   description?: string;
 }
@@ -144,7 +144,7 @@ export default function Plans() {
       setCreateDialogOpen(false);
 
       // Redirect to the plan detail page
-      router.push(`/plans/${response.data._id}`);
+      router.push(`/plans/${response.data.id}`);
     },
     onError: (error) => {
       console.error("Failed to create plan", error);
@@ -163,7 +163,7 @@ export default function Plans() {
       setPlanToDelete(null);
 
       // Clear active plan if it was deleted
-      if (planToDelete && activePlanId === planToDelete._id) {
+      if (planToDelete && activePlanId === planToDelete.id) {
         setActivePlanId(null);
         localStorage.removeItem("activePlanId");
       }
@@ -184,7 +184,7 @@ export default function Plans() {
 
   const handleConfirmDelete = () => {
     if (planToDelete) {
-      deletePlanMutation.mutate(planToDelete._id);
+      deletePlanMutation.mutate(planToDelete.id);
     }
   };
 
@@ -330,10 +330,10 @@ export default function Plans() {
           className="grid grid-cols-1 gap-6 sm:grid-cols-2"
         >
           {plans?.data?.map((plan: Plan) => {
-            const isActive = activePlanId === plan._id;
+            const isActive = activePlanId === plan.id;
 
             return (
-              <motion.div key={plan._id} variants={item}>
+              <motion.div key={plan.id} variants={item}>
                 <Card
                   className={`group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-xl transition-all duration-300 h-full flex flex-col ${
                     isActive
@@ -409,7 +409,7 @@ export default function Plans() {
                       size="lg"
                     >
                       <Link
-                        href={`/plans/${plan._id}`}
+                        href={`/plans/${plan.id}`}
                         className="flex items-center justify-center gap-2"
                       >
                         <Eye className="h-4 w-4" />
@@ -426,7 +426,7 @@ export default function Plans() {
                           ? "bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
                           : ""
                       }`}
-                      onClick={() => handleToggleActivePlan(plan._id)}
+                      onClick={() => handleToggleActivePlan(plan.id)}
                     >
                       {isActive ? (
                         <>

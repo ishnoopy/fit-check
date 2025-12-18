@@ -5,7 +5,7 @@ import { BadRequestError } from "../lib/errors.js";
 import * as workoutService from "../services/workout.service.js";
 
 const createWorkoutWithExercisesSchema = z.object({
-  plan_id: z.string().length(24, "Invalid plan ID"),
+  planId: z.string().length(24, "Invalid plan ID"),
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   exercises: z.array(z.object({
@@ -16,15 +16,15 @@ const createWorkoutWithExercisesSchema = z.object({
 });
 
 const createWorkoutSchema = z.object({
-  plan_id: z.string().length(24, "Invalid plan ID"),
+  planId: z.string().length(24, "Invalid plan ID"),
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   exercises: z.array(z.string()).default([]),
 });
 
 const updateWorkoutSchema = z.object({
-  plan_id: z.string().length(24).optional(),
-  title: z.string().min(1).optional(),
+  planId: z.string().length(24).optional(),
+  title: z.string().optional(),
   description: z.string().optional(),
   exercises: z.array(z.string()).optional(),
 });
@@ -65,9 +65,7 @@ export async function createWorkout(c: Context) {
   const body = await c.req.json();
   const validation = await createWorkoutSchema.safeParseAsync(body);
 
-  console.log("success: ", validation.success);
   if (!validation.success) {
-    console.log(validation.error.errors);
     throw new BadRequestError(validation.error.errors[0].message);
   }
 
@@ -110,7 +108,6 @@ export async function updateWorkout(c: Context) {
   if (!validation.success) {
     throw new BadRequestError(validation.error);
   }
-
 
   const userId = c.get("user").id;
   const workout = await workoutService.updateWorkoutService(params.data.id, validation.data, userId);

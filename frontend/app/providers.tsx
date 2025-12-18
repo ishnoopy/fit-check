@@ -11,21 +11,21 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 interface User {
   email: string;
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
   role: string;
   profileCompleted: boolean;
   age?: number;
   gender?: "male" | "female" | "other" | "prefer_not_to_say";
   weight?: number;
   height?: number;
-  fitness_goal?:
+  fitnessGoal?:
     | "lose_weight"
     | "gain_muscle"
     | "maintain"
     | "improve_endurance"
     | "general_fitness";
-  activity_level?:
+  activityLevel?:
     | "sedentary"
     | "lightly_active"
     | "moderately_active"
@@ -33,6 +33,9 @@ interface User {
     | "extremely_active";
   createdAt: string;
   updatedAt: string;
+  avatar?: string;
+  authProvider?: "local" | "google";
+  googleId?: string;
 }
 
 interface UserContextType {

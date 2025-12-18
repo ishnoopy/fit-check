@@ -2,13 +2,24 @@ import mongoose, { model } from "mongoose";
 
 // e.g. Push Day, Pull Day, Leg Day, etc.
 export interface IWorkout {
-    user_id: mongoose.Schema.Types.ObjectId | string;
-    plan_id: mongoose.Schema.Types.ObjectId | string;
+    id?: string;
+    userId: mongoose.Schema.Types.ObjectId | string;
+    planId: mongoose.Schema.Types.ObjectId | string;
     title: string;
     description?: string;
     exercises: Array<mongoose.Schema.Types.ObjectId | string>; // References to Exercise model
     createdAt?: Date;
     updatedAt?: Date;
+}
+
+// Interface for the workout model
+export interface IWorkoutModel {
+    _id?: string;
+    user_id: mongoose.Schema.Types.ObjectId | string;
+    plan_id: mongoose.Schema.Types.ObjectId | string;
+    title: string;
+    description?: string;
+    exercises: Array<mongoose.Schema.Types.ObjectId | string>;
 }
 
 const WorkoutSchema = new mongoose.Schema({
@@ -17,6 +28,11 @@ const WorkoutSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: false },
     exercises: { type: [mongoose.Schema.Types.ObjectId], ref: "Exercise", required: true },
-}, { timestamps: true });
+}, {
+    timestamps: {
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
+    }
+});
 
-export default model<IWorkout>("Workout", WorkoutSchema);
+export default model<IWorkoutModel>("Workout", WorkoutSchema);

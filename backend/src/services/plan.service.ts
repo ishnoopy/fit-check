@@ -4,7 +4,7 @@ import * as planRepository from "../repositories/plan.repository.js";
 import * as workoutRepository from "../repositories/workout.repository.js";
 
 export async function getAllPlansService(userId: string) {
-  return await planRepository.findAll({ user_id: userId });
+  return await planRepository.findAll({ userId });
 }
 
 export async function getPlanByIdService(id: string, userId: string) {
@@ -15,12 +15,12 @@ export async function getPlanByIdService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (plan.user_id.toString() !== userId) {
+  if (plan.userId as string !== userId) {
     throw new BadRequestError("Unauthorized access to plan");
   }
 
   // Get the workouts for the plan
-  const workouts = await workoutRepository.findAll({ plan_id: id });
+  const workouts = await workoutRepository.findAll({ planId: id });
 
   return {
     ...plan,
@@ -28,17 +28,11 @@ export async function getPlanByIdService(id: string, userId: string) {
   };
 }
 
-export async function createPlanService(payload: Partial<IPlan>, userId: string) {
-  const planData = {
-    ...payload,
-    user_id: userId,
-    workouts: payload.workouts || [],
-  };
-
-  return await planRepository.createPlan(planData);
+export async function createPlanService(payload: Omit<IPlan, "userId">, userId: string) {
+  return await planRepository.createPlan({ ...payload, userId: userId });
 }
 
-export async function updatePlanService(id: string, payload: Partial<IPlan>, userId: string) {
+export async function updatePlanService(id: string, payload: Partial<Omit<IPlan, "userId">>, userId: string) {
   const existingPlan = await planRepository.findById(id);
 
   if (!existingPlan) {
@@ -46,11 +40,13 @@ export async function updatePlanService(id: string, payload: Partial<IPlan>, use
   }
 
   // Verify ownership
-  if (existingPlan.user_id.toString() !== userId) {
+  if (existingPlan.userId as string !== userId) {
     throw new BadRequestError("Unauthorized access to plan");
   }
 
-  return await planRepository.updatePlan(id, payload);
+  const payloadWithUserId = { ...payload, userId: userId };
+
+  return await planRepository.updatePlan(id, payloadWithUserId);
 }
 
 export async function deletePlanService(id: string, userId: string) {
@@ -61,7 +57,7 @@ export async function deletePlanService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (existingPlan.user_id.toString() !== userId) {
+  if (existingPlan.userId as string !== userId) {
     throw new BadRequestError("Unauthorized access to plan");
   }
 

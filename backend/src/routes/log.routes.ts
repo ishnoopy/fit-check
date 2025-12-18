@@ -6,7 +6,7 @@ const router = new Hono()
   .get("/logs", authMiddleware, getLogs)
   .get("/logs/query", authMiddleware, getLogsByQuery)
   .post("/logs", authMiddleware, createLog)
-  .put("/logs/:id", authMiddleware, updateLog)
+  .patch("/logs/:id", authMiddleware, updateLog)
   .delete("/logs/:id", authMiddleware, deleteLog)
   .get("/logs/exercise/:id/history", authMiddleware, getExerciseHistory);
 

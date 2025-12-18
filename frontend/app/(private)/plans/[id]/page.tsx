@@ -172,9 +172,9 @@ export default function PlanDetailPage() {
     { data: Plan },
     { title?: string; description?: string }
   > = (values) => {
-    return api.put(`/api/plans/${id}`, {
-      title: values.title || "",
-      description: values.description || "",
+    return api.patch(`/api/plans/${id}`, {
+      title: values.title,
+      description: values.description,
     });
   };
 
@@ -196,7 +196,7 @@ export default function PlanDetailPage() {
     AddWorkoutFormValues
   > = (values) => {
     return api.post("/api/workouts/with-exercises", {
-      plan_id: id,
+      planId: id,
       ...values,
     });
   };
@@ -226,7 +226,7 @@ export default function PlanDetailPage() {
     { data: Workout },
     EditWorkoutFormValues & { workoutId: string }
   > = (values) => {
-    return api.put(`/api/workouts/${values.workoutId}`, values);
+    return api.patch(`/api/workouts/${values.workoutId}`, values);
   };
 
   const updateWorkoutMutation = useMutation({
@@ -287,7 +287,7 @@ export default function PlanDetailPage() {
 
   const handleEditWorkout = (values: EditWorkoutFormValues) => {
     if (workoutToEdit) {
-      updateWorkoutMutation.mutate({ ...values, workoutId: workoutToEdit._id });
+      updateWorkoutMutation.mutate({ ...values, workoutId: workoutToEdit.id });
     }
   };
 
@@ -299,7 +299,7 @@ export default function PlanDetailPage() {
 
   const handleDeleteWorkout = () => {
     if (itemToDelete) {
-      deleteWorkoutMutation.mutate(itemToDelete._id);
+      deleteWorkoutMutation.mutate(itemToDelete.id);
     }
   };
 
@@ -570,7 +570,7 @@ export default function PlanDetailPage() {
             <AnimatePresence mode="popLayout">
               {plan.workouts.map((workout, index) => (
                 <motion.div
-                  key={workout._id}
+                  key={workout.id}
                   variants={item}
                   layout
                   exit={{ opacity: 0, x: -20 }}
@@ -618,7 +618,7 @@ export default function PlanDetailPage() {
                       </DropdownMenu>
                     </div>
 
-                    <Link href={`/plans/${id}/workouts/${workout._id}`}>
+                    <Link href={`/plans/${id}/workouts/${workout.id}`}>
                       <CardContent className="p-6 pr-12">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary font-bold group-hover:bg-primary/20 transition-colors shrink-0">

@@ -71,7 +71,7 @@ export const loggerMiddleware = async (c: Context, next: Next) => {
 
   console.log(
     `✨[${uuid}] ${method} ${url}`,
-    maskedPayload !== undefined ? { payload: maskedPayload } : {},
+    maskedPayload !== undefined ? { payload: JSON.stringify(maskedPayload, null, 2) } : {},
   );
 
   await next();
@@ -80,7 +80,7 @@ export const loggerMiddleware = async (c: Context, next: Next) => {
   const status = c.res.status ?? 0;
   const isError = status >= 400;
 
-    const logLabel = isError ? "🚨 ERROR" : "🚀 OK";
+  const logLabel = isError ? "🚨 ERROR" : "🚀 OK";
 
   console.log(
     `[${uuid}] ${method} ${url} -> ${status} ${logLabel} (${durationMs}ms)`,

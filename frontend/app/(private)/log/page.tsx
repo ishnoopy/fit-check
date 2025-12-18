@@ -2,15 +2,8 @@
 
 import { useGeneral } from "@/app/providers";
 import { AppGuide } from "@/components/AppGuide";
-import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -51,19 +44,24 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const formSchema = z.object({
-  plan_id: z.string(),
-  workout_id: z.string(),
-  exercise_id: z.string(),
-  sets: z.array(
-    z.object({
-      set_number: z.number().min(1),
-      reps: z.number().min(1),
-      weight: z.number().min(1),
-      notes: z.string().optional(),
-    })
-  ),
-  workout_date: z.string().datetime().optional(),
-  duration_minutes: z.number().min(1).optional(),
+  planId: z.string().min(1, { message: "Plan is required" }),
+  workoutId: z.string().min(1, { message: "Workout is required" }),
+  exerciseId: z.string(),
+  sets: z
+    .array(
+      z.object({
+        setNumber: z.number(),
+        reps: z.number(),
+        weight: z.number(),
+        notes: z.string().optional(),
+      })
+    )
+    .min(1, { message: "At least one set is required" })
+    .refine((sets) => sets.every((set) => set.reps > 0 && set.weight > 0), {
+      message: "Please fill in reps and weight for all sets",
+    }),
+  workoutDate: z.string().datetime().optional(),
+  durationMinutes: z.number().min(1, { message: "" }).optional(),
   notes: z.string().optional(),
 });
 
@@ -77,6 +75,28 @@ const getItemFromLocalStorage = (key: string) => {
   const item = localStorage.getItem(key);
   return item || null;
 };
+
+// Default empty sets structure
+const DEFAULT_SETS = [
+  {
+    setNumber: 1,
+    reps: 0,
+    weight: 0,
+    notes: "",
+  },
+  {
+    setNumber: 2,
+    reps: 0,
+    weight: 0,
+    notes: "",
+  },
+  {
+    setNumber: 3,
+    reps: 0,
+    weight: 0,
+    notes: "",
+  },
+];
 
 export default function LogPage() {
   const { activePlanId } = useGeneral();
@@ -93,12 +113,12 @@ export default function LogPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      plan_id: activePlanId || "",
-      workout_id: activeWorkoutId || "",
-      exercise_id: activeExerciseId || "",
-      sets: [],
-      workout_date: new Date().toISOString(),
-      duration_minutes: 0,
+      planId: activePlanId || "",
+      workoutId: activeWorkoutId || "",
+      exerciseId: activeExerciseId || "",
+      sets: DEFAULT_SETS,
+      workoutDate: new Date().toISOString(),
+      durationMinutes: 0,
       notes: "",
     },
   });
@@ -121,7 +141,7 @@ export default function LogPage() {
     debounceTimerRef.current = setTimeout(() => {
       const dataToSave = {
         sets: formValues.sets,
-        duration_minutes: formValues.duration_minutes,
+        durationMinutes: formValues.durationMinutes,
         notes: formValues.notes,
         exerciseId: activeExerciseId, // Include ID to verify it's for the right exercise
       };
@@ -136,7 +156,7 @@ export default function LogPage() {
     };
   }, [
     formValues.sets,
-    formValues.duration_minutes,
+    formValues.durationMinutes,
     formValues.notes,
     activeExerciseId,
   ]);
@@ -155,8 +175,8 @@ export default function LogPage() {
           if (parsed.sets && parsed.sets.length > 0) {
             form.setValue("sets", parsed.sets);
           }
-          if (parsed.duration_minutes) {
-            form.setValue("duration_minutes", parsed.duration_minutes);
+          if (parsed.durationMinutes) {
+            form.setValue("durationMinutes", parsed.durationMinutes);
           }
           if (parsed.notes) {
             form.setValue("notes", parsed.notes);
@@ -180,6 +200,9 @@ export default function LogPage() {
       // ✅ Clear the draft after successful save
       localStorage.removeItem("draftLogData");
 
+      // Clear copied from last workout
+      setCopiedFromLast(false);
+
       toast.success("Log created successfully");
       form.reset();
     },
@@ -195,11 +218,11 @@ export default function LogPage() {
       return;
     }
     const payload = {
-      plan_id: activePlanId || "",
-      workout_id: activeWorkoutId || "",
-      exercise_id: activeExerciseId || "",
+      planId: activePlanId || "",
+      workoutId: activeWorkoutId || "",
+      exerciseId: activeExerciseId || "",
       sets: values.sets || [],
-      duration_minutes: values.duration_minutes || 0,
+      durationMinutes: values.durationMinutes || 0,
       notes: values.notes || "",
     };
 
@@ -221,10 +244,10 @@ export default function LogPage() {
   const workouts = workoutsData?.data;
 
   const activeWorkout = workouts?.find(
-    (workout: Workout) => workout._id === activeWorkoutId
+    (workout: Workout) => workout.id === activeWorkoutId
   );
   const activeExercise = activeWorkout?.exercises.find(
-    (exercise: Exercise) => exercise._id === activeExerciseId
+    (exercise: Exercise) => exercise.id === activeExerciseId
   );
 
   const getLatestExerciseLog = async () => {
@@ -242,8 +265,8 @@ export default function LogPage() {
   const latestExerciseLog = latestExerciseLogData?.data[0];
 
   const handleWorkoutChange = (value: string) => {
-    const workout = workouts?.find((workout: Workout) => workout._id === value);
-    setActiveWorkoutId(workout?._id || null);
+    const workout = workouts?.find((workout: Workout) => workout.id === value);
+    setActiveWorkoutId(workout?.id || null);
     setActiveExerciseId(null);
     setCopiedFromLast(false);
 
@@ -256,12 +279,12 @@ export default function LogPage() {
 
     // Clear the form and draft when changing exercises
     form.reset({
-      plan_id: activePlanId || "",
-      workout_id: activeWorkoutId || "",
-      exercise_id: value,
-      sets: [],
-      workout_date: new Date().toISOString(),
-      duration_minutes: 0,
+      planId: activePlanId || "",
+      workoutId: activeWorkoutId || "",
+      exerciseId: value,
+      sets: DEFAULT_SETS,
+      workoutDate: new Date().toISOString(),
+      durationMinutes: 0,
       notes: "",
     });
     setCopiedFromLast(false);
@@ -271,379 +294,362 @@ export default function LogPage() {
   const copyFromLastWorkout = () => {
     if (latestExerciseLog?.sets) {
       form.setValue("sets", latestExerciseLog.sets);
-      form.setValue(
-        "duration_minutes",
-        latestExerciseLog.duration_minutes || 0
-      );
+      form.setValue("durationMinutes", latestExerciseLog.durationMinutes || 0);
       setCopiedFromLast(true);
       toast.success("Copied sets from your last workout!");
     }
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
-      <div className="p-6 max-w-2xl mx-auto space-y-8">
-        <div className="flex items-start justify-between gap-3">
-          <PageHeader
-            title="Workout Log"
-            subtitle="Track your sets, reps, and progress 💪"
-          />
-          <div className="flex items-center gap-2 shrink-0 mt-1">
+    <div className="min-h-screen bg-background pb-24">
+      <div className="p-3 sm:p-4 max-w-2xl mx-auto space-y-3">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold hidden sm:block">Workout Log 💪</h1>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5 absolute right-3 top-3 sm:relative sm:top-0 sm:right-0 z-10">
             <AppGuide />
-            <Button variant="outline" size="sm" className="gap-2" asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
               <Link href="/logs/archive">
                 <HistoryIcon className="h-4 w-4" />
-                View Archive
               </Link>
             </Button>
           </div>
         </div>
-
         {!activePlanId && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.1 }}
+            transition={{ duration: 0.15 }}
           >
-            <Card className="border-dashed bg-card/50 backdrop-blur-sm">
-              <CardHeader className="text-center py-12">
-                <div className="mx-auto w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mb-4">
+            <Card className="border-dashed border">
+              <CardContent className="text-center py-12">
+                <div className="w-16 h-16 bg-orange-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <AlertCircleIcon className="h-8 w-8 text-orange-500" />
                 </div>
-                <CardTitle className="text-2xl">No Active Plan</CardTitle>
-                <CardDescription className="mt-2 text-base">
+                <h3 className="font-bold text-lg mb-2">No Active Plan</h3>
+                <p className="text-sm text-muted-foreground mb-6 max-w-xs mx-auto">
                   Set a plan as active to start logging workouts
-                </CardDescription>
-                <Button className="mt-6 mx-auto" asChild>
-                  <Link href="/plans">Go to Plans</Link>
+                </p>
+                <Button className="h-9" asChild>
+                  <Link href="/plans">Browse Plans</Link>
                 </Button>
-              </CardHeader>
+              </CardContent>
             </Card>
           </motion.div>
         )}
 
         {activePlanId && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.1 }}
+            transition={{ duration: 0.15 }}
           >
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-shadow duration-300">
-              <CardHeader className="space-y-1">
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <DumbbellIcon className="h-5 w-5 text-blue-500" />
-                  </div>
-                  Log Workout
-                </CardTitle>
-                <CardDescription>
-                  Select your workout and exercise to begin
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {workouts && workouts.length > 0 ? (
-                  <>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground">
-                          Workout Session
-                        </label>
-                        <Select
-                          onValueChange={handleWorkoutChange}
-                          value={activeWorkoutId || ""}
-                        >
-                          <SelectTrigger className="h-11 border-border/50 hover:border-border transition-colors">
-                            <SelectValue placeholder="Choose workout..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {workouts.map((workout: Workout) => (
-                              <SelectItem key={workout._id} value={workout._id}>
-                                {workout.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {activeWorkoutId && (
-                        <motion.div
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="space-y-2"
-                        >
-                          <label className="text-sm font-medium text-muted-foreground">
-                            Exercise
-                          </label>
-                          {activeWorkout?.exercises &&
-                          activeWorkout?.exercises.length > 0 ? (
-                            <Select
-                              onValueChange={handleExerciseChange}
-                              value={activeExercise?._id || ""}
-                            >
-                              <SelectTrigger className="h-11 border-border/50 hover:border-border transition-colors">
-                                <SelectValue placeholder="Choose exercise..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {activeWorkout.exercises.map(
-                                  (exercise: Exercise) => (
-                                    <SelectItem
-                                      key={exercise._id}
-                                      value={exercise._id}
-                                    >
-                                      {exercise.name}
-                                    </SelectItem>
-                                  )
-                                )}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <div className="border border-dashed border-border/50 rounded-lg p-4 bg-muted/30">
-                              <div className="flex items-start gap-3">
-                                <AlertCircleIcon className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                                <div className="space-y-1">
-                                  <p className="text-sm font-medium text-foreground">
-                                    No exercises in this workout
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Add exercises to this workout to start
-                                    logging. Go to Plans → Select your plan →
-                                    Edit the workout to add exercises.
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </motion.div>
-                      )}
+            {workouts && workouts.length > 0 ? (
+              <Card className="border shadow-sm">
+                <CardContent className="px-5 py-3 space-y-3">
+                  {/* Compact Selectors - Always Side by Side */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="space-y-1.5 min-w-0">
+                      <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                        <DumbbellIcon className="h-3 w-3 shrink-0" />
+                        <span className="truncate">Workout</span>
+                      </label>
+                      <Select
+                        onValueChange={handleWorkoutChange}
+                        value={activeWorkoutId || ""}
+                      >
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {workouts.map((workout: Workout) => (
+                            <SelectItem key={workout.id} value={workout.id}>
+                              {workout.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    {activeExercise && (
+                    {activeWorkoutId && (
                       <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="border-t pt-6 space-y-4"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="space-y-1.5 min-w-0"
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="space-y-1">
-                            <h3 className="font-semibold text-xl flex items-center gap-2">
-                              <Sparkles className="h-5 w-5 text-yellow-500" />
-                              {activeExercise.name}
-                            </h3>
-                            {latestExerciseLog && (
-                              <p className="text-xs text-muted-foreground">
-                                Last:{" "}
-                                {latestExerciseLog.sets
-                                  ?.map(
-                                    (s: { reps: number; weight: number }) =>
-                                      `${s.reps}×${s.weight}kg`
-                                  )
-                                  .join(", ")}{" "}
-                                <span className="opacity-60">
-                                  (
-                                  {format(
-                                    new Date(latestExerciseLog.createdAt),
-                                    "MMM d"
-                                  )}
-                                  )
-                                </span>
-                              </p>
-                            )}
-                          </div>
-                          {latestExerciseLog && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={copyFromLastWorkout}
-                              className="gap-1.5 shrink-0"
-                            >
-                              {copiedFromLast ? (
-                                <>
-                                  <CheckIcon className="h-3.5 w-3.5" />
-                                  Copied
-                                </>
-                              ) : (
-                                <>
-                                  <CopyIcon className="h-3.5 w-3.5" />
-                                  Copy
-                                </>
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          <Sparkles className="h-3 w-3 shrink-0" />
+                          <span className="truncate">Exercise</span>
+                        </label>
+                        {activeWorkout?.exercises &&
+                        activeWorkout?.exercises.length > 0 ? (
+                          <Select
+                            onValueChange={handleExerciseChange}
+                            value={activeExercise?.id || ""}
+                          >
+                            <SelectTrigger className="h-9 text-sm">
+                              <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activeWorkout.exercises.map(
+                                (exercise: Exercise) => (
+                                  <SelectItem
+                                    key={exercise.id}
+                                    value={exercise.id}
+                                  >
+                                    {exercise.name}
+                                  </SelectItem>
+                                )
                               )}
-                            </Button>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="border border-dashed rounded-lg p-2 bg-amber-500/5 flex items-center gap-2">
+                            <AlertCircleIcon className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                            <p className="text-xs text-muted-foreground">
+                              No exercises
+                            </p>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {/* Exercise Form - Only show when exercise is selected */}
+                  {activeExercise && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.15 }}
+                      className="space-y-3 pt-2 border-t"
+                    >
+                      {/* Exercise Name & Copy Button */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <Sparkles className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
+                          <h3 className="font-bold text-sm truncate">
+                            {activeExercise.name}
+                          </h3>
+                        </div>
+                        {latestExerciseLog && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={copyFromLastWorkout}
+                            className="gap-1.5 h-7 text-xs shrink-0"
+                          >
+                            {copiedFromLast ? (
+                              <>
+                                <CheckIcon className="h-3 w-3" />
+                                <span className="hidden sm:inline">Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <CopyIcon className="h-3 w-3" />
+                                <span className="hidden sm:inline">Copy</span>
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Ultra-Compact Last Performance */}
+                      {latestExerciseLog && (
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <HistoryIcon className="h-3 w-3 shrink-0" />
+                            <span className="font-medium">
+                              {format(
+                                new Date(
+                                  latestExerciseLog.createdAt ||
+                                    latestExerciseLog.workoutDate
+                                ),
+                                "MMM d"
+                              )}
+                            </span>
+                            <span className="text-muted-foreground/60">•</span>
+                            {latestExerciseLog.sets
+                              ?.slice(0, 3)
+                              .map(
+                                (
+                                  s: { reps: number; weight: number },
+                                  idx: number
+                                ) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium"
+                                  >
+                                    {s.reps}×{s.weight}kg
+                                  </span>
+                                )
+                              )}
+                            {latestExerciseLog.sets &&
+                              latestExerciseLog.sets.length > 3 && (
+                                <span className="text-muted-foreground/60">
+                                  +{latestExerciseLog.sets.length - 3}
+                                </span>
+                              )}
+                          </div>
+                          {latestExerciseLog.notes && (
+                            <p className="text-xs text-muted-foreground/70 italic truncate">
+                              &ldquo;{latestExerciseLog.notes}&rdquo;
+                            </p>
                           )}
                         </div>
-
-                        <Form {...form}>
-                          <form
-                            onSubmit={form.handleSubmit(onSubmit)}
-                            className="space-y-6"
-                          >
-                            <FormField
-                              control={form.control}
-                              name="sets"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-base font-semibold">
-                                    Sets
-                                  </FormLabel>
-                                  <FormControl>
-                                    <div className="space-y-2">
-                                      {field.value &&
-                                        Array.isArray(field.value) &&
-                                        field.value.length > 0 &&
-                                        field.value.map((set, idx) => (
-                                          <motion.div
-                                            key={idx}
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: idx * 0.05 }}
-                                            className="flex gap-2 items-center bg-muted/30 border border-border/50 rounded-lg p-2.5 hover:bg-muted/50 transition-colors"
+                      )}
+                      <Form {...form}>
+                        <form
+                          onSubmit={form.handleSubmit(onSubmit)}
+                          className="space-y-3"
+                        >
+                          {/* Compact Sets */}
+                          <FormField
+                            control={form.control}
+                            name="sets"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs font-semibold text-muted-foreground">
+                                  SETS
+                                </FormLabel>
+                                <FormControl>
+                                  <div className="space-y-1.5">
+                                    {field.value &&
+                                      Array.isArray(field.value) &&
+                                      field.value.length > 0 &&
+                                      field.value.map((set, idx) => (
+                                        <motion.div
+                                          key={idx}
+                                          initial={{ opacity: 0 }}
+                                          animate={{ opacity: 1 }}
+                                          transition={{ duration: 0.1 }}
+                                          className="flex gap-1.5 items-center p-1.5 bg-muted/30 border rounded-lg hover:bg-muted/50 transition-colors"
+                                        >
+                                          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-linear-to-br from-blue-500/20 to-purple-500/20 text-foreground font-bold text-xs shrink-0 border border-border/30">
+                                            {idx + 1}
+                                          </div>
+                                          <Input
+                                            type="number"
+                                            placeholder="12"
+                                            value={set.reps || ""}
+                                            onChange={(e) => {
+                                              const sets =
+                                                field.value?.slice() || [];
+                                              sets[idx] = {
+                                                ...sets[idx],
+                                                setNumber: idx + 1,
+                                                reps: Number(e.target.value),
+                                              };
+                                              field.onChange(sets);
+                                            }}
+                                            className="w-14 h-8 text-center font-bold text-sm p-0"
+                                          />
+                                          <span className="text-xs text-muted-foreground">
+                                            ×
+                                          </span>
+                                          <Input
+                                            type="number"
+                                            step="0.5"
+                                            placeholder="50"
+                                            value={set.weight || ""}
+                                            onChange={(e) => {
+                                              const sets =
+                                                field.value?.slice() || [];
+                                              sets[idx] = {
+                                                ...sets[idx],
+                                                weight: Number(e.target.value),
+                                              };
+                                              field.onChange(sets);
+                                            }}
+                                            className="w-16 h-8 text-center font-bold text-sm p-0"
+                                          />
+                                          <span className="text-xs text-muted-foreground hidden sm:inline">
+                                            kg
+                                          </span>
+                                          <Input
+                                            placeholder="notes"
+                                            value={set.notes || ""}
+                                            onChange={(e) => {
+                                              const sets =
+                                                field.value?.slice() || [];
+                                              sets[idx] = {
+                                                ...sets[idx],
+                                                notes: e.target.value,
+                                              };
+                                              field.onChange(sets);
+                                            }}
+                                            className="flex-1 min-w-0 h-8 text-xs"
+                                          />
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 shrink-0"
+                                            onClick={() => {
+                                              const sets =
+                                                field.value?.slice() || [];
+                                              sets.splice(idx, 1);
+                                              field.onChange(sets);
+                                            }}
                                           >
-                                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-linear-to-br from-blue-500/20 to-purple-500/20 text-foreground font-bold text-sm shrink-0 border border-border/30">
-                                              {idx + 1}
-                                            </div>
-                                            <Input
-                                              type="number"
-                                              placeholder="Reps"
-                                              value={set.reps || ""}
-                                              onChange={(e) => {
-                                                const sets =
-                                                  field.value?.slice() || [];
-                                                sets[idx] = {
-                                                  ...sets[idx],
-                                                  set_number: idx + 1,
-                                                  reps: Number(e.target.value),
-                                                };
-                                                field.onChange(sets);
-                                              }}
-                                              className="w-20"
-                                            />
-                                            <span className="text-muted-foreground">
-                                              ×
-                                            </span>
-                                            <Input
-                                              type="number"
-                                              step="0.5"
-                                              placeholder="kg"
-                                              value={set.weight || ""}
-                                              onChange={(e) => {
-                                                const sets =
-                                                  field.value?.slice() || [];
-                                                sets[idx] = {
-                                                  ...sets[idx],
-                                                  weight: Number(
-                                                    e.target.value
-                                                  ),
-                                                };
-                                                field.onChange(sets);
-                                              }}
-                                              className="w-20"
-                                            />
-                                            <Input
-                                              placeholder="Notes"
-                                              value={set.notes || ""}
-                                              onChange={(e) => {
-                                                const sets =
-                                                  field.value?.slice() || [];
-                                                sets[idx] = {
-                                                  ...sets[idx],
-                                                  notes: e.target.value,
-                                                };
-                                                field.onChange(sets);
-                                              }}
-                                              className="flex-1 min-w-0"
-                                            />
-                                            <Button
-                                              type="button"
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-8 w-8 shrink-0"
-                                              onClick={() => {
-                                                const sets =
-                                                  field.value?.slice() || [];
-                                                sets.splice(idx, 1);
-                                                field.onChange(sets);
-                                              }}
-                                            >
-                                              <XIcon className="h-4 w-4" />
-                                            </Button>
-                                          </motion.div>
-                                        ))}
+                                            <XIcon className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </motion.div>
+                                      ))}
 
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="w-full border-dashed hover:border-solid hover:bg-primary/5 transition-all"
-                                        onClick={() => {
-                                          const currentSets = Array.isArray(
-                                            field.value
-                                          )
-                                            ? field.value.slice()
-                                            : [];
-                                          field.onChange([
-                                            ...currentSets,
-                                            {
-                                              set_number:
-                                                currentSets.length + 1,
-                                              reps: 0,
-                                              weight: 0,
-                                              notes: "",
-                                            },
-                                          ]);
-                                        }}
-                                      >
-                                        <PlusIcon className="h-4 w-4 mr-2" />
-                                        Add Set
-                                      </Button>
-                                    </div>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full border-dashed hover:border-solid h-8 text-xs gap-1.5"
+                                      onClick={() => {
+                                        const currentSets = Array.isArray(
+                                          field.value
+                                        )
+                                          ? field.value.slice()
+                                          : [];
+                                        field.onChange([
+                                          ...currentSets,
+                                          {
+                                            setNumber: currentSets.length + 1,
+                                            reps: 0,
+                                            weight: 0,
+                                            notes: "",
+                                          },
+                                        ]);
+                                      }}
+                                    >
+                                      <PlusIcon className="h-3.5 w-3.5" />
+                                      Add Set
+                                    </Button>
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                            <div className="grid md:grid-cols-2 gap-4">
-                              <FormField
-                                control={form.control}
-                                name="duration_minutes"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-sm font-medium">
-                                      Duration (minutes)
-                                    </FormLabel>
-                                    <FormControl>
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        placeholder="30"
-                                        {...field}
-                                        value={field.value || ""}
-                                        onChange={(e) =>
-                                          field.onChange(Number(e.target.value))
-                                        }
-                                        className="h-11"
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-
+                          {/* Compact Duration & Notes */}
+                          <div className="grid sm:grid-cols-2 gap-2">
                             <FormField
                               control={form.control}
-                              name="notes"
+                              name="durationMinutes"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-sm font-medium">
-                                    Workout Notes (optional)
+                                  <FormLabel className="text-xs font-medium text-muted-foreground">
+                                    Duration (min)
                                   </FormLabel>
                                   <FormControl>
-                                    <Textarea
-                                      placeholder="How did the workout feel? Any observations?"
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      placeholder="30"
                                       {...field}
-                                      rows={3}
-                                      className="resize-none"
+                                      value={field.value || ""}
+                                      onChange={(e) =>
+                                        field.onChange(Number(e.target.value))
+                                      }
+                                      className="h-9 text-center font-semibold"
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -651,68 +657,86 @@ export default function LogPage() {
                               )}
                             />
 
-                            <div className="flex gap-3 pt-4">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="lg"
-                                className="flex-1"
-                                onClick={() => {
-                                  form.reset();
-                                  setCopiedFromLast(false);
-                                  localStorage.removeItem("draftLogData"); // ✅ Clear draft on reset
-                                }}
-                              >
-                                Reset
-                              </Button>
-                              <Button
-                                type="submit"
-                                disabled={createLogMutation.isPending}
-                                size="lg"
-                                className="flex-1 gap-2 "
-                              >
-                                {createLogMutation.isPending ? (
-                                  <>
-                                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                    Saving...
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckIcon className="h-4 w-4" />
-                                    Save Log
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </form>
-                        </Form>
-                      </motion.div>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/30">
-                    <div className="mx-auto w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mb-4">
-                      <AlertCircleIcon className="h-8 w-8 text-amber-500" />
-                    </div>
-                    <h3 className="font-semibold text-lg mb-2">
-                      Not seeing your exercises?
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-2 max-w-md mx-auto">
-                      You may not have selected or activated a plan yet.
+                            <FormField
+                              control={form.control}
+                              name="notes"
+                              render={({ field }) => (
+                                <FormItem className="sm:col-span-2">
+                                  <FormLabel className="text-xs font-medium text-muted-foreground">
+                                    Notes (optional)
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      placeholder="How did it feel..."
+                                      {...field}
+                                      rows={2}
+                                      className="resize-none text-sm"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          {/* Compact Actions */}
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 h-9"
+                              onClick={() => {
+                                form.reset();
+                                setCopiedFromLast(false);
+                                localStorage.removeItem("draftLogData");
+                              }}
+                            >
+                              Reset
+                            </Button>
+                            <Button
+                              type="submit"
+                              disabled={createLogMutation.isPending}
+                              size="sm"
+                              className="flex-2 h-9 font-semibold gap-1.5"
+                            >
+                              {createLogMutation.isPending ? (
+                                <>
+                                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                  <span>Saving...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckIcon className="h-4 w-4" />
+                                  <span>Save Log</span>
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </form>
+                      </Form>
+                    </motion.div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border shadow-sm">
+                <CardContent className="p-3">
+                  <div className="text-center py-8 border border-dashed rounded-lg bg-muted/10">
+                    <AlertCircleIcon className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+                    <p className="text-sm font-medium mb-1">
+                      No workouts found
                     </p>
-                    <p className="text-xs text-muted-foreground mb-6 max-w-md mx-auto px-4">
-                      💡 <strong>Quick reminder:</strong> Plans contain Workouts
-                      → Workouts contain Exercises. Make sure you&apos;ve
-                      created a plan, added workouts with exercises, and set it
-                      as active!
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Create workouts in your plan first
                     </p>
                     <Button variant="default" size="sm" asChild>
                       <Link href="/plans">Go to Plans</Link>
                     </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </motion.div>
         )}
       </div>

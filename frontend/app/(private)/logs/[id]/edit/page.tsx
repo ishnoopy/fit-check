@@ -50,14 +50,14 @@ import { z } from "zod";
 const formSchema = z.object({
   sets: z.array(
     z.object({
-      set_number: z.number().min(1),
+      setNumber: z.number().min(1),
       reps: z.number().min(1),
       weight: z.number().min(0),
       notes: z.string().optional(),
     })
   ),
-  workout_date: z.date(),
-  duration_minutes: z.number().min(0).optional(),
+  workoutDate: z.date(),
+  durationMinutes: z.number().min(0).optional(),
   notes: z.string().optional(),
 });
 
@@ -77,9 +77,9 @@ const updateLog = async ({
   logId: string;
   values: FormValues;
 }) => {
-  return api.put(`/api/logs/${logId}`, {
+  return api.patch(`/api/logs/${logId}`, {
     ...values,
-    workout_date: values.workout_date.toISOString(),
+    workoutDate: values.workoutDate.toISOString(),
   });
 };
 
@@ -93,8 +93,8 @@ export default function EditLogPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       sets: [],
-      workout_date: new Date(),
-      duration_minutes: 0,
+      workoutDate: new Date(),
+      durationMinutes: 0,
       notes: "",
     },
   });
@@ -110,10 +110,8 @@ export default function EditLogPage() {
     if (log) {
       form.reset({
         sets: log.sets || [],
-        workout_date: log.workout_date
-          ? new Date(log.workout_date)
-          : new Date(),
-        duration_minutes: log.duration_minutes || 0,
+        workoutDate: log.workoutDate ? new Date(log.workoutDate) : new Date(),
+        durationMinutes: log.durationMinutes || 0,
         notes: log.notes || "",
       });
     }
@@ -165,7 +163,7 @@ export default function EditLogPage() {
         <BackButton href="/logs/archive" />
         <PageHeader
           title="Edit Log"
-          subtitle={`Editing ${log.exercise_id?.name || "workout log"} ✏️`}
+          subtitle={`Editing ${log.exerciseId?.name || "workout log"} ✏️`}
         />
 
         <motion.div
@@ -179,7 +177,7 @@ export default function EditLogPage() {
                 <div className="p-2 bg-blue-500/10 rounded-lg">
                   <DumbbellIcon className="h-5 w-5 text-blue-500" />
                 </div>
-                {log.exercise_id?.name || "Unknown Exercise"}
+                {log.exerciseId?.name || "Unknown Exercise"}
               </CardTitle>
               <CardDescription>Update your workout details</CardDescription>
             </CardHeader>
@@ -191,7 +189,7 @@ export default function EditLogPage() {
                 >
                   <FormField
                     control={form.control}
-                    name="workout_date"
+                    name="workoutDate"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Workout Date</FormLabel>
@@ -207,7 +205,7 @@ export default function EditLogPage() {
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {field.value ? (
-                                  format(field.value, "PPP")
+                                  format(new Date(field.value), "PPP")
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
@@ -217,7 +215,9 @@ export default function EditLogPage() {
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
-                              selected={field.value}
+                              selected={
+                                field.value ? new Date(field.value) : undefined
+                              }
                               onSelect={field.onChange}
                               disabled={(date) =>
                                 date > new Date() ||
@@ -264,7 +264,7 @@ export default function EditLogPage() {
                                       const sets = field.value?.slice() || [];
                                       sets[idx] = {
                                         ...sets[idx],
-                                        set_number: idx + 1,
+                                        setNumber: idx + 1,
                                         reps: Number(e.target.value),
                                       };
                                       field.onChange(sets);
@@ -312,7 +312,7 @@ export default function EditLogPage() {
                                       sets.splice(idx, 1);
                                       // Renumber remaining sets
                                       sets.forEach((s, i) => {
-                                        s.set_number = i + 1;
+                                        s.setNumber = i + 1;
                                       });
                                       field.onChange(sets);
                                     }}
@@ -354,7 +354,7 @@ export default function EditLogPage() {
 
                   <FormField
                     control={form.control}
-                    name="duration_minutes"
+                    name="durationMinutes"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Duration (minutes)</FormLabel>
@@ -364,7 +364,7 @@ export default function EditLogPage() {
                             min={0}
                             placeholder="30"
                             {...field}
-                            value={field.value || ""}
+                            value={field.value ? field.value.toString() : ""}
                             onChange={(e) =>
                               field.onChange(Number(e.target.value))
                             }

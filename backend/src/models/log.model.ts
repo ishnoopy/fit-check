@@ -1,7 +1,28 @@
 import mongoose, { model } from "mongoose";
 
-// Individual set data
 export interface ISetData {
+    setNumber: number;
+    reps: number;
+    weight: number;
+    notes?: string;
+}
+export interface ILog {
+    id?: string;
+    userId: mongoose.Schema.Types.ObjectId | string;
+    planId: mongoose.Schema.Types.ObjectId | string;
+    workoutId: mongoose.Schema.Types.ObjectId | string;
+    exerciseId: mongoose.Schema.Types.ObjectId | string;
+    sets: Array<ISetData>; // Array of set data
+    workoutDate?: Date | string; // When the workout was performed
+    durationMinutes?: number; // Optional: how long the exercise took
+    notes?: string; // General notes about the exercise performance
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+
+// Individual set data
+export interface ISetDataModel {
     set_number: number;
     reps: number;
     weight: number; // Weight in kg
@@ -9,17 +30,17 @@ export interface ISetData {
 }
 
 // Tracks actual workout session data
-export interface ILog {
+export interface ILogModel {
     user_id: mongoose.Schema.Types.ObjectId | string;
     plan_id: mongoose.Schema.Types.ObjectId | string;
     workout_id: mongoose.Schema.Types.ObjectId | string;
     exercise_id: mongoose.Schema.Types.ObjectId | string;
-    sets: Array<ISetData>; // Array of set data
+    sets: Array<ISetDataModel>; // Array of set data
     workout_date?: Date; // When the workout was performed
     duration_minutes?: number; // Optional: how long the exercise took
     notes?: string; // General notes about the exercise performance
-    createdAt?: Date;
-    updatedAt?: Date;
+    created_at?: Date;
+    updated_at?: Date;
 }
 
 const SetDataSchema = new mongoose.Schema({
@@ -38,11 +59,16 @@ const LogSchema = new mongoose.Schema({
     workout_date: { type: Date, required: true, default: Date.now },
     duration_minutes: { type: Number, required: false },
     notes: { type: String, required: false },
-}, { timestamps: true });
+}, {
+    timestamps: {
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
+    }
+});
 
 // Index for efficient querying
 LogSchema.index({ user_id: 1, workout_date: -1 });
 LogSchema.index({ user_id: 1, exercise_id: 1, workout_date: -1 });
 
-export default model<ILog>("Log", LogSchema);
+export default model<ILogModel>("Log", LogSchema);
 

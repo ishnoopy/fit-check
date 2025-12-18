@@ -75,7 +75,7 @@ export default function LogsArchivePage() {
 
   const handleDeleteLog = () => {
     if (logToDelete) {
-      deleteLogMutation.mutate(logToDelete._id);
+      deleteLogMutation.mutate(logToDelete.id);
     }
   };
 
@@ -129,7 +129,7 @@ export default function LogsArchivePage() {
           <div className="space-y-4">
             {logs.map((log, index) => (
               <motion.div
-                key={log._id}
+                key={log.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
@@ -142,17 +142,17 @@ export default function LogsArchivePage() {
                           <div className="p-1.5 bg-blue-500/10 rounded-lg">
                             <DumbbellIcon className="h-4 w-4 text-blue-500" />
                           </div>
-                          {log.exercise_id?.name || "Unknown Exercise"}
+                          {log.exerciseId?.name || "Unknown Exercise"}
                         </CardTitle>
                         <CardDescription className="flex flex-wrap items-center gap-3 text-sm">
                           <span className="flex items-center gap-1">
                             <CalendarIcon className="h-3.5 w-3.5" />
-                            {format(new Date(log.workout_date), "MMMM d, yyyy")}
+                            {format(new Date(log.workoutDate), "MMMM d, yyyy")}
                           </span>
-                          {log.duration_minutes && (
+                          {log.durationMinutes && (
                             <span className="flex items-center gap-1">
                               <ClockIcon className="h-3.5 w-3.5" />
-                              {log.duration_minutes} min
+                              {log.durationMinutes} min
                             </span>
                           )}
                         </CardDescription>
@@ -164,7 +164,7 @@ export default function LogsArchivePage() {
                           className="h-9 w-9"
                           asChild
                         >
-                          <Link href={`/logs/${log._id}/edit`}>
+                          <Link href={`/logs/${log.id}/edit`}>
                             <EditIcon className="h-4 w-4" />
                           </Link>
                         </Button>
@@ -191,7 +191,7 @@ export default function LogsArchivePage() {
                             className="flex items-center gap-2 bg-muted/30 border border-border/50 rounded-lg p-2.5"
                           >
                             <div className="flex items-center justify-center w-7 h-7 rounded-full bg-linear-to-br from-blue-500/20 to-purple-500/20 text-foreground font-bold text-xs shrink-0 border border-border/30">
-                              {set.set_number}
+                              {set.setNumber}
                             </div>
                             <span className="text-sm font-medium">
                               {set.reps} × {set.weight}kg
@@ -216,14 +216,14 @@ export default function LogsArchivePage() {
                     )}
 
                     <div className="flex flex-wrap gap-2 pt-2 text-xs text-muted-foreground">
-                      {log.workout_id?.title && (
+                      {log.workoutId?.title && (
                         <span className="px-2 py-1 bg-muted/50 rounded-md">
-                          Workout: {log.workout_id.title}
+                          Workout: {log.workoutId.title}
                         </span>
                       )}
-                      {log.plan_id?.title && (
+                      {log.planId?.title && (
                         <span className="px-2 py-1 bg-muted/50 rounded-md">
-                          Plan: {log.plan_id?.title}
+                          Plan: {log.planId?.title}
                         </span>
                       )}
                     </div>
@@ -248,10 +248,10 @@ export default function LogsArchivePage() {
           {logToDelete && (
             <div className="rounded-lg border border-border/50 p-4 space-y-2">
               <p className="font-semibold">
-                {logToDelete.exercise_id?.name || "Unknown Exercise"}
+                {logToDelete.exerciseId?.name || "Unknown Exercise"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {format(new Date(logToDelete.workout_date), "MMMM d, yyyy")}
+                {format(new Date(logToDelete.workoutDate), "MMMM d, yyyy")}
               </p>
               <p className="text-sm">
                 {logToDelete.sets.length} set

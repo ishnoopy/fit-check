@@ -58,8 +58,8 @@ const exerciseFormSchema = z.object({
 type ExerciseFormValues = z.infer<typeof exerciseFormSchema>;
 
 interface Exercise {
-  _id: string;
-  user_id: string;
+  id: string;
+  userId: string;
   name: string;
   description: string;
   notes: string;
@@ -68,9 +68,9 @@ interface Exercise {
 }
 
 interface Workout {
-  _id: string;
-  user_id: string;
-  plan_id: string;
+  id: string;
+  userId: string;
+  planId: string;
   title: string;
   description: string;
   exercises: Exercise[];
@@ -87,18 +87,17 @@ const createExercise = async (
 ) => {
   // First create the exercise
   const exerciseData = await api.post<{ data: Exercise }>("/api/exercises", {
-    workout_id: workoutId,
+    workoutId: workoutId,
     ...values,
   });
 
-  const newExerciseId = exerciseData.data._id;
+  const newExerciseId = exerciseData.data.id;
 
   // Then update the workout to include the new exercise
-  const exerciseIds = [...currentExercises.map((ex) => ex._id), newExerciseId];
+  const exerciseIds = [...currentExercises.map((ex) => ex.id), newExerciseId];
 
-  await api.put(`/api/workouts/${workoutId}`, {
-    workout_id: workoutId,
-    plan_id: planId,
+  await api.patch(`/api/workouts/${workoutId}`, {
+    planId: planId,
     exercises: exerciseIds,
   });
 
@@ -109,7 +108,7 @@ const updateExercise = async (
   exerciseId: string,
   values: ExerciseFormValues
 ) => {
-  return api.put(`/api/exercises/${exerciseId}`, values);
+  return api.patch(`/api/exercises/${exerciseId}`, values);
 };
 
 const deleteExercise = async (
@@ -118,12 +117,12 @@ const deleteExercise = async (
   exerciseId: string
 ) => {
   const exercises = workout.exercises
-    .filter((ex) => ex._id !== exerciseId)
-    .map((ex) => ex._id);
+    .filter((ex) => ex.id !== exerciseId)
+    .map((ex) => ex.id);
 
-  return api.put(`/api/workouts/${workoutId}`, {
-    workout_id: workoutId,
-    plan_id: workout.plan_id,
+  return api.patch(`/api/workouts/${workoutId}`, {
+    workoutId: workoutId,
+    planId: workout.planId,
     exercises,
   });
 };
@@ -136,11 +135,6 @@ const container = {
       staggerChildren: 0.1,
     },
   },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
 };
 
 // Main Component
@@ -186,7 +180,7 @@ export default function WorkoutDetailPage() {
       if (!workout) throw new Error("Workout not found");
       return createExercise(
         workoutId,
-        workout.plan_id,
+        workout.planId,
         workout.exercises || [],
         values
       );
@@ -258,7 +252,7 @@ export default function WorkoutDetailPage() {
 
   const handleEditExercise = (values: ExerciseFormValues) => {
     if (!editingExercise) return;
-    updateMutation.mutate({ ...values, id: editingExercise._id });
+    updateMutation.mutate({ ...values, id: editingExercise.id });
   };
 
   const handleDeleteExercise = (exercise: Exercise) => {
@@ -267,7 +261,7 @@ export default function WorkoutDetailPage() {
 
   const confirmDeleteExercise = () => {
     if (exerciseToDelete) {
-      deleteMutation.mutate(exerciseToDelete._id);
+      deleteMutation.mutate(exerciseToDelete.id);
       setExerciseToDelete(null);
     }
   };
@@ -435,7 +429,7 @@ export default function WorkoutDetailPage() {
             >
               {workout.exercises.map((exercise, index) => (
                 <Card
-                  key={exercise._id}
+                  key={exercise.id}
                   className="group bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300"
                 >
                   <CardContent className="p-6">

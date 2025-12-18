@@ -1,9 +1,10 @@
 import mongoose, { model } from "mongoose";
 
+// Interface for the user object
 export interface IUser {
-  _id?: string;
-  first_name?: string | undefined | null;
-  last_name?: string | undefined | null;
+  id?: string;
+  firstName?: string | undefined | null;
+  lastName?: string | undefined | null;
   email: string;
   password?: string;
   role: string;
@@ -11,17 +12,41 @@ export interface IUser {
   // Fitness-related fields
   age?: number;
   gender?: "male" | "female" | "other" | "prefer_not_to_say";
+  weight?: number;
+  height?: number;
+  fitnessGoal?: "lose_weight" | "gain_muscle" | "maintain" | "improve_endurance" | "general_fitness";
+  activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
+  createdAt?: Date;
+  updatedAt?: Date;
+  // OAuth Fields
+  googleId?: string | null;
+  avatar?: string | null;
+  authProvider?: "local" | "google" | null;
+}
+
+// Interface for the user model
+export interface IUserModel {
+  _id?: string;
+  first_name?: string | undefined | null;
+  last_name?: string | undefined | null;
+  email: string;
+  password?: string;
+  role: string;
+  profile_completed: boolean;
+  // Fitness-related fields
+  age?: number;
+  gender?: "male" | "female" | "other" | "prefer_not_to_say";
   weight?: number; // in kg
   height?: number; // in cm
   fitness_goal?: "lose_weight" | "gain_muscle" | "maintain" | "improve_endurance" | "general_fitness";
   activity_level?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
-  createdAt?: Date;
-  updatedAt?: Date;
+  created_at?: Date;
+  updated_at?: Date;
 
   // OAuth Fields
   google_id?: string | null;
   avatar?: string | null;
-  authProvider?: "local" | "google" | null;
+  auth_provider?: "local" | "google" | null;
 }
 
 const UserSchema = new mongoose.Schema({
@@ -30,7 +55,7 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true },
   password: { type: String, required: false },
   role: { type: String, required: true },
-  profileCompleted: { type: Boolean, default: false },
+  profile_completed: { type: Boolean, default: false },
   // Fitness-related fields (optional)
   age: { type: Number },
   gender: { type: String, enum: ["male", "female", "other", "prefer_not_to_say"] },
@@ -48,9 +73,12 @@ const UserSchema = new mongoose.Schema({
   // OAuth Fields
   google_id: { type: String, unique: true, sparse: true },
   avatar: { type: String },
-  authProvider: { type: String, enum: ["local", "google"], default: "local" },
+  auth_provider: { type: String, enum: ["local", "google"], default: "local" },
 }, {
-  timestamps: true
+  timestamps: {
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
+  }
 });
 
-export default model<IUser>("User", UserSchema);
+export default model<IUserModel>("User", UserSchema);

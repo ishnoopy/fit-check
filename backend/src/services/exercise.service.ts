@@ -4,7 +4,7 @@ import * as exerciseRepository from "../repositories/exercise.repository.js";
 import * as workoutRepository from "../repositories/workout.repository.js";
 
 export async function getAllExercisesService(userId: string) {
-  return await exerciseRepository.findAll({ user_id: userId });
+  return await exerciseRepository.findAll({ userId });
 }
 
 export async function getExerciseByIdService(id: string, userId: string) {
@@ -15,35 +15,31 @@ export async function getExerciseByIdService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (exercise.user_id.toString() !== userId) {
+  if (exercise.userId as string !== userId) {
     throw new BadRequestError("Unauthorized access to exercise");
   }
 
   return exercise;
 }
 
-export async function createExerciseService(payload: Partial<IExercise>, userId: string) {
-  const exerciseData = {
-    ...payload,
-    user_id: userId,
-  };
+export async function createExerciseService(payload: Omit<IExercise, "userId">, userId: string) {
+  const exercise = await exerciseRepository.createExercise({ ...payload, userId: userId });
 
-  const exercise = await exerciseRepository.createExercise(exerciseData);
-
-  if (payload.workout_id) {
-    const workout = await workoutRepository.findById(String(payload.workout_id));
+  if (payload.workoutId) {
+    const workout = await workoutRepository.findById(payload.workoutId as string);
     if (!workout) {
       throw new NotFoundError("Workout not found");
     }
-    workout.exercises.push(exercise._id.toString());
-    await workoutRepository.updateWorkout(String(payload.workout_id), {
+    workout.exercises.push(exercise.id as string);
+    await workoutRepository.updateWorkout(payload.workoutId as string, {
+      ...workout,
       exercises: workout.exercises,
     });
   }
   return exercise;
 }
 
-export async function updateExerciseService(id: string, payload: Partial<IExercise>, userId: string) {
+export async function updateExerciseService(id: string, payload: Partial<Omit<IExercise, "userId">>, userId: string) {
   const existingExercise = await exerciseRepository.findById(id);
 
   if (!existingExercise) {
@@ -51,11 +47,13 @@ export async function updateExerciseService(id: string, payload: Partial<IExerci
   }
 
   // Verify ownership
-  if (existingExercise.user_id.toString() !== userId) {
+  if (existingExercise.userId as string !== userId) {
     throw new BadRequestError("Unauthorized access to exercise");
   }
 
-  return await exerciseRepository.updateExercise(id, payload);
+  const payloadWithUserId = { ...payload, userId: userId };
+
+  return await exerciseRepository.updateExercise(id, payloadWithUserId);
 }
 
 export async function deleteExerciseService(id: string, userId: string) {
@@ -66,7 +64,7 @@ export async function deleteExerciseService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (existingExercise.user_id.toString() !== userId) {
+  if (existingExercise.userId as string !== userId) {
     throw new BadRequestError("Unauthorized access to exercise");
   }
 

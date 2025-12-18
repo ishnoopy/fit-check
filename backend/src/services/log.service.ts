@@ -23,7 +23,7 @@ export async function getAllLogsService(userId: string, filters?: {
     return await logRepository.findByExercise(userId, filters.exerciseId);
   }
 
-  return await logRepository.findAll({ user_id: userId });
+  return await logRepository.findAll({ userId: userId });
 }
 
 export async function getLogByIdService(id: string, userId: string) {
@@ -34,7 +34,7 @@ export async function getLogByIdService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (log.user_id.toString() !== userId) {
+  if (log.userId as string !== userId) {
     throw new BadRequestError("Unauthorized access to log");
   }
 
@@ -43,18 +43,17 @@ export async function getLogByIdService(id: string, userId: string) {
 
 export async function getLogsByQueryService(query: Record<string, unknown>, userId: string) {
   let options: { limit?: number, sort?: Record<string, SortOrder> } = {};
-  if (query.start_date && query.end_date) {
+  if (query.startDate && query.endDate) {
     query = {
       ...query, createdAt: {
-        $gte: new Date(query.start_date as string),
-        $lte: new Date(query.end_date as string),
+        $gte: new Date(query.startDate as string),
+        $lte: new Date(query.endDate as string),
       }
     };
 
-    delete query.start_date;
-    delete query.end_date;
+    delete query.startDate;
+    delete query.endDate;
   }
-
 
   if (query.latest === true) {
     delete query.latest;
@@ -63,22 +62,12 @@ export async function getLogsByQueryService(query: Record<string, unknown>, user
   return await logRepository.findByQuery(userId, query, options);
 }
 
-export async function createLogService(payload: Partial<ILog>, userId: string) {
-  // Validate sets array
-  if (!payload.sets || payload.sets.length === 0) {
-    throw new BadRequestError("At least one set is required");
-  }
-
-  const logData = {
-    ...payload,
-    user_id: userId,
-    workout_date: payload.workout_date || new Date(),
-  };
-
-  return await logRepository.createLog(logData);
+export async function createLogService(payload: Omit<ILog, "userId">, userId: string) {
+  return await logRepository.createLog({ ...payload, userId: userId });
 }
 
-export async function updateLogService(id: string, payload: Partial<ILog>, userId: string) {
+export async function updateLogService(id: string, payload: Partial<Omit<ILog, "userId">>, userId: string) {
+  console.log("a")
   const existingLog = await logRepository.findById(id);
 
   if (!existingLog) {
@@ -86,13 +75,8 @@ export async function updateLogService(id: string, payload: Partial<ILog>, userI
   }
 
   // Verify ownership
-  if (existingLog.user_id.toString() !== userId) {
+  if (existingLog.userId as string !== userId) {
     throw new BadRequestError("Unauthorized access to log");
-  }
-
-  // Validate sets array if provided
-  if (payload.sets && payload.sets.length === 0) {
-    throw new BadRequestError("At least one set is required");
   }
 
   return await logRepository.updateLog(id, payload);
@@ -106,7 +90,7 @@ export async function deleteLogService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (existingLog.user_id.toString() !== userId) {
+  if (existingLog.userId as string !== userId) {
     throw new BadRequestError("Unauthorized access to log");
   }
 

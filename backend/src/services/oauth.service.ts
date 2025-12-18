@@ -40,28 +40,28 @@ export async function handleGoogleOAuthCallback(code: string) {
             // Create new user with Google data
             user = await UserRepository.createUser({
                 email: data.email,
-                google_id: data.id,
-                first_name: data.given_name,
-                last_name: data.family_name,
+                googleId: data.id,
+                firstName: data.given_name,
+                lastName: data.family_name,
                 avatar: data.picture,
                 authProvider: "google",
                 role: "user",
                 profileCompleted: false
             });
-        } else if (!user.google_id) {
+        } else if (!user.googleId) {
             // Link existing account to Google
-            user = await UserRepository.updateUser(user._id.toString(), {
-                google_id: data.id,
+            user = await UserRepository.updateUser(user.id as string, {
+                googleId: data.id,
                 avatar: data.picture ?? user.avatar,
-                first_name: user.first_name ?? data.given_name,
-                last_name: user.last_name ?? data.family_name,
+                firstName: user.firstName ?? data.given_name,
+                lastName: user.lastName ?? data.family_name,
             })
         }
 
         const { password, ...userWithoutPassword } = user as IUser;
 
         const token = await new jose.SignJWT({
-            id: userWithoutPassword._id,
+            id: userWithoutPassword.id,
             email: userWithoutPassword.email,
             role: userWithoutPassword?.role,
         })

@@ -151,7 +151,7 @@ export default function Home() {
           >
             <div className="space-y-1">
               <p className="text-lg text-foreground">
-                Welcome back{user.first_name ? `, ${user.first_name}` : ""} 👋
+                Welcome back{user.firstName ? `, ${user.firstName}` : ""} 👋
               </p>
               <p className="text-sm text-muted-foreground">
                 {currentStreak > 0
