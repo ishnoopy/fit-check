@@ -61,7 +61,7 @@ export default function LandingPage() {
               <Link href="/login">Sign In</Link>
             </Button>
             <Button asChild>
-              <Link href="/register">Start Free</Link>
+              <Link href="/register">Start Now</Link>
             </Button>
           </nav>
         </div>
