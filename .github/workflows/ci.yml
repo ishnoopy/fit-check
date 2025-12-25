@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd ~/app/fit-check
+            docker-compose pull
+            docker-compose down
+            docker-compose up -d
+            docker-compose logs -f
+
+      - name: Success
+        if: success()
+        run: echo "Deployment successful"
+
+      - name: Failure
+        if: failure()
+        run: echo "Deployment failed"
+
+      - name: Clean up
+        if: always()
+        run: docker system prune -af
