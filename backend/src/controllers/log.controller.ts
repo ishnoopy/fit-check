@@ -49,6 +49,8 @@ const getLogsQuerySchema = z.object({
     .string()
     .transform((val) => val === "true")
     .optional(),
+  sort_by: z.enum(["created_at", "updated_at"]).optional(),
+  sort_order: z.enum(["asc", "desc"]).optional(),
 });
 
 export type ICreateLogPayload = z.infer<typeof createLogSchema>;

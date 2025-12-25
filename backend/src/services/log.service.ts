@@ -55,6 +55,12 @@ export async function getLogsByQueryService(query: Record<string, unknown>, user
     delete query.endDate;
   }
 
+  if (query.sortBy && query.sortOrder) {
+    options = { ...options, sort: { [query.sortBy as string]: query.sortOrder as SortOrder } };
+    delete query.sortBy;
+    delete query.sortOrder;
+  }
+
   if (query.latest === true) {
     delete query.latest;
     options = { ...options, limit: 1, sort: { createdAt: -1 } };
