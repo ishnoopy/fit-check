@@ -26,10 +26,13 @@ export async function getExercises(c: Context) {
 
   const exercises = await exerciseService.getAllExercisesService(userId);
 
-  return c.json({
-    success: true,
-    data: exercises,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: exercises,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function getExercise(c: Context) {
@@ -40,12 +43,18 @@ export async function getExercise(c: Context) {
   }
 
   const userId = c.get("user").id;
-  const exercise = await exerciseService.getExerciseByIdService(params.data.id, userId);
+  const exercise = await exerciseService.getExerciseByIdService(
+    params.data.id,
+    userId,
+  );
 
-  return c.json({
-    success: true,
-    data: exercise,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: exercise,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function createExercise(c: Context) {
@@ -56,14 +65,19 @@ export async function createExercise(c: Context) {
     throw new BadRequestError(validation.error);
   }
 
-
   const userId = c.get("user").id;
-  const exercise = await exerciseService.createExerciseService(validation.data, userId);
+  const exercise = await exerciseService.createExerciseService(
+    validation.data,
+    userId,
+  );
 
-  return c.json({
-    success: true,
-    data: exercise,
-  }, StatusCodes.CREATED);
+  return c.json(
+    {
+      success: true,
+      data: exercise,
+    },
+    StatusCodes.CREATED,
+  );
 }
 
 export async function updateExercise(c: Context) {
@@ -80,14 +94,20 @@ export async function updateExercise(c: Context) {
     throw new BadRequestError(validation.error);
   }
 
-
   const userId = c.get("user").id;
-  const exercise = await exerciseService.updateExerciseService(params.data.id, validation.data, userId);
+  const exercise = await exerciseService.updateExerciseService(
+    params.data.id,
+    validation.data,
+    userId,
+  );
 
-  return c.json({
-    success: true,
-    data: exercise,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: exercise,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function deleteExercise(c: Context) {
@@ -100,9 +120,11 @@ export async function deleteExercise(c: Context) {
   const userId = c.get("user").id;
   await exerciseService.deleteExerciseService(params.data.id, userId);
 
-  return c.json({
-    success: true,
-    message: "Exercise deleted successfully",
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      message: "Exercise deleted successfully",
+    },
+    StatusCodes.OK,
+  );
 }
-
