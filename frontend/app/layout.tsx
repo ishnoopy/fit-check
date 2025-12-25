@@ -38,7 +38,7 @@ export default function RootLayout({
       <body
         className={`${balsamiqSans.variable} ${lora.variable} ${dmMono.variable} antialiased`}
       >
-        <Toaster />
+        <Toaster position="top-right" richColors />
         <Providers>{children}</Providers>
       </body>
     </html>
