@@ -1,5 +1,7 @@
 # Deployment Guide 🚀
 
+# test-commit
+
 This guide walks you through deploying the Fit-Check application on an AWS EC2 instance with Docker and SSL.
 
 ## Prerequisites
