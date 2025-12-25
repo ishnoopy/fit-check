@@ -1,8 +1,6 @@
 # Deployment Guide 🚀
 
-# test-commit
-
-This guide walks you through deploying the Fit-Check application on an AWS EC2 instance with Docker and SSL.
+This guide walks you through deploying the Fit-Check application on an AWS EC2 instance with Docker and SSL, _and automating future deployments using GitHub Actions_.
 
 ## Prerequisites
 
@@ -170,6 +168,23 @@ Replace the contents with `deployed/nginx-after-installing-ssl.conf`
 ```bash
 docker exec -it nginx nginx -s reload
 ```
+
+---
+
+## Step 5: Automated Deployment with GitHub Actions
+
+You can automate deployments to your EC2 server using the included GitHub Actions workflow.
+
+1. **Open your repository on GitHub.**
+2. Go to **Settings > Secrets and variables > Actions > Repository secrets**.
+3. Add the following secrets (provided by your EC2 setup):
+   - `EC2_HOST` &nbsp; &rarr; your EC2 instance public IP or DNS name
+   - `EC2_USERNAME` &nbsp; &rarr; your SSH username (e.g., `ubuntu`)
+   - `EC2_KEY` &nbsp; &rarr; your **private SSH key** (contents of your `.pem` file; keep this secret!)
+
+**Note:** The deployment workflow will run automatically when you push to the `main` branch. The workflow file is at `.github/workflows/ci.yml` and uses SSH to pull the latest images and restart the application via docker-compose.
+
+_You can customize the workflow as desired. For example, you could add build steps or notifications._
 
 ---
 
