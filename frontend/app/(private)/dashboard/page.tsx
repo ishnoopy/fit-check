@@ -35,7 +35,9 @@ export default function Home() {
   const dayName = getDayName(new Date().getDay());
 
   const getLogs = async () => {
-    return api.get<{ data: Log[] }>("/api/logs");
+    return api.get<{ data: Log[] }>(
+      "/api/logs/query?sortBy=createdAt&sortOrder=desc"
+    );
   };
 
   const { data: logs } = useQuery({
@@ -47,26 +49,25 @@ export default function Home() {
   const calculateStreak = () => {
     if (!logs?.data || logs.data.length === 0) return 0;
 
-    const sortedDates = logs.data
-      .map((log: { createdAt: string }) => new Date(log.createdAt))
-      .sort((a: Date, b: Date) => b.getTime() - a.getTime());
+    // Extract all unique log dates (midnight timestamp, as string)
+    const uniqueDates = new Set(
+      logs.data.map((log: { createdAt: string }) => {
+        const d = new Date(log.createdAt);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime();
+      })
+    );
 
+    if (uniqueDates.size === 0) return 0;
+
+    // Start streak from today, count backwards as long as there are workout days
     let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const current = new Date();
+    current.setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < sortedDates.length; i++) {
-      const logDate = new Date(sortedDates[i]);
-      logDate.setHours(0, 0, 0, 0);
-
-      const expectedDate = new Date(today);
-      expectedDate.setDate(today.getDate() - streak);
-
-      if (logDate.getTime() === expectedDate.getTime()) {
-        streak++;
-      } else if (logDate.getTime() < expectedDate.getTime()) {
-        break;
-      }
+    while (uniqueDates.has(current.getTime())) {
+      streak += 1;
+      current.setDate(current.getDate() - 1);
     }
 
     return streak;
