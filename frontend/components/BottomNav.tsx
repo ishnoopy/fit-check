@@ -4,7 +4,7 @@ import { useUser } from "@/app/providers";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion, useScroll } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   CalendarIcon,
   ChartBarIcon,
@@ -18,7 +18,6 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,9 +41,6 @@ export default function BottomNav({ className }: { className?: string }) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { user } = useUser();
-  const [isVisible, setIsVisible] = useState(true);
-  const { scrollY } = useScroll();
-  const [lastScrollY, setLastScrollY] = useState(0);
 
   // Check if user has any plans
   const { data: plansData } = useQuery({
@@ -73,34 +69,6 @@ export default function BottomNav({ className }: { className?: string }) {
     logoutMutation.mutate();
   };
 
-  // Scroll detection logic
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      // Show nav when at top of page
-      if (currentScrollY < 10) {
-        setIsVisible(true);
-        setLastScrollY(currentScrollY);
-        return;
-      }
-
-      // Hide nav when scrolling down, show when scrolling up
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        // Scrolling down
-        setIsVisible(false);
-      } else if (currentScrollY < lastScrollY) {
-        // Scrolling up
-        setIsVisible(true);
-      }
-
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
-
   const navItems = [
     { href: "/dashboard", icon: HomeIcon, label: "Home" },
     {
@@ -117,16 +85,8 @@ export default function BottomNav({ className }: { className?: string }) {
   return (
     <motion.nav
       initial={{ y: 100 }}
-      animate={{
-        y: isVisible ? 0 : 100,
-        opacity: isVisible ? 1 : 0,
-      }}
-      transition={{
-        type: "spring",
-        stiffness: 300,
-        damping: 30,
-        opacity: { duration: 0.2 },
-      }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
         "fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 sm:px-4 sm:pb-4",
         className
