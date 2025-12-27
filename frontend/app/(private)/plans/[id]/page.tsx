@@ -88,6 +88,11 @@ const addWorkoutFormSchema = z.object({
         name: z.string().min(1, { message: "Name is required" }),
         description: z.string().optional(),
         notes: z.string().optional(),
+        restTime: z
+          .number()
+          .int()
+          .positive()
+          .max(600, { message: "Rest time must be less than 600 seconds" }),
       })
     )
     .min(1, { message: "At least one exercise is required" }),
@@ -96,10 +101,15 @@ const addWorkoutFormSchema = z.object({
 const editWorkoutFormSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   description: z.string().optional(),
+  restTime: z
+    .number()
+    .int()
+    .positive()
+    .max(600, { message: "Rest time must be less than 600 seconds" }),
 });
 
-type AddWorkoutFormValues = z.infer<typeof addWorkoutFormSchema>;
-type EditWorkoutFormValues = z.infer<typeof editWorkoutFormSchema>;
+type AddWorkoutFormValues = z.input<typeof addWorkoutFormSchema>;
+type EditWorkoutFormValues = z.input<typeof editWorkoutFormSchema>;
 
 export default function PlanDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -144,6 +154,7 @@ export default function PlanDetailPage() {
     defaultValues: {
       title: "",
       description: "",
+      restTime: 60,
     },
   });
 
@@ -402,6 +413,7 @@ export default function PlanDetailPage() {
       name: "",
       description: "",
       notes: "",
+      restTime: 60,
     });
   };
 
@@ -877,6 +889,37 @@ export default function PlanDetailPage() {
                                     </FormItem>
                                   )}
                                 />
+
+                                <FormField
+                                  control={addWorkoutForm.control}
+                                  name={`exercises.${index}.restTime`}
+                                  render={({ field }) => (
+                                    <FormItem className="md:col-span-1">
+                                      <FormLabel>
+                                        Rest Time (seconds) *
+                                      </FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          placeholder="e.g., 120"
+                                          type="number"
+                                          min={0}
+                                          max={1000}
+                                          step={1}
+                                          className="h-12 rounded-2xl text-center font-semibold"
+                                          {...field}
+                                          value={field.value || ""}
+                                          onChange={(e) => {
+                                            field.onChange(
+                                              Number(e.target.value)
+                                            );
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormMessage />
                               </div>
                             </CardContent>
                           </Card>

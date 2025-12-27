@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Separator } from "@radix-ui/react-select";
 import {
   QueryFunction,
   useMutation,
@@ -36,6 +37,7 @@ import {
 import { motion } from "framer-motion";
 import {
   AlertCircle,
+  Clock,
   Dumbbell,
   Edit2,
   Loader2,
@@ -53,9 +55,14 @@ const exerciseFormSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   description: z.string().optional(),
   notes: z.string().optional(),
+  restTime: z
+    .number({ message: "Rest time is required" })
+    .int({ message: "Rest time must be an integer" })
+    .positive({ message: "Rest time must be greater than 0 seconds" })
+    .max(600, { message: "Rest time must be less than 600 seconds" }),
 });
 
-type ExerciseFormValues = z.infer<typeof exerciseFormSchema>;
+type ExerciseFormValues = z.input<typeof exerciseFormSchema>;
 
 interface Exercise {
   id: string;
@@ -63,6 +70,7 @@ interface Exercise {
   name: string;
   description: string;
   notes: string;
+  restTime: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -155,6 +163,7 @@ export default function WorkoutDetailPage() {
       name: "",
       description: "",
       notes: "",
+      restTime: 0,
     },
   });
 
@@ -272,6 +281,7 @@ export default function WorkoutDetailPage() {
       name: exercise.name,
       description: exercise.description || "",
       notes: exercise.notes || "",
+      restTime: exercise.restTime,
     });
   };
 
@@ -283,6 +293,7 @@ export default function WorkoutDetailPage() {
       name: "",
       description: "",
       notes: "",
+      restTime: 0,
     });
   };
 
@@ -294,6 +305,7 @@ export default function WorkoutDetailPage() {
       name: "",
       description: "",
       notes: "",
+      restTime: 0,
     });
     // Then open the dialog
     setIsAddDialogOpen(true);
@@ -438,9 +450,17 @@ export default function WorkoutDetailPage() {
                         {index + 1}
                       </div>
                       <div className="flex-1 space-y-2">
-                        <h4 className="text-lg font-semibold">
+                        <h4 className="text-lg font-semibold flex items-center gap-2">
                           {exercise.name}
                         </h4>
+                        <span className="text-sm text-muted-foreground flex items-center gap-1">
+                          <span className="text-muted-foreground font-semibold text-xs">
+                            Rest Time:
+                          </span>
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          {exercise.restTime ? `${exercise.restTime}s` : "0s"}
+                        </span>
+                        <Separator className="my-2 bg-border/50 h-px" />
                         {exercise.description && (
                           <p className="text-sm text-muted-foreground">
                             {exercise.description}
@@ -539,7 +559,7 @@ export default function WorkoutDetailPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Description (optional)</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Brief description of the exercise"
@@ -556,12 +576,36 @@ export default function WorkoutDetailPage() {
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Notes</FormLabel>
+                      <FormLabel>Notes (optional)</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Any additional notes (form cues, tips, etc.)"
                           className="rounded-2xl"
                           {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={exerciseForm.control}
+                  name="restTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rest Time (seconds) *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., 120"
+                          type="number"
+                          min={0}
+                          step={1}
+                          className="h-12 rounded-2xl text-center font-semibold w-24"
+                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            field.onChange(Number(e.target.value));
+                          }}
                         />
                       </FormControl>
                       <FormMessage />

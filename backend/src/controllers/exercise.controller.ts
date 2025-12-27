@@ -5,16 +5,18 @@ import { BadRequestError } from "../lib/errors.js";
 import * as exerciseService from "../services/exercise.service.js";
 
 const createExerciseSchema = z.object({
-  workout_id: z.string().min(24).max(24).optional(),
+  workoutId: z.string().min(24).max(24).optional(),
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   notes: z.string().optional(),
+  restTime: z.number().int().positive(),
 });
 
 const updateExerciseSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
   notes: z.string().optional(),
+  restTime: z.number().int().positive().optional(),
 });
 
 const idParamSchema = z.object({
