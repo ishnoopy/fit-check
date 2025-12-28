@@ -63,3 +63,11 @@ export interface Log {
     workoutId?: Workout;
     planId?: Plan;
 }
+
+export interface LogStats {
+    totalLogs: number;
+    exercisesToday: number;
+    exercisesThisWeek: number;
+    datesWithWorkouts: number[];
+    streak: number;
+}
