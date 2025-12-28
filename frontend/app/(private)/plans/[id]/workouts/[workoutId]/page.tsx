@@ -337,7 +337,7 @@ export default function WorkoutDetailPage() {
           >
             <Card className="border-destructive/50 bg-destructive/10">
               <CardContent className="p-6 flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                 <p className="text-destructive">
                   {error instanceof Error
                     ? error.message
@@ -446,7 +446,7 @@ export default function WorkoutDetailPage() {
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex-shrink-0">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold shrink-0">
                         {index + 1}
                       </div>
                       <div className="flex-1 space-y-2">
@@ -472,7 +472,7 @@ export default function WorkoutDetailPage() {
                           </p>
                         )}
                       </div>
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex gap-2 shrink-0">
                         <Button
                           size="sm"
                           variant="ghost"

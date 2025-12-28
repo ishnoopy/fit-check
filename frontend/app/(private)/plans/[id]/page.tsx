@@ -441,7 +441,7 @@ export default function PlanDetailPage() {
           >
             <Card className="border-destructive/50 bg-destructive/10">
               <CardContent className="p-6 flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                 <p className="text-destructive">
                   {error instanceof Error
                     ? error.message
