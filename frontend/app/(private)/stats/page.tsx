@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
-import { Log } from "@/types";
+import { LogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -19,96 +19,38 @@ import { useRouter } from "next/navigation";
 
 export default function StatsPage() {
   const router = useRouter();
-  const getLogs = async () => {
-    return api.get<{ data: Log[] }>("/api/logs");
+  const getStats = async () => {
+    return api.get<{ data: LogStats }>("/api/logs/stats");
   };
 
-  const { data: logs, isLoading } = useQuery({
-    queryKey: ["logs"],
-    queryFn: getLogs,
+  const { data: statsData, isLoading } = useQuery({
+    queryKey: ["stats"],
+    queryFn: getStats,
   });
 
-  const uniqueDatesWorkouts = Array.from(
-    new Set(
-      logs?.data?.map((log) => {
-        const date = new Date(log.createdAt);
-        // Convert to YYYY-MM-DD string for Set comparison
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}-${String(date.getDate()).padStart(2, "0")}`;
-      })
-    )
-  ).map((date: unknown) => new Date(date as string));
-
-  const totalWorkouts = logs?.data?.length || 0;
-
-  // Calculate current streak
-  const calculateStreak = () => {
-    if (!logs?.data || logs.data.length === 0) return 0;
-
-    const sortedDates = logs.data
-      .map((log: { createdAt: string }) => new Date(log.createdAt))
-      .sort((a: Date, b: Date) => b.getTime() - a.getTime());
-
-    let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (let i = 0; i < sortedDates.length; i++) {
-      const logDate = new Date(sortedDates[i]);
-      logDate.setHours(0, 0, 0, 0);
-
-      const expectedDate = new Date(today);
-      expectedDate.setDate(today.getDate() - streak);
-
-      if (logDate.getTime() === expectedDate.getTime()) {
-        streak++;
-      } else if (logDate.getTime() < expectedDate.getTime()) {
-        break;
-      }
-    }
-
-    return streak;
-  };
-
-  const currentStreak = calculateStreak();
-
-  // Calculate this week's workouts
-  const thisWeekWorkouts = () => {
-    if (!logs?.data) return 0;
-
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    return logs.data.filter((log: { createdAt: string }) => {
-      const logDate = new Date(log.createdAt);
-      return logDate >= startOfWeek;
-    }).length;
-  };
-
-  const weeklyWorkouts = thisWeekWorkouts();
+  const totalLogs = statsData?.data?.totalLogs || 0;
+  const exercisesThisWeek = statsData?.data?.exercisesThisWeek || 0;
+  const datesWithWorkouts = statsData?.data?.datesWithWorkouts || [];
+  const streak = statsData?.data?.streak || 0;
 
   const stats = [
     {
       icon: Flame,
-      value: currentStreak,
+      value: streak,
       label: "Day Streak",
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
     },
     {
       icon: Target,
-      value: totalWorkouts,
+      value: totalLogs,
       label: "Total Workouts",
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },
     {
       icon: TrendingUp,
-      value: weeklyWorkouts,
+      value: exercisesThisWeek,
       label: "This Week",
       color: "text-green-500",
       bgColor: "bg-green-500/10",
@@ -144,7 +86,7 @@ export default function StatsPage() {
     );
   }
 
-  if (totalWorkouts === 0) {
+  if (totalLogs === 0) {
     return (
       <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto">
@@ -225,7 +167,9 @@ export default function StatsPage() {
             <CardContent className="flex justify-center">
               <Calendar
                 mode="multiple"
-                selected={uniqueDatesWorkouts}
+                selected={datesWithWorkouts.map(
+                  (date: number) => new Date(date)
+                )}
                 disabled={true}
                 className="rounded-2xl border-0"
               />
@@ -248,7 +192,7 @@ export default function StatsPage() {
                     Total Days
                   </p>
                   <p className="text-3xl font-bold">
-                    {uniqueDatesWorkouts.length}
+                    {datesWithWorkouts.length}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Days with at least one workout
@@ -260,10 +204,8 @@ export default function StatsPage() {
                   </p>
                   <p className="text-3xl font-bold">
                     {Math.round(
-                      (totalWorkouts /
-                        Math.max(uniqueDatesWorkouts.length / 7, 1)) *
-                        10
-                    ) / 10}
+                      totalLogs / Math.max(datesWithWorkouts.length / 7, 1) / 10
+                    ) * 10}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Workouts per week average

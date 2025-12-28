@@ -165,3 +165,12 @@ export async function getExerciseHistory(c: Context) {
   }, StatusCodes.OK);
 }
 
+export async function getLogStats(c: Context) {
+  const userId = c.get("user").id;
+  const stats = await logService.getLogStatsService(userId);
+
+  return c.json({
+    success: true,
+    data: stats,
+  }, StatusCodes.OK);
+}

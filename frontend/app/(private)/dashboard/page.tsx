@@ -7,7 +7,7 @@ import { ProfileCompletionDialog } from "@/components/ProfileCompletionDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getDayName } from "@/lib/store";
-import { Log } from "@/types";
+import { LogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { CalendarPlus, Flame, Target, TrendingUp } from "lucide-react";
@@ -34,94 +34,36 @@ export default function Home() {
   const router = useRouter();
   const dayName = getDayName(new Date().getDay());
 
-  const getLogs = async () => {
-    return api.get<{ data: Log[] }>(
-      "/api/logs?sort_by=created_at&sort_order=desc"
-    );
+  const getStats = async () => {
+    return api.get<{ data: LogStats }>("/api/logs/stats");
   };
 
-  const { data: logs } = useQuery({
-    queryKey: ["logs"],
-    queryFn: getLogs,
+  const { data: statsData } = useQuery({
+    queryKey: ["stats"],
+    queryFn: getStats,
   });
 
-  // Calculate current streak
-  const calculateStreak = () => {
-    if (!logs?.data || logs.data.length === 0) return 0;
-
-    // Extract all unique log dates (midnight timestamp, as string)
-    const uniqueDates = new Set(
-      logs.data.map((log: { createdAt: string }) => {
-        const d = new Date(log.createdAt);
-        d.setHours(0, 0, 0, 0);
-        return d.getTime();
-      })
-    );
-
-    if (uniqueDates.size === 0) return 0;
-
-    // Start streak from today, count backwards as long as there are workout days
-    let streak = 0;
-    const current = new Date();
-    current.setHours(0, 0, 0, 0);
-
-    while (uniqueDates.has(current.getTime())) {
-      streak += 1;
-      current.setDate(current.getDate() - 1);
-    }
-
-    return streak;
-  };
-
-  // Calculate today's workouts
-  const todayWorkouts = () => {
-    if (!logs?.data) return 0;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return logs.data.filter((log: { createdAt: string }) => {
-      const logDate = new Date(log.createdAt);
-      logDate.setHours(0, 0, 0, 0);
-      return logDate.getTime() === today.getTime();
-    }).length;
-  };
-
-  // Calculate this week's workouts
-  const thisWeekWorkouts = () => {
-    if (!logs?.data) return 0;
-
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    return logs.data.filter((log: { createdAt: string }) => {
-      const logDate = new Date(log.createdAt);
-      return logDate >= startOfWeek;
-    }).length;
-  };
-
-  const currentStreak = calculateStreak();
-  const todayCount = todayWorkouts();
-  const weeklyCount = thisWeekWorkouts();
+  const totalLogs = statsData?.data?.totalLogs || 0;
+  const exercisesToday = statsData?.data?.exercisesToday || 0;
+  const exercisesThisWeek = statsData?.data?.exercisesThisWeek || 0;
+  const streak = statsData?.data?.streak || 0;
 
   const stats = [
     {
       icon: Flame,
-      value: currentStreak.toString(),
+      value: streak.toString(),
       label: "Day Streak",
       color: "text-orange-500",
     },
     {
       icon: Target,
-      value: todayCount.toString(),
+      value: exercisesToday.toString(),
       label: "Exercises Today",
       color: "text-blue-500",
     },
     {
       icon: TrendingUp,
-      value: weeklyCount.toString(),
+      value: exercisesThisWeek.toString(),
       label: "Exercises This Week",
       color: "text-green-500",
     },
@@ -155,14 +97,14 @@ export default function Home() {
                 Welcome back{user.firstName ? `, ${user.firstName}` : ""} 👋
               </p>
               <p className="text-sm text-muted-foreground">
-                {currentStreak > 0
-                  ? `You're on a ${currentStreak}-day streak! Keep it up! 🔥`
+                {streak > 0
+                  ? `You're on a ${streak}-day streak! Keep it up! 🔥`
                   : "Ready to start your fitness journey?"}
               </p>
             </div>
 
             {/* Show guide hint for new users */}
-            {(!logs?.data || logs.data.length === 0) && (
+            {totalLogs === 0 && (
               <Card className="border-primary/30 bg-primary/5 backdrop-blur-sm">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
