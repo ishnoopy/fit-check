@@ -20,9 +20,7 @@ import { useRouter } from "next/navigation";
 export default function StatsPage() {
   const router = useRouter();
   const getLogs = async () => {
-    return api.get<{ data: Log[] }>(
-      "/api/logs?sort_by=created_at&sort_order=desc"
-    );
+    return api.get<{ data: Log[] }>("/api/logs");
   };
 
   const { data: logs, isLoading } = useQuery({
