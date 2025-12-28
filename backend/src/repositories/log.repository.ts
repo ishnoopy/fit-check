@@ -1,5 +1,5 @@
-import { ObjectId } from 'mongodb';
 import type { FilterQuery, SortOrder } from 'mongoose';
+import { Types } from 'mongoose';
 import LogModel, { type ILog } from '../models/log.model.js';
 import { toCamelCase, toSnakeCase } from '../utils/transformer.js';
 
@@ -96,7 +96,7 @@ export async function findByQuery(userId: string, query: Record<string, unknown>
 
 export async function getLogStats(userId: string) {
   const logs = await LogModel.aggregate([
-    { $match: { user_id: new ObjectId(userId) } },
+    { $match: { user_id: new Types.ObjectId(userId) } },
     { $sort: { workout_date: -1 } },
     {
       $project: {
