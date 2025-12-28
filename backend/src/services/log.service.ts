@@ -1,3 +1,4 @@
+import { formatInTimeZone } from "date-fns-tz";
 import type { SortOrder } from "mongoose";
 import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { ILog } from "../models/log.model.js";
@@ -43,7 +44,10 @@ export async function getLogByIdService(id: string, userId: string) {
 
 export async function getLogsByQueryService(query: Record<string, unknown>, userId: string) {
   let options: { limit?: number, sort?: Record<string, SortOrder> } = {};
+  let customizedOptions: { llmMessage?: boolean, startDate?: Date, endDate?: Date } = {};
+
   if (query.startDate && query.endDate) {
+    customizedOptions = { ...customizedOptions, startDate: new Date(query.startDate as string), endDate: new Date(query.endDate as string) };
     query = {
       ...query, createdAt: {
         $gte: new Date(query.startDate as string),
@@ -65,15 +69,68 @@ export async function getLogsByQueryService(query: Record<string, unknown>, user
     delete query.latest;
     options = { ...options, limit: 1, sort: { createdAt: -1 } };
   }
-  return await logRepository.findByQuery(userId, query, options);
-}
 
+  if (query.llmMessage === true) {
+    delete query.llmMessage;
+    customizedOptions = { ...customizedOptions, llmMessage: true };
+  }
+
+  const logs = await logRepository.findByQuery(userId, query, options);
+
+  if (customizedOptions.llmMessage === true) {
+    // Format date range
+    const dateRangeStr = customizedOptions.startDate && customizedOptions.endDate
+      ? `${formatInTimeZone(customizedOptions.startDate, 'UTC', "yyyy-MM-dd")} to ${formatInTimeZone(customizedOptions.endDate, 'UTC', "yyyy-MM-dd")}`
+      : null;
+
+    // Transform logs to optimized format
+    const logsData = logs.map((log: any) => {
+      const sets = log.sets.map((set: any) =>
+        `${set.setNumber}: ${set.reps}×${set.weight}kg${set.notes ? ` (${set.notes})` : ''}`
+      ).join(', ');
+
+      return {
+        date: log.workoutDate ? formatInTimeZone(log.workoutDate, 'UTC', "yyyy-MM-dd") : null,
+        plan: log.planId?.title || 'N/A',
+        workout: log.workoutId?.title || 'N/A',
+        exercise: log.exerciseId?.name || 'N/A',
+        sets,
+        notes: log.notes || null,
+      };
+    });
+
+    // Calculate summary statistics
+    const totalSessions = logs.length;
+    const uniqueExercises = new Set(logs.map((log: any) => log.exerciseId?.name).filter(Boolean)).size;
+    const totalSets = logs.reduce((sum: number, log: any) => sum + (log.sets?.length || 0), 0);
+    const avgDuration = logs.reduce((sum: number, log: any) => sum + (log.durationMinutes || 0), 0) / totalSessions || 0;
+
+    // Build optimized message
+    const message = `You are a professional fitness coach analyzing workout logs. Provide:
+1. **Performance Summary** - Key achievements and patterns
+2. **Progress Analysis** - Strength/volume trends
+3. **Recommendations** - Next workout adjustments
+4. **Areas for Improvement** - Specific focus points
+
+Use emojis to make it engaging. Keep it concise but actionable.
+
+**Period:** ${dateRangeStr || 'All time'}
+**Sessions:** ${totalSessions} | **Exercises:** ${uniqueExercises} | **Total Sets:** ${totalSets} | **Avg Duration:** ${Math.round(avgDuration)}min
+
+**Workout Logs:**
+${logsData.map((log, idx) =>
+      `${idx + 1}. ${log.date || 'N/A'} - ${log.exercise} (${log.workout})\n   Sets: ${log.sets}${log.notes ? `\n   Notes: ${log.notes}` : ''}`
+    ).join('\n\n')}`;
+
+    return message;
+  }
+  return logs;
+}
 export async function createLogService(payload: Omit<ILog, "userId">, userId: string) {
   return await logRepository.createLog({ ...payload, userId: userId });
 }
 
 export async function updateLogService(id: string, payload: Partial<Omit<ILog, "userId">>, userId: string) {
-  console.log("a")
   const existingLog = await logRepository.findById(id);
 
   if (!existingLog) {

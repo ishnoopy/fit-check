@@ -40,7 +40,7 @@ const idParamSchema = z.object({
 // query params are in snake_case
 const getLogsQuerySchema = z.object({
   id: z.string().length(24).optional(),
-  start_date: z.string().datetime().optional(),
+  start_date: z.string().datetime().optional(), //e.g. 2025-12-28T00:00:00.000Z
   end_date: z.string().datetime().optional(),
   exercise_id: z.string().length(24).optional(),
   plan_id: z.string().length(24).optional(),
@@ -51,33 +51,13 @@ const getLogsQuerySchema = z.object({
     .optional(),
   sort_by: z.enum(["created_at", "updated_at"]).optional(),
   sort_order: z.enum(["asc", "desc"]).optional(),
+  llm_message: z.string().transform((val) => val === "true").optional(),
 });
 
 export type ICreateLogPayload = z.infer<typeof createLogSchema>;
 
+
 export async function getLogs(c: Context) {
-  const userId = c.get("user").id;
-
-  // Extract query parameters for filtering
-  const startDate = c.req.query("start_date");
-  const endDate = c.req.query("end_date");
-  const exerciseId = c.req.query("exercise_id");
-
-  const filters = {
-    startDate,
-    endDate,
-    exerciseId,
-  };
-
-  const logs = await logService.getAllLogsService(userId, filters);
-
-  return c.json({
-    success: true,
-    data: logs,
-  }, StatusCodes.OK);
-}
-
-export async function getLogsByQuery(c: Context) {
   const params = await getLogsQuerySchema.safeParseAsync(c.req.query());
 
   if (!params.success) {

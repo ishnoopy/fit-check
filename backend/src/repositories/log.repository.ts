@@ -82,7 +82,8 @@ export async function findByExercise(userId: string, exerciseId: string) {
 
 export async function findByQuery(userId: string, query: Record<string, unknown>, options?: { limit?: number, sort?: Record<string, SortOrder> }) {
   const sort = toSnakeCase(options?.sort || { createdAt: -1 });
-  const logs = await LogModel.find({ user_id: userId, ...toSnakeCase(query) })
+  const snakeQuery = toSnakeCase(query);
+  const logs = await LogModel.find({ user_id: userId, ...snakeQuery })
     .populate('plan_id')
     .populate('workout_id')
     .populate('exercise_id')

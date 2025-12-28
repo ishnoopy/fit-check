@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -20,6 +21,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 import { Log } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,11 +36,13 @@ import {
   ClockIcon,
   DumbbellIcon,
   EditIcon,
+  SparklesIcon,
   Trash2Icon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
 const fetchLogs = async (): Promise<{ success: boolean; data: Log[] }> => {
@@ -47,17 +55,45 @@ const deleteLog = async (logId: string) => {
 
 const fetchLogsByQuery = async (
   query: string
-): Promise<{ success: boolean; data: Log[] }> => {
-  return api.get(`/api/logs/query?${query}`);
+): Promise<{ success: boolean; data: Log[] | string }> => {
+  return api.get(`/api/logs?${query}`);
 };
 
 export default function LogsArchivePage() {
   const queryClient = useQueryClient();
   const [logToDelete, setLogToDelete] = useState<Log | null>(null);
+  const [isDateRangeDialogOpen, setIsDateRangeDialogOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: (() => {
+      const today = new Date();
+      const tenDaysAgo = new Date(today);
+      tenDaysAgo.setDate(today.getDate() - 9);
+      return tenDaysAgo;
+    })(),
+    to: new Date(),
+  });
   const router = useRouter();
-  const { data, isLoading, error } = useQuery({
+  const logsQuery = useQuery({
     queryKey: ["logs"],
     queryFn: fetchLogs,
+  });
+
+  // Build query string with date range
+  const buildQueryString = () => {
+    if (!dateRange?.from || !dateRange?.to) {
+      return "llm_message=true";
+    }
+    const startDate = new Date(dateRange.from);
+    startDate.setUTCHours(0, 0, 0, 0);
+    const endDate = new Date(dateRange.to);
+    endDate.setUTCHours(23, 59, 59, 999);
+    return `llm_message=true&start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`;
+  };
+
+  const llmMessageQuery = useQuery({
+    queryKey: ["llmMessage"],
+    queryFn: () => fetchLogsByQuery(buildQueryString()),
+    enabled: !!dateRange?.from && !!dateRange?.to,
   });
 
   const deleteLogMutation = useMutation({
@@ -79,11 +115,11 @@ export default function LogsArchivePage() {
     }
   };
 
-  if (isLoading) {
+  if (logsQuery.isLoading) {
     return <LoadingState />;
   }
 
-  if (error) {
+  if (logsQuery.error) {
     return (
       <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-4xl mx-auto">
@@ -101,17 +137,41 @@ export default function LogsArchivePage() {
     );
   }
 
-  const logs = data?.data || [];
+  const logs = logsQuery.data?.data || [];
 
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <BackButton href="/log" />
 
-        <PageHeader
-          title="Logs Archive"
-          subtitle="View and manage your workout logs 📚"
-        />
+        <div className="flex items-start justify-between gap-3">
+          <PageHeader
+            title="Logs Archive"
+            subtitle="View and manage your workout logs 📚"
+          />
+
+          {logs.length > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setIsDateRangeDialogOpen(true)}
+                >
+                  <SparklesIcon className="h-4 w-4" />
+                  Generate LLM Message
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs" side="bottom">
+                <p>
+                  Generate AI-powered workout analysis message for selected date
+                  range and feed to AI.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
 
         {logs.length === 0 ? (
           <EmptyState
@@ -234,6 +294,84 @@ export default function LogsArchivePage() {
           </div>
         )}
       </div>
+
+      {/* Date Range Selection Dialog */}
+      <Dialog
+        open={isDateRangeDialogOpen}
+        onOpenChange={setIsDateRangeDialogOpen}
+      >
+        <DialogContent className="w-full max-w-md sm:max-w-[425px] mx-auto">
+          <DialogHeader>
+            <DialogTitle>Select Date Range</DialogTitle>
+            <DialogDescription>
+              Choose the date range for your workout analysis
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center py-4">
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={setDateRange}
+              numberOfMonths={1}
+              className="rounded-md border"
+            />
+          </div>
+          {dateRange?.from && dateRange?.to && (
+            <div className="text-sm text-muted-foreground px-4 pb-2">
+              Selected: {format(dateRange.from, "MMM d, yyyy")} -{" "}
+              {format(dateRange.to, "MMM d, yyyy")}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDateRangeDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (dateRange?.from && dateRange?.to) {
+                  setIsDateRangeDialogOpen(false);
+
+                  try {
+                    const result = await llmMessageQuery.refetch();
+                    const message =
+                      typeof result.data?.data === "string"
+                        ? result.data.data
+                        : null;
+                    if (message) {
+                      navigator.clipboard.writeText(message);
+                      toast.success("LLM message copied to clipboard");
+                    } else {
+                      toast.error("Failed to generate message");
+                    }
+                  } catch {
+                    toast.error("Failed to generate message");
+                  }
+                } else {
+                  toast.error("Please select a date range");
+                }
+              }}
+              disabled={
+                !dateRange?.from || !dateRange?.to || llmMessageQuery.isLoading
+              }
+            >
+              {llmMessageQuery.isLoading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <SparklesIcon className="h-4 w-4 mr-2" />
+                  Generate & Copy
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!logToDelete} onOpenChange={() => setLogToDelete(null)}>

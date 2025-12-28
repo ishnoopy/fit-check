@@ -36,7 +36,7 @@ export default function Home() {
 
   const getLogs = async () => {
     return api.get<{ data: Log[] }>(
-      "/api/logs/query?sortBy=createdAt&sortOrder=desc"
+      "/api/logs?sort_by=created_at&sort_order=desc"
     );
   };
 

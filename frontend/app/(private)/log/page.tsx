@@ -252,7 +252,7 @@ export default function LogPage() {
 
   const getLatestExerciseLog = async () => {
     return api.get<{ data: Log[] }>(
-      `/api/logs/query?exercise_id=${activeExerciseId}&plan_id=${activePlanId}&workout_id=${activeWorkoutId}&latest=true`
+      `/api/logs?exercise_id=${activeExerciseId}&plan_id=${activePlanId}&workout_id=${activeWorkoutId}&latest=true`
     );
   };
 
