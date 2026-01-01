@@ -57,8 +57,7 @@ jobs:
           script: |
             cd ~/app/fit-check
 
-            docker system prune -a --volumes
-            rm -rf /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/*
+            docker system prune -af --volumes
 
             docker-compose pull
             docker-compose down
