@@ -6,8 +6,9 @@ import {
   QueryClientProvider,
   useQuery,
 } from "@tanstack/react-query";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 interface User {
   email: string;
@@ -87,14 +88,12 @@ interface GeneralContextType {
 const GeneralContext = createContext<GeneralContextType | null>(null);
 
 export function GeneralProvider({ children }: { children: React.ReactNode }) {
-  const [activePlanId, setActivePlanId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedPlanId = localStorage.getItem("activePlanId");
-    if (storedPlanId) {
-      setActivePlanId(storedPlanId);
+  const [activePlanId, setActivePlanId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("activePlanId");
     }
-  }, []);
+    return null;
+  });
 
   return (
     <GeneralContext.Provider value={{ activePlanId, setActivePlanId }}>
@@ -115,9 +114,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
   return (
     <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <GeneralProvider>{children}</GeneralProvider>
-      </UserProvider>
+      <NextThemesProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <UserProvider>
+          <GeneralProvider>{children}</GeneralProvider>
+        </UserProvider>
+      </NextThemesProvider>
     </QueryClientProvider>
   );
 }

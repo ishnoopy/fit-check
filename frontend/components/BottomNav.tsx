@@ -11,10 +11,13 @@ import {
   DumbbellIcon,
   HomeIcon,
   LogOutIcon,
+  MoonIcon,
   SparklesIcon,
+  SunIcon,
   UserIcon,
   WrenchIcon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -41,6 +44,8 @@ export default function BottomNav({ className }: { className?: string }) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { user } = useUser();
+  const { setTheme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   // Check if user has any plans
   const { data: plansData } = useQuery({
@@ -55,6 +60,9 @@ export default function BottomNav({ className }: { className?: string }) {
     mutationFn: logout,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
+      localStorage.removeItem("logFormDrafts");
+      localStorage.removeItem("activeWorkoutId");
+      localStorage.removeItem("activeExerciseId");
       router.push("/login");
     },
     onError: (error) => {
@@ -240,6 +248,17 @@ export default function BottomNav({ className }: { className?: string }) {
                 <Link href="/profile" className="cursor-pointer rounded-xl">
                   Profile
                 </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+                className="cursor-pointer rounded-xl"
+              >
+                {isDark ? (
+                  <SunIcon className="mr-2 h-4 w-4" />
+                ) : (
+                  <MoonIcon className="mr-2 h-4 w-4" />
+                )}
+                {isDark ? "Light mode" : "Dark mode"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
