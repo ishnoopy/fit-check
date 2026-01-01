@@ -186,3 +186,46 @@ export async function getLogStats(userId: string) {
     streak,
   };
 }
+
+
+export async function findLatestLogs(userId: string, exerciseIds: string[]) {
+  const objectIdExerciseIds = exerciseIds.map(id => new Types.ObjectId(id));
+
+  const logs = await LogModel.aggregate([
+    {
+      $match: {
+        user_id: new Types.ObjectId(userId),
+        exercise_id: { $in: objectIdExerciseIds }
+      }
+    },
+    {
+      $sort: { workout_date: -1 }
+    },
+    {
+      $group: {
+        _id: '$exercise_id',
+        latestLog: { $first: '$$ROOT' }
+      }
+    },
+    {
+      $replaceRoot: { newRoot: '$latestLog' }
+    }
+  ]);
+
+  const populatedLogs = await LogModel.populate(logs, [
+    { path: 'plan_id' },
+    { path: 'workout_id' },
+    { path: 'exercise_id' }
+  ]);
+
+  // Convert Mongoose documents to plain objects
+  const leanLogs = populatedLogs.map(doc => {
+    if (doc && typeof doc.toObject === 'function') {
+      return doc.toObject({ flattenMaps: true });
+    }
+    // If it's already a plain object, use JSON parse/stringify to deep clone and remove any hidden properties
+    return JSON.parse(JSON.stringify(doc));
+  });
+
+  return toCamelCase(leanLogs) as ILog[];
+}

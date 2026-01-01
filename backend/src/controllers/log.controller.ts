@@ -37,6 +37,10 @@ const idParamSchema = z.object({
   id: z.string().length(24),
 });
 
+const getLatestLogsQuerySchema = z.object({
+  exercise_ids: z.array(z.string().length(24)).optional(),
+});
+
 // query params are in snake_case
 const getLogsQuerySchema = z.object({
   id: z.string().length(24).optional(),
@@ -172,5 +176,20 @@ export async function getLogStats(c: Context) {
   return c.json({
     success: true,
     data: stats,
+  }, StatusCodes.OK);
+}
+
+export async function getLatestLogs(c: Context) {
+  const params = await getLatestLogsQuerySchema.safeParseAsync(c.req.queries());
+
+  if (!params.success) {
+    throw new BadRequestError(params.error);
+  }
+
+  const userId = c.get("user").id;
+  const logs = await logService.getLatestLogsService(userId, params.data.exercise_ids || []);
+  return c.json({
+    success: true,
+    data: logs,
   }, StatusCodes.OK);
 }

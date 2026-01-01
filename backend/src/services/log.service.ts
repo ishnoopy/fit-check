@@ -168,3 +168,7 @@ export async function getExerciseHistoryService(userId: string, exerciseId: stri
 export async function getLogStatsService(userId: string) {
   return await logRepository.getLogStats(userId);
 }
+
+export async function getLatestLogsService(userId: string, exerciseIds: string[]) {
+  return await logRepository.findLatestLogs(userId, exerciseIds);
+}
