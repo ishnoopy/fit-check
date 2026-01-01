@@ -21,6 +21,8 @@ export interface Exercise {
     name: string;
     description?: string;
     notes?: string;
+    restTime?: number;
+    active?: boolean;
     createdAt?: string;
     updatedAt?: string;
 }
