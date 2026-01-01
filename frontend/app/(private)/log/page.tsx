@@ -27,6 +27,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 import { getItemFromLocalStorage } from "@/lib/utils";
 import { Exercise, Log, Workout } from "@/types";
@@ -37,6 +42,7 @@ import {
   AlertCircleIcon,
   CheckCircle2,
   HistoryIcon,
+  InfoIcon,
   PlusIcon,
   XIcon,
 } from "lucide-react";
@@ -417,6 +423,8 @@ export default function LogV2Page() {
               (log: Log) => log.exerciseId?.id === exercise.id
             );
 
+            const isActiveExercise = activeExerciseId === exercise.id;
+
             return (
               <AccordionItem
                 key={exercise.id}
@@ -435,10 +443,39 @@ export default function LogV2Page() {
                     <span
                       className={`flex-1 text-left text-sm ${
                         isLogged ? "font-medium" : ""
-                      }`}
+                      } ${isActiveExercise ? "font-bold text-primary" : ""}`}
                     >
                       {exercise.name}
                     </span>
+                    {exercise.restTime || exercise.notes ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="shrink-0 p-0.5 rounded hover:bg-muted/50 transition-colors cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <InfoIcon className="h-3.5 w-3.5 text-muted-foreground opacity-60" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="left"
+                          sideOffset={6}
+                          className="max-w-[180px] p-1.5 space-y-0.5 text-xs"
+                        >
+                          {exercise.restTime && (
+                            <div className="font-medium leading-tight">
+                              Rest: {exercise.restTime}s
+                            </div>
+                          )}
+                          {exercise.notes && (
+                            <div className="text-muted-foreground/90 leading-snug">
+                              {exercise.notes}
+                            </div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
                     {isLogged && (
                       <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                         Done
