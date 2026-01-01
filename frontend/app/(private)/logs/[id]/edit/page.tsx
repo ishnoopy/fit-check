@@ -66,7 +66,7 @@ type FormValues = z.infer<typeof formSchema>;
 const fetchLog = async (
   logId: string
 ): Promise<{ success: boolean; data: Log }> => {
-  const data = await api.get<{ data: Log[] }>(`/api/logs/query?_id=${logId}`);
+  const data = await api.get<{ data: Log[] }>(`/api/logs?id=${logId}`);
   return { success: true, data: data.data[0] };
 };
 
