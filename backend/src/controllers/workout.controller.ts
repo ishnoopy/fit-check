@@ -13,6 +13,7 @@ const createWorkoutWithExercisesSchema = z.object({
     description: z.string().optional(),
     notes: z.string().optional(),
     restTime: z.number().int().positive(),
+    active: z.boolean().default(true),
   })).min(1, "At least one exercise is required"),
 });
 
