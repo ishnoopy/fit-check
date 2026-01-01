@@ -10,6 +10,7 @@ const createExerciseSchema = z.object({
   description: z.string().optional(),
   notes: z.string().optional(),
   restTime: z.number().int().positive(),
+  active: z.boolean().default(true),
 });
 
 const updateExerciseSchema = z.object({
@@ -17,6 +18,7 @@ const updateExerciseSchema = z.object({
   description: z.string().optional(),
   notes: z.string().optional(),
   restTime: z.number().int().positive().optional(),
+  active: z.boolean().optional(),
 });
 
 const idParamSchema = z.object({

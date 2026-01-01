@@ -16,6 +16,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Form,
   FormControl,
   FormField,
@@ -24,10 +31,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Separator } from "@radix-ui/react-select";
 import {
   QueryFunction,
   useMutation,
@@ -41,6 +48,7 @@ import {
   Dumbbell,
   Edit2,
   Loader2,
+  MoreVertical,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -60,6 +68,7 @@ const exerciseFormSchema = z.object({
     .int({ message: "Rest time must be an integer" })
     .positive({ message: "Rest time must be greater than 0 seconds" })
     .max(600, { message: "Rest time must be less than 600 seconds" }),
+  active: z.boolean().default(true),
 });
 
 type ExerciseFormValues = z.input<typeof exerciseFormSchema>;
@@ -71,6 +80,7 @@ interface Exercise {
   description: string;
   notes: string;
   restTime: number;
+  active: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -164,6 +174,7 @@ export default function WorkoutDetailPage() {
       description: "",
       notes: "",
       restTime: 0,
+      active: true,
     },
   });
 
@@ -226,6 +237,7 @@ export default function WorkoutDetailPage() {
         name: "",
         description: "",
         notes: "",
+        active: true,
       });
     },
     onError: (error) => {
@@ -282,6 +294,7 @@ export default function WorkoutDetailPage() {
       description: exercise.description || "",
       notes: exercise.notes || "",
       restTime: exercise.restTime,
+      active: exercise.active,
     });
   };
 
@@ -294,6 +307,7 @@ export default function WorkoutDetailPage() {
       description: "",
       notes: "",
       restTime: 0,
+      active: true,
     });
   };
 
@@ -306,6 +320,7 @@ export default function WorkoutDetailPage() {
       description: "",
       notes: "",
       restTime: 0,
+      active: true,
     });
     // Then open the dialog
     setIsAddDialogOpen(true);
@@ -437,60 +452,78 @@ export default function WorkoutDetailPage() {
               variants={container}
               initial="hidden"
               animate="show"
-              className="space-y-4"
+              className="space-y-3"
             >
               {workout.exercises.map((exercise, index) => (
                 <Card
                   key={exercise.id}
-                  className="group bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300"
+                  className="group relative overflow-hidden bg-card/40 backdrop-blur-sm border-border/40 hover:border-border/60 hover:shadow-md transition-all duration-200"
                 >
-                  <CardContent className="p-6">
+                  {/* Diagonal Active Stripe */}
+                  {exercise.active && (
+                    <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none">
+                      <div className="absolute top-0 right-0 w-32 h-8 bg-primary/90 text-primary-foreground text-[10px] font-semibold flex items-center justify-center transform rotate-45 translate-x-8 translate-y-4 shadow-sm">
+                        ACTIVE
+                      </div>
+                    </div>
+                  )}
+                  <CardContent className="p-5">
                     <div className="flex items-start gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold shrink-0">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary text-sm font-semibold shrink-0">
                         {index + 1}
                       </div>
-                      <div className="flex-1 space-y-2">
-                        <h4 className="text-lg font-semibold flex items-center gap-2">
+                      <div className="flex-1 space-y-1.5 min-w-0">
+                        <h4 className="text-base font-semibold text-foreground">
                           {exercise.name}
                         </h4>
-                        <span className="text-sm text-muted-foreground flex items-center gap-1">
-                          <span className="text-muted-foreground font-semibold text-xs">
-                            Rest Time:
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>
+                            {exercise.restTime ? `${exercise.restTime}s` : "0s"}{" "}
+                            rest
                           </span>
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          {exercise.restTime ? `${exercise.restTime}s` : "0s"}
-                        </span>
-                        <Separator className="my-2 bg-border/50 h-px" />
+                        </div>
                         {exercise.description && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground/80 leading-relaxed">
                             {exercise.description}
                           </p>
                         )}
                         {exercise.notes && (
-                          <p className="text-xs text-muted-foreground/70 italic">
-                            Notes: {exercise.notes}
+                          <p className="text-xs text-muted-foreground/60 italic leading-relaxed">
+                            {exercise.notes}
                           </p>
                         )}
                       </div>
-                      <div className="flex gap-2 shrink-0">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="rounded-full"
-                          onClick={() => openEditDialog(exercise)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="rounded-full hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => handleDeleteExercise(exercise)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 rounded-lg shrink-0"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem
+                            onClick={() => openEditDialog(exercise)}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteExercise(exercise)}
+                            disabled={deleteMutation.isPending}
+                            variant="destructive"
+                            className="cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardContent>
                 </Card>
@@ -608,6 +641,32 @@ export default function WorkoutDetailPage() {
                           }}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={exerciseForm.control}
+                  name="active"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between rounded-xl border border-border/50 bg-muted/30 p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm font-medium cursor-pointer">
+                            Active Status
+                          </FormLabel>
+                          <p className="text-xs text-muted-foreground">
+                            Exercise will be included in workouts
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            className="data-[state=checked]:bg-primary"
+                          />
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
