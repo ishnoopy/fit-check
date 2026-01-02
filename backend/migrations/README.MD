@@ -6,7 +6,13 @@ This directory contains migration scripts for managing the MongoDB database sche
 
 All commands are to be run from the `backend` directory.
 
-### 1. Initialize (Already Done)
+### 1. Project Initialization (Already Completed)
+
+The initial setup step (already done for this repo) generates the `migrations` directory and the `migrate-mongo-config.js` file:
+
+```sh
+npx migrate-mongo init
+```
 
 Initialization creates the `migrations` directory and config files.
 **Already set up in this repo.**
