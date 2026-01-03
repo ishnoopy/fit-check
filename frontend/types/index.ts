@@ -32,6 +32,7 @@ export interface User {
     firstName?: string;
     lastName?: string;
     email: string;
+    password?: string;
     role: string;
     profileCompleted: boolean;
     age?: number;

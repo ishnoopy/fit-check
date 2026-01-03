@@ -1,24 +1,228 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { api } from "@/lib/api";
+import { User } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Activity,
   Calendar,
+  Edit,
   Mail,
   Ruler,
+  Settings,
   Sparkles,
   Target,
   TrendingUp,
-  User,
   UserIcon,
   Weight,
 } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 import { useUser } from "../../providers";
+
+const profileFormSchema = z.object({
+  firstName: z.string().min(1, { message: "First name is required" }),
+  lastName: z.string().min(1, { message: "Last name is required" }),
+  email: z.string().email().optional(),
+  password: z.string().min(6).optional().or(z.literal("")),
+  age: z.string().optional(),
+  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
+  weight: z.string().optional(),
+  height: z.string().optional(),
+  fitnessGoal: z
+    .enum([
+      "lose_weight",
+      "gain_muscle",
+      "maintain",
+      "improve_endurance",
+      "general_fitness",
+    ])
+    .optional(),
+  activityLevel: z
+    .enum([
+      "sedentary",
+      "lightly_active",
+      "moderately_active",
+      "very_active",
+      "extremely_active",
+    ])
+    .optional(),
+});
+
+const settingsFormSchema = z.object({
+  restDays: z.number().int().nonnegative().optional(),
+});
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type SettingsFormValues = z.infer<typeof settingsFormSchema>;
+
+interface Setting {
+  id?: string;
+  userId: string;
+  settings: {
+    restDays?: number;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+const updateProfile = (values: ProfileFormValues) => {
+  const transformedValues: Partial<User> = {
+    firstName: values.firstName,
+    lastName: values.lastName,
+    age: values.age && values.age !== "" ? Number(values.age) : undefined,
+    weight:
+      values.weight && values.weight !== "" ? Number(values.weight) : undefined,
+    height:
+      values.height && values.height !== "" ? Number(values.height) : undefined,
+    gender: values.gender,
+    fitnessGoal: values.fitnessGoal,
+    activityLevel: values.activityLevel,
+  };
+
+  // Only include password if it's provided and not empty
+  if (values.password && values.password !== "") {
+    transformedValues.password = values.password;
+  }
+
+  return api.put("/api/auth/complete-profile", transformedValues);
+};
+
+const getSettings = () => api.get<{ data: Setting }>("/api/settings");
+const updateSettings = (values: SettingsFormValues) =>
+  api.put("/api/settings", { settings: values });
 
 export default function ProfilePage() {
   const { user } = useUser();
+  const queryClient = useQueryClient();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+
+  const isGoogleUser = user?.authProvider === "google";
+
+  // Fetch settings
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: getSettings,
+    retry: false,
+    select: (data) => data.data,
+  });
+
+  const profileForm = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      email: user?.email || "",
+      password: "",
+      age: user?.age?.toString() || "",
+      gender: user?.gender,
+      weight: user?.weight?.toString() || "",
+      height: user?.height?.toString() || "",
+      fitnessGoal: user?.fitnessGoal,
+      activityLevel: user?.activityLevel,
+    },
+  });
+
+  const settingsForm = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsFormSchema),
+    defaultValues: {
+      restDays: settings?.settings?.restDays || 0,
+    },
+  });
+
+  // Update form when user or settings change
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        password: "",
+        age: user.age?.toString() || "",
+        gender: user.gender,
+        weight: user.weight?.toString() || "",
+        height: user.height?.toString() || "",
+        fitnessGoal: user.fitnessGoal,
+        activityLevel: user.activityLevel,
+      });
+    }
+  }, [user, profileForm]);
+
+  useEffect(() => {
+    if (settings) {
+      settingsForm.reset({
+        restDays: settings.settings?.restDays,
+      });
+    }
+  }, [settings, settingsForm]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      toast.success("Profile updated successfully! ✨");
+      setIsEditDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile"
+      );
+    },
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: updateSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      toast.success("Settings updated successfully! ⚙️");
+      setIsSettingsDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update settings"
+      );
+    },
+  });
+
+  const handleProfileSubmit = (values: ProfileFormValues) => {
+    updateProfileMutation.mutate(values);
+  };
+
+  const handleSettingsSubmit = (values: SettingsFormValues) => {
+    updateSettingsMutation.mutate(values);
+  };
 
   // Helper function to format field labels
   const formatLabel = (key: string) => {
@@ -143,13 +347,23 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </div>
-                  {user?.role && (
-                    <div className="rounded-full bg-primary/10 px-3 py-1.5 shrink-0">
-                      <p className="text-sm font-semibold text-primary capitalize">
-                        {user.role}
-                      </p>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {user?.role && (
+                      <div className="rounded-full bg-primary/10 px-3 py-1.5">
+                        <p className="text-sm font-semibold text-primary capitalize">
+                          {user.role}
+                        </p>
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsEditDialogOpen(true)}
+                      className="shrink-0"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -213,7 +427,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
                     <div className="flex items-center gap-2 mb-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
+                      <UserIcon className="h-4 w-4 text-muted-foreground" />
                       <p className="text-xs font-medium text-muted-foreground">
                         Gender
                       </p>
@@ -287,6 +501,41 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
+          {/* Settings Card */}
+          <motion.div variants={item}>
+            <Card className="border shadow-sm">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Settings className="h-4 w-4 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-base">Settings</h3>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsSettingsDialogOpen(true)}
+                  >
+                    <Edit className="h-3.5 w-3.5 mr-1.5" />
+                    Edit
+                  </Button>
+                </div>
+                <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Rest Days per Week
+                    </p>
+                  </div>
+                  <p className="text-lg font-bold">
+                    {settings?.settings?.restDays ?? "Not set"}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
           {/* Account Information Card */}
           <motion.div variants={item}>
             <Card className="border shadow-sm">
@@ -321,6 +570,324 @@ export default function ProfilePage() {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogDescription>
+              Update your profile information
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...profileForm}>
+            <form
+              onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={profileForm.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name *</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={profileForm.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name *</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={profileForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        disabled={isGoogleUser}
+                        placeholder="your@email.com"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {isGoogleUser && (
+                      <p className="text-xs text-muted-foreground">
+                        Email cannot be changed for Google accounts
+                      </p>
+                    )}
+                  </FormItem>
+                )}
+              />
+
+              {!isGoogleUser && (
+                <FormField
+                  control={profileForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="password"
+                          placeholder="Leave empty to keep current password"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Leave empty to keep your current password
+                      </p>
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={profileForm.control}
+                  name="age"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Age</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" placeholder="Age" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={profileForm.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gender</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value="prefer_not_to_say">
+                            Prefer not to say
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={profileForm.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Weight (kg)</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          step="0.1"
+                          placeholder="Weight"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={profileForm.control}
+                  name="height"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Height (cm)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" placeholder="Height" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={profileForm.control}
+                name="fitnessGoal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fitness Goal</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select fitness goal" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="lose_weight">Lose Weight</SelectItem>
+                        <SelectItem value="gain_muscle">Gain Muscle</SelectItem>
+                        <SelectItem value="maintain">Maintain</SelectItem>
+                        <SelectItem value="improve_endurance">
+                          Improve Endurance
+                        </SelectItem>
+                        <SelectItem value="general_fitness">
+                          General Fitness
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={profileForm.control}
+                name="activityLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Activity Level</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select activity level" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="sedentary">Sedentary</SelectItem>
+                        <SelectItem value="lightly_active">
+                          Lightly Active
+                        </SelectItem>
+                        <SelectItem value="moderately_active">
+                          Moderately Active
+                        </SelectItem>
+                        <SelectItem value="very_active">Very Active</SelectItem>
+                        <SelectItem value="extremely_active">
+                          Extremely Active
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {updateProfileMutation.isPending
+                    ? "Saving..."
+                    : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog
+        open={isSettingsDialogOpen}
+        onOpenChange={setIsSettingsDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogDescription>
+              Customize your workout settings
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...settingsForm}>
+            <form
+              onSubmit={settingsForm.handleSubmit(handleSettingsSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={settingsForm.control}
+                name="restDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rest Days per Week</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min="0"
+                        max="7"
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value)
+                          )
+                        }
+                        placeholder="e.g., 2"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground">
+                      Number of rest days you prefer between workouts (0-7)
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsSettingsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateSettingsMutation.isPending}
+                >
+                  {updateSettingsMutation.isPending ? "Saving..." : "Save"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

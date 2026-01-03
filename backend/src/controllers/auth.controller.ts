@@ -1,8 +1,10 @@
+import { hash } from "bcrypt";
 import type { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { BadRequestError, NotFoundError } from "../lib/errors.js";
+import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
 import * as OAuthService from "../services/oauth.service.js";
 import { loginService, registerService } from "../services/user.service.js";
@@ -132,6 +134,7 @@ export async function completeProfile(c: Context) {
 	const paramsSchema = z.object({
 		firstName: z.string().min(1),
 		lastName: z.string().min(1),
+		password: z.string().min(6).optional(),
 		// Optional fitness fields
 		age: z.number().min(13).max(120).optional(),
 		gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
@@ -154,20 +157,28 @@ export async function completeProfile(c: Context) {
 		throw new NotFoundError("User not found");
 	}
 
+	// Prepare update payload
+	const updatePayload: Partial<IUser> = {
+		firstName: params.data.firstName,
+		lastName: params.data.lastName,
+		age: params.data.age,
+		gender: params.data.gender,
+		weight: params.data.weight,
+		height: params.data.height,
+		fitnessGoal: params.data.fitnessGoal,
+		activityLevel: params.data.activityLevel,
+		profileCompleted: true,
+	};
+
+	// Hash password if provided
+	if (params.data.password) {
+		updatePayload.password = await hash(params.data.password, 10);
+	}
+
 	// Update user profile
 	const updatedUser = await UserRepository.updateUser(
 		user.id,
-		{
-			firstName: params.data.firstName,
-			lastName: params.data.lastName,
-			age: params.data.age,
-			gender: params.data.gender,
-			weight: params.data.weight,
-			height: params.data.height,
-			fitnessGoal: params.data.fitnessGoal,
-			activityLevel: params.data.activityLevel,
-			profileCompleted: true,
-		},
+		updatePayload,
 	);
 
 	if (!updatedUser) {
