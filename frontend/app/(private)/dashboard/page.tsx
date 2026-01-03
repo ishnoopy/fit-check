@@ -29,7 +29,7 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-export default function Home() {
+export default function DashboardPage() {
   const { user } = useUser();
   const router = useRouter();
   const dayName = getDayName(new Date().getDay());

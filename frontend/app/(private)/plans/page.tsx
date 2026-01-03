@@ -97,7 +97,7 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-export default function Plans() {
+export default function PlansPage() {
   const { activePlanId, setActivePlanId } = useGeneral();
   const router = useRouter();
   const queryClient = useQueryClient();

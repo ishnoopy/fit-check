@@ -106,7 +106,7 @@ const DEFAULT_SETS = [
   },
 ];
 
-export default function LogV2Page() {
+export default function LogPage() {
   const queryClient = useQueryClient();
   const [activePlanId] = useState<string>(
     getItemFromLocalStorage("activePlanId") || ""
