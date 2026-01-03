@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { FieldErrors, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -107,6 +107,7 @@ const DEFAULT_SETS = [
 ];
 
 export default function LogV2Page() {
+  const queryClient = useQueryClient();
   const [activePlanId] = useState<string>(
     getItemFromLocalStorage("activePlanId") || ""
   );
@@ -116,11 +117,6 @@ export default function LogV2Page() {
   const [activeExerciseId, setActiveExerciseId] = useState<string>(
     getItemFromLocalStorage("activeExerciseId") || ""
   );
-
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -141,23 +137,35 @@ export default function LogV2Page() {
     );
   };
 
-  const { data: workoutsData } = useQuery({
+  const { data: workouts } = useQuery({
     queryKey: ["workouts", activePlanId],
     queryFn: getWorkouts,
     enabled: !!activePlanId,
+    select: (data) => data.data,
   });
 
-  const workouts = workoutsData?.data;
   const activeExercises =
     workouts
       ?.find((workout: Workout) => workout.id === activeWorkoutId)
       ?.exercises.filter((exercise: Exercise) => exercise.active) || [];
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
 
   const getTodayLogs = async () => {
     return api.get<{ data: Log[] }>(
       `/api/logs?plan_id=${activePlanId}&workout_id=${activeWorkoutId}&start_date=${startOfDay.toISOString()}&end_date=${endOfDay.toISOString()}`
     );
   };
+
+  const { data: todayLogs } = useQuery({
+    queryKey: ["todayLogs", activePlanId, activeWorkoutId],
+    queryFn: getTodayLogs,
+    enabled: !!activePlanId && !!activeWorkoutId,
+    select: (data) => data.data,
+  });
 
   const getLatestLogs = async () => {
     return api.get<{ data: Log[] }>(
@@ -167,26 +175,16 @@ export default function LogV2Page() {
     );
   };
 
-  const { data: latestLogsData } = useQuery({
+  const { data: latestLogs } = useQuery({
     queryKey: ["latestLogs", activePlanId, activeWorkoutId],
     queryFn: getLatestLogs,
     enabled: !!activePlanId && !!activeWorkoutId && activeExercises.length > 0,
+    select: (data) => data.data,
   });
 
-  const latestLogs = latestLogsData?.data;
-
-  const { data: todayLogsData } = useQuery({
-    queryKey: ["todayLogs", activePlanId, activeWorkoutId],
-    queryFn: getTodayLogs,
-    enabled: !!activePlanId && !!activeWorkoutId,
-  });
-
-  const todayLogs = todayLogsData?.data;
   const progress = todayLogs
     ? Math.round((todayLogs.length / activeExercises.length) * 100)
     : 0;
-
-  const queryClient = useQueryClient();
 
   const createLogMutation = useMutation({
     mutationFn: createLog,
@@ -225,7 +223,7 @@ export default function LogV2Page() {
     localStorage.setItem("activeWorkoutId", value);
   };
 
-  // save form draft to local storage on change
+  // Save form draft to local storage on change
   const formVal = form.watch();
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -283,7 +281,7 @@ export default function LogV2Page() {
       (log: Log) => log.exerciseId?.id === activeExerciseId
     );
 
-    // Update form with log data if available, otherwise use defaults
+    // Update form with log data if available
     if (logData) {
       form.setValue("exerciseId", activeExerciseId);
       form.setValue("planId", activePlanId || "");
@@ -338,15 +336,11 @@ export default function LogV2Page() {
   const onSubmit = (values: FormValues) => {
     const payload = {
       ...values,
-      planId: activePlanId || "",
-      workoutId: activeWorkoutId || "",
-      exerciseId: activeExerciseId || "",
+      planId: activePlanId,
+      workoutId: activeWorkoutId,
+      exerciseId: activeExerciseId,
     };
     createLogMutation.mutate(payload);
-  };
-
-  const onError = (errors: FieldErrors<FormValues>) => {
-    console.log(errors);
   };
 
   if (activePlanId === "") {
@@ -502,7 +496,7 @@ export default function LogV2Page() {
                           <DialogHeader>
                             <DialogTitle className="text-sm font-medium flex items-center gap-2">
                               <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                              Exercise Info
+                              {exercise.name}
                             </DialogTitle>
                             <DialogDescription className="sr-only">
                               {exercise.restTime &&
@@ -628,7 +622,7 @@ export default function LogV2Page() {
                     <Form {...form} key={exercise.id}>
                       <fieldset disabled={isLogged} className="space-y-2.5">
                         <form
-                          onSubmit={form.handleSubmit(onSubmit, onError)}
+                          onSubmit={form.handleSubmit(onSubmit)}
                           className="space-y-2.5"
                         >
                           <FormField
