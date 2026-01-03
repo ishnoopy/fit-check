@@ -27,11 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 import { getItemFromLocalStorage } from "@/lib/utils";
 import { Exercise, Log, Workout } from "@/types";
@@ -51,6 +46,15 @@ import { useEffect, useRef, useState } from "react";
 import { FieldErrors, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const formSchema = z.object({
   planId: z.string().min(1, { message: "Plan is required" }),
@@ -447,40 +451,66 @@ export default function LogV2Page() {
                     >
                       {exercise.name}
                     </span>
-                    {exercise.restTime || exercise.notes ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="shrink-0 p-0.5 rounded hover:bg-muted/50 transition-colors cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <InfoIcon className="h-3.5 w-3.5 text-muted-foreground opacity-60" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="left"
-                          sideOffset={6}
-                          className="max-w-[180px] p-1.5 space-y-0.5 text-xs"
-                        >
-                          {exercise.restTime && (
-                            <div className="font-medium leading-tight">
-                              Rest: {exercise.restTime}s
-                            </div>
-                          )}
-                          {exercise.notes && (
-                            <div className="text-muted-foreground/90 leading-snug">
-                              {exercise.notes}
-                            </div>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : null}
                     {isLogged && (
                       <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                         Done
                       </span>
                     )}
+                    {exercise.restTime || exercise.notes ? (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <span
+                            className="shrink-0 p-0.5 rounded hover:bg-muted/50 transition-colors cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <InfoIcon className="h-3.5 w-3.5 text-muted-foreground opacity-60" />
+                          </span>
+                        </DialogTrigger>
+                        <DialogContent
+                          className="max-w-[280px] p-4 space-y-2 text-xs"
+                          showCloseButton={true}
+                          onInteractOutside={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onPointerDownOutside={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onEscapeKeyDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onCloseClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onOverlayClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          <DialogHeader>
+                            <DialogTitle className="text-sm font-medium flex items-center gap-2">
+                              <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                              Exercise Info
+                            </DialogTitle>
+                            <DialogDescription className="sr-only">
+                              {exercise.restTime &&
+                                `Rest time: ${exercise.restTime} seconds. `}
+                              {exercise.notes && `Notes: ${exercise.notes}`}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-2">
+                            {exercise.restTime && (
+                              <div className="font-medium leading-tight">
+                                Rest: {exercise.restTime}s
+                              </div>
+                            )}
+                            {exercise.notes && (
+                              <div className="text-muted-foreground/90 leading-snug">
+                                {exercise.notes}
+                              </div>
+                            )}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    ) : null}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-3 py-3 space-y-2.5">
