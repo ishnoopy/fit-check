@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
-import { User } from "@/types";
+import { IUser } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -98,7 +98,7 @@ interface Setting {
 }
 
 const updateProfile = (values: ProfileFormValues) => {
-  const transformedValues: Partial<User> = {
+  const transformedValues: Partial<IUser> = {
     firstName: values.firstName,
     lastName: values.lastName,
     age: values.age && values.age !== "" ? Number(values.age) : undefined,

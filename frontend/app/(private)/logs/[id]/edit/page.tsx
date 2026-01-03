@@ -29,7 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { Log } from "@/types";
+import { ILog } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -63,11 +63,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const fetchLog = async (
-  logId: string
-): Promise<{ success: boolean; data: Log }> => {
-  const data = await api.get<{ data: Log[] }>(`/api/logs?id=${logId}`);
-  return { success: true, data: data.data[0] };
+const fetchLog = async (logId: string) => {
+  return api.get<{ data: ILog[] }>(`/api/logs?id=${logId}`);
 };
 
 const updateLog = async ({
@@ -99,13 +96,17 @@ export default function EditLogPage() {
     },
   });
 
-  const { data, isLoading, error } = useQuery({
+  const {
+    data: log,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["log", logId],
     queryFn: () => fetchLog(logId),
     enabled: !!logId,
+    select: (data) => data.data[0],
   });
 
-  const log = data?.data;
   useEffect(() => {
     if (log) {
       form.reset({

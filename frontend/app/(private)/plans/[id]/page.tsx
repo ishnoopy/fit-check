@@ -33,7 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
-import { Plan, Workout } from "@/types";
+import { IPlan, IWorkout } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   MutationFunction,
@@ -122,12 +122,14 @@ export default function PlanDetailPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [nextStepsDialogOpen, setNextStepsDialogOpen] = useState(false);
   const [isEditWorkoutOpen, setIsEditWorkoutOpen] = useState(false);
-  const [workoutToEdit, setWorkoutToEdit] = useState<Workout | null>(null);
+  const [workoutToEdit, setWorkoutToEdit] = useState<IWorkout | null>(null);
 
   // Delete Dialog State
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteType, setDeleteType] = useState<"plan" | "workout">("plan");
-  const [itemToDelete, setItemToDelete] = useState<Workout | Plan | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<IWorkout | IPlan | null>(
+    null
+  );
 
   // Edit Plan Dialog State
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -158,7 +160,7 @@ export default function PlanDetailPage() {
     },
   });
 
-  const getPlan: QueryFunction<{ data: Plan }> = () =>
+  const getPlan: QueryFunction<{ data: IPlan }> = () =>
     api.get(`/api/plans/${id}`);
 
   const { data, isLoading, error } = useQuery({
@@ -180,7 +182,7 @@ export default function PlanDetailPage() {
   }, [plan]);
 
   const updatePlan: MutationFunction<
-    { data: Plan },
+    { data: IPlan },
     { title?: string; description?: string }
   > = (values) => {
     return api.patch(`/api/plans/${id}`, {
@@ -203,7 +205,7 @@ export default function PlanDetailPage() {
   });
 
   const createWorkoutWithExercises: MutationFunction<
-    { data: Workout },
+    { data: IWorkout },
     AddWorkoutFormValues
   > = (values) => {
     return api.post("/api/workouts/with-exercises", {
@@ -234,7 +236,7 @@ export default function PlanDetailPage() {
   });
 
   const updateWorkout: MutationFunction<
-    { data: Workout },
+    { data: IWorkout },
     EditWorkoutFormValues & { workoutId: string }
   > = (values) => {
     return api.patch(`/api/workouts/${values.workoutId}`, values);
@@ -350,14 +352,17 @@ export default function PlanDetailPage() {
     }
   };
 
-  const openEditWorkoutDialog = (workout: Workout) => {
+  const openEditWorkoutDialog = (workout: IWorkout) => {
     setWorkoutToEdit(workout);
     editWorkoutForm.setValue("title", workout.title);
     editWorkoutForm.setValue("description", workout.description || "");
     setIsEditWorkoutOpen(true);
   };
 
-  const openDeleteDialog = (type: "plan" | "workout", item: Workout | Plan) => {
+  const openDeleteDialog = (
+    type: "plan" | "workout",
+    item: IWorkout | IPlan
+  ) => {
     setDeleteType(type);
     setItemToDelete(item);
     setDeleteDialogOpen(true);

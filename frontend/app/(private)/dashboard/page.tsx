@@ -7,7 +7,7 @@ import { ProfileCompletionDialog } from "@/components/ProfileCompletionDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getDayName } from "@/lib/store";
-import { LogStats } from "@/types";
+import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { CalendarPlus, Flame, Target, TrendingUp } from "lucide-react";
@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const dayName = getDayName(new Date().getDay());
 
   const getStats = async () => {
-    return api.get<{ data: LogStats }>("/api/logs/stats");
+    return api.get<{ data: ILogStats }>("/api/logs/stats");
   };
 
   const { data: statsData } = useQuery({

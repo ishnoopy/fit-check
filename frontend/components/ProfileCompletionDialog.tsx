@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
-import type { User } from "@/types";
+import type { IUser } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -88,7 +88,7 @@ export function ProfileCompletionDialog({
 }: ProfileCompletionDialogProps) {
   const queryClient = useQueryClient();
   const [isCompleted, setIsCompleted] = useState(false);
-  const { data: user } = useQuery<{ data: User }>({
+  const { data: user } = useQuery<{ data: IUser }>({
     queryKey: ["user"],
     queryFn: () => api.get("/api/auth/me"),
   });

@@ -1,22 +1,22 @@
-export interface Plan {
+export interface IPlan {
     id: string;
     title: string;
     description?: string;
     updatedAt: string;
-    workouts: Workout[];
+    workouts: IWorkout[];
 }
 
-export interface Workout {
+export interface IWorkout {
     id: string;
     title: string;
     description?: string;
     createdAt: string;
     updatedAt: string;
-    exercises: Exercise[];
+    exercises: IExercise[];
 }
 
 
-export interface Exercise {
+export interface IExercise {
     id: string;
     name: string;
     description?: string;
@@ -27,7 +27,7 @@ export interface Exercise {
     updatedAt?: string;
 }
 
-export interface User {
+export interface IUser {
     id: string;
     firstName?: string;
     lastName?: string;
@@ -45,29 +45,29 @@ export interface User {
     updatedAt?: string;
 }
 
-export interface SetData {
+export interface ISetData {
     setNumber: number;
     reps: number;
     weight: number;
     notes?: string;
 }
 
-export interface Log {
+export interface ILog {
     id: string;
     userId: string;
-    sets: SetData[];
+    sets: ISetData[];
     workoutDate: string;
     durationMinutes?: number;
     notes?: string;
     createdAt: string;
     updatedAt: string;
     // Populated fields (from backend join)
-    exerciseId?: Exercise;
-    workoutId?: Workout;
-    planId?: Plan;
+    exerciseId?: IExercise;
+    workoutId?: IWorkout;
+    planId?: IPlan;
 }
 
-export interface LogStats {
+export interface ILogStats {
     totalLogs: number;
     exercisesToday: number;
     exercisesThisWeek: number;

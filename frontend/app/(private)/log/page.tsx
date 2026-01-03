@@ -29,7 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { getItemFromLocalStorage } from "@/lib/utils";
-import { Exercise, Log, Workout } from "@/types";
+import { ILog, IWorkout } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -132,7 +132,7 @@ export default function LogPage() {
   });
 
   const getWorkouts = async () => {
-    return api.get<{ data: Workout[] }>(
+    return api.get<{ data: IWorkout[] }>(
       `/api/workouts?plan_id=${activePlanId}`
     );
   };
@@ -146,8 +146,8 @@ export default function LogPage() {
 
   const activeExercisesList =
     workouts
-      ?.find((workout: Workout) => workout.id === activeWorkoutId)
-      ?.exercises.filter((exercise: Exercise) => exercise.active) || [];
+      ?.find((workout) => workout.id === activeWorkoutId)
+      ?.exercises.filter((exercise) => exercise.active) || [];
 
   const today = new Date();
   const startOfDay = new Date(
@@ -158,7 +158,7 @@ export default function LogPage() {
   );
 
   const getTodayLogs = async () => {
-    return api.get<{ data: Log[] }>(
+    return api.get<{ data: ILog[] }>(
       `/api/logs?plan_id=${activePlanId}&workout_id=${activeWorkoutId}&start_date=${startOfDay.toISOString()}&end_date=${endOfDay.toISOString()}`
     );
   };
@@ -171,9 +171,9 @@ export default function LogPage() {
   });
 
   const getLatestLogs = async () => {
-    return api.get<{ data: Log[] }>(
+    return api.get<{ data: ILog[] }>(
       `/api/logs/latest?${activeExercisesList
-        .map((exercise: Exercise) => `exercise_ids=${exercise.id}`)
+        .map((exercise) => `exercise_ids=${exercise.id}`)
         .join("&")}`
     );
   };
@@ -268,7 +268,7 @@ export default function LogPage() {
 
     // Find log data for the current exercise
     const todayLogForExercise = todayLogs?.find(
-      (log: Log) => log.exerciseId?.id === activeExerciseId
+      (log) => log.exerciseId?.id === activeExerciseId
     );
 
     const draftFormData = (() => {
@@ -284,7 +284,7 @@ export default function LogPage() {
     })();
 
     const previousLogForExercise = latestLogs?.find(
-      (log: Log) => log.exerciseId?.id === activeExerciseId
+      (log) => log.exerciseId?.id === activeExerciseId
     );
 
     // Update form with log data if available
@@ -434,17 +434,17 @@ export default function LogPage() {
             setActiveExerciseId("");
           }}
         >
-          {activeExercisesList.map((exercise: Exercise) => {
+          {activeExercisesList.map((exercise) => {
             const isLogged = todayLogs?.some(
-              (log: Log) => log.exerciseId?.id === exercise.id
+              (log) => log.exerciseId?.id === exercise.id
             );
 
             const logData = todayLogs?.find(
-              (log: Log) => log.exerciseId?.id === exercise.id
+              (log) => log.exerciseId?.id === exercise.id
             );
 
             const latestExerciseLog = latestLogs?.find(
-              (log: Log) => log.exerciseId?.id === exercise.id
+              (log) => log.exerciseId?.id === exercise.id
             );
 
             const isActiveExercise = activeExerciseId === exercise.id;

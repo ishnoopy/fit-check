@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
-import { LogStats } from "@/types";
+import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -20,18 +20,23 @@ import { useRouter } from "next/navigation";
 export default function StatsPage() {
   const router = useRouter();
   const getStats = async () => {
-    return api.get<{ data: LogStats }>("/api/logs/stats");
+    return api.get<{ data: ILogStats }>("/api/logs/stats");
   };
 
-  const { data: statsData, isLoading } = useQuery({
+  const {
+    data: statsData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["stats"],
     queryFn: getStats,
+    select: (data) => data.data,
   });
 
-  const totalLogs = statsData?.data?.totalLogs || 0;
-  const exercisesThisWeek = statsData?.data?.exercisesThisWeek || 0;
-  const datesWithWorkouts = statsData?.data?.datesWithWorkouts || [];
-  const streak = statsData?.data?.streak || 0;
+  const totalLogs = statsData?.totalLogs || 0;
+  const exercisesThisWeek = statsData?.exercisesThisWeek || 0;
+  const datesWithWorkouts = statsData?.datesWithWorkouts || [];
+  const streak = statsData?.streak || 0;
 
   const stats = [
     {
@@ -86,7 +91,7 @@ export default function StatsPage() {
     );
   }
 
-  if (totalLogs === 0) {
+  if (statsData && totalLogs === 0) {
     return (
       <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto">
@@ -106,6 +111,10 @@ export default function StatsPage() {
         </div>
       </div>
     );
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
   }
 
   return (
