@@ -7,13 +7,8 @@ import * as planRepository from "../repositories/plan.repository.js";
 import * as workoutRepository from "../repositories/workout.repository.js";
 import * as exerciseService from "./exercise.service.js";
 
-export async function getAllWorkoutsService(userId: string, planId?: string) {
-  const filter: FilterQuery<IWorkout> = { userId };
-
-  if (planId) {
-    filter.planId = planId;
-  }
-
+export async function getAllWorkoutsService(userId: string, filters?: { planId?: string, active?: boolean }) {
+  const filter: FilterQuery<IWorkout> = { userId, ...filters };
   return await workoutRepository.findAll(filter);
 }
 

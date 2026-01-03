@@ -35,11 +35,20 @@ const idParamSchema = z.object({
   id: z.string().min(24).max(24),
 });
 
+const getWorkoutsQuerySchema = z.object({
+  plan_id: z.string().min(24).max(24).optional(),
+  active: z.string().transform((val) => val === "true").optional(),
+});
+
 export async function getWorkouts(c: Context) {
   const userId = c.get("user").id;
-  const planId = c.req.query("plan_id");
+  const query = await getWorkoutsQuerySchema.safeParseAsync(c.req.query());
 
-  const workouts = await workoutService.getAllWorkoutsService(userId, planId);
+  if (!query.success) {
+    throw new BadRequestError(query.error);
+  }
+
+  const workouts = await workoutService.getAllWorkoutsService(userId, query.data);
 
   return c.json({
     success: true,
