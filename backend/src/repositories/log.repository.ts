@@ -176,8 +176,11 @@ export async function getLogStats(userId: string) {
   );
 
   // Calculate streak with rest days buffer
-  // Streak continues as long as there's a workout within restDaysBuffer days
-  // We track how many buffer days were consumed to maintain the streak
+  // Logic:
+  // 1. Get all unique dates with workouts
+  // 2. Get the most recent workout date. If gap between today and most recent workout > restDaysBuffer, streak is over
+  // 3. Arrange workout dates in chronological order (oldest to newest)
+  // 4. If gap between 2 consecutive dates > restDaysBuffer, exclude those earlier dates from the set
 
   // If no workouts, return early
   if (uniqueDates.length === 0) {
@@ -193,11 +196,13 @@ export async function getLogStats(userId: string) {
   }
 
   // Get the most recent workout date
-  const mostRecentWorkoutDate = uniqueDates.length > 0
-    ? new Date(Math.max(...uniqueDates.map(date => new Date(date).getTime())))
-    : null;
+  const mostRecentWorkoutDate = new Date(Math.max(...uniqueDates.map(date => new Date(date).getTime())));
+  mostRecentWorkoutDate.setUTCHours(0, 0, 0, 0);
 
-  if (!mostRecentWorkoutDate) {
+  // Check if gap between today and most recent workout is greater than restDaysBuffer
+  const daysSinceLastWorkout = getDaysDifference(today, mostRecentWorkoutDate);
+  if (daysSinceLastWorkout > restDaysBuffer) {
+    // Streak is broken
     return {
       totalLogs,
       exercisesToday,
@@ -209,103 +214,78 @@ export async function getLogStats(userId: string) {
     };
   }
 
-  mostRecentWorkoutDate.setUTCHours(0, 0, 0, 0);
+  // Arrange workout dates in chronological order (oldest to newest)
+  const sortedDates = uniqueDates
+    .map(date => {
+      const d = new Date(date);
+      d.setUTCHours(0, 0, 0, 0);
+      return d;
+    })
+    .sort((a, b) => a.getTime() - b.getTime());
 
-  // Create a Set for O(1) lookup of workout dates
-  const workoutDatesSet = new Set(uniqueDates.map(date => {
-    const d = new Date(date);
-    d.setUTCHours(0, 0, 0, 0);
-    return d.getTime();
-  }));
+  // Filter out dates where gap between consecutive dates > restDaysBuffer
+  // Start from the most recent date and work backwards
+  const validStreakDates: Date[] = [];
 
-  // Check if today has a workout
-  const hasWorkoutToday = workoutDatesSet.has(today.getTime());
+  // Start with the most recent date
+  validStreakDates.push(new Date(sortedDates[sortedDates.length - 1]));
 
-  // Calculate days since most recent workout
-  const daysSinceLastWorkout = getDaysDifference(today, mostRecentWorkoutDate);
+  // Work backwards through sorted dates
+  for (let i = sortedDates.length - 2; i >= 0; i--) {
+    const currentDate = sortedDates[i];
+    const previousValidDate = validStreakDates[0]; // Most recent valid date
 
-  // Initialize streak and buffer
-  let streak = 0;
-  let bufferDaysUsed = 0;
+    const gap = getDaysDifference(previousValidDate, currentDate);
 
-  // Start counting from today, working backwards
-  let currentDate = new Date(today);
-  let lastWorkoutSeen: Date | null = null;
-
-  // If today has no workout, check if we can use buffer
-  if (!hasWorkoutToday) {
-    if (daysSinceLastWorkout <= restDaysBuffer && daysSinceLastWorkout > 0) {
-      // Use buffer to include today
-      bufferDaysUsed += daysSinceLastWorkout;
-      streak += daysSinceLastWorkout;
-      lastWorkoutSeen = new Date(mostRecentWorkoutDate);
+    if (gap <= restDaysBuffer) {
+      // Gap is within buffer - include this date in streak
+      validStreakDates.unshift(new Date(currentDate));
     } else {
-      // Gap too large, streak is broken
-      return {
-        totalLogs,
-        exercisesToday,
-        exercisesThisWeek,
-        datesWithWorkouts,
-        streak: 0,
-        bufferDaysUsed: 0,
-        restDaysBuffer,
-      };
+      // Gap exceeds buffer - exclude this and all earlier dates
+      break;
     }
-  } else {
-    // Today has workout
-    streak = 1;
-    lastWorkoutSeen = new Date(today);
   }
 
-  // Now count backwards day by day
-  currentDate.setDate(currentDate.getDate() - 1);
+  // Calculate streak including restDaysBuffer
+  // Streak = number of consecutive days from oldest valid workout to most recent (or today if within buffer)
+  const oldestValidDate = validStreakDates[0];
+  const mostRecentValidDate = validStreakDates[validStreakDates.length - 1];
 
-  while (true) {
-    // Stop if we've gone too far back
-    const daysBack = getDaysDifference(today, currentDate);
-    if (daysBack > 365) {
-      break;
-    }
+  // Check if today has a workout
+  const hasWorkoutToday = validStreakDates.some(date => isSameDate(date, today));
 
-    const currentTimestamp = currentDate.getTime();
-    const hasWorkout = workoutDatesSet.has(currentTimestamp);
-
-    if (hasWorkout) {
-      // Found a workout
-      if (lastWorkoutSeen) {
-        // Check gap from last workout we saw
-        const gap = getDaysDifference(lastWorkoutSeen, currentDate);
-
-        if (gap <= restDaysBuffer) {
-          // Gap is within buffer - streak continues
-          streak++;
-          // Add buffer days used for the gap (if any days between workouts)
-          if (gap > 1) {
-            bufferDaysUsed += gap - 1; // gap - 1 because workout days don't count as buffer
-          }
-          lastWorkoutSeen = new Date(currentDate);
-        } else {
-          // Gap exceeds buffer - streak broken
-          break;
-        }
-      } else {
-        // First workout we're counting
-        streak++;
-        lastWorkoutSeen = new Date(currentDate);
-      }
+  // Determine the end date for streak calculation
+  let streakEndDate: Date;
+  if (hasWorkoutToday) {
+    streakEndDate = new Date(today);
+  } else {
+    // If today has no workout, check if we can include today using buffer
+    const gapToToday = getDaysDifference(today, mostRecentValidDate);
+    if (gapToToday <= restDaysBuffer) {
+      streakEndDate = new Date(today);
     } else {
-      // No workout on this day
-      // We'll check the gap when we find the next workout
-      // For now, just continue backwards
+      streakEndDate = new Date(mostRecentValidDate);
     }
+  }
 
-    currentDate.setDate(currentDate.getDate() - 1);
+  // Calculate streak as total days from oldest to end date (inclusive)
+  const streak = getDaysDifference(streakEndDate, oldestValidDate) + 1;
 
-    // Stop if we've gone past the earliest workout date
-    const earliestWorkoutDate = new Date(Math.min(...uniqueDates.map(date => new Date(date).getTime())));
-    earliestWorkoutDate.setUTCHours(0, 0, 0, 0);
-    if (currentDate < earliestWorkoutDate) {
-      break;
+  // Calculate buffer days used (sum of gaps between consecutive dates)
+  let bufferDaysUsed = 0;
+  for (let i = 1; i < validStreakDates.length; i++) {
+    const gap = getDaysDifference(validStreakDates[i], validStreakDates[i - 1]);
+    if (gap > 1) {
+      // gap - 1 because workout days don't count as buffer
+      bufferDaysUsed += gap - 1;
+    }
+  }
+
+  // Also account for gap from most recent workout to today (if today has no workout)
+  if (!hasWorkoutToday && streak > 0) {
+    const gapToToday = getDaysDifference(today, mostRecentValidDate);
+    if (gapToToday > 0 && gapToToday <= restDaysBuffer) {
+      bufferDaysUsed += gapToToday;
     }
   }
 
