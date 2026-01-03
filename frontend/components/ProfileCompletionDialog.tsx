@@ -61,11 +61,12 @@ const formSchema = z.object({
       "extremely_active",
     ])
     .optional(),
+  restDays: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const completeProfile = (values: FormValues) => {
+const completeProfile = async (values: FormValues) => {
   // Transform string fields to numbers
   const transformedValues = {
     ...values,
@@ -76,7 +77,23 @@ const completeProfile = (values: FormValues) => {
       values.height && values.height !== "" ? Number(values.height) : undefined,
   };
 
-  return api.put("/api/auth/complete-profile", transformedValues);
+  // Remove restDays from profile update
+  const { restDays, ...profileData } = transformedValues;
+
+  // Complete profile first
+  await api.put("/api/auth/complete-profile", profileData);
+
+  // Then create/update settings if restDays is provided
+  if (restDays && restDays !== "") {
+    const restDaysNumber = Number(restDays);
+    if (!isNaN(restDaysNumber) && restDaysNumber >= 0) {
+      await api.put("/api/settings", {
+        settings: {
+          restDays: restDaysNumber,
+        },
+      });
+    }
+  }
 };
 
 interface ProfileCompletionDialogProps {
@@ -104,6 +121,7 @@ export function ProfileCompletionDialog({
       height: "",
       fitnessGoal: undefined,
       activityLevel: undefined,
+      restDays: "",
     },
   });
 
@@ -114,6 +132,8 @@ export function ProfileCompletionDialog({
       setIsCompleted(true);
 
       queryClient.invalidateQueries({ queryKey: ["user"] });
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
       toast.success("Profile completed successfully! Welcome to FitCheck! 🎉");
     },
     onError: (error) => {
@@ -389,6 +409,50 @@ export function ProfileCompletionDialog({
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
+
+            {/* Settings */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="space-y-4"
+            >
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold">
+                  4
+                </span>
+                Workout Settings
+              </h3>
+              <FormDescription>
+                Optional - customize your workout preferences
+              </FormDescription>
+
+              <FormField
+                control={form.control}
+                name="restDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rest Days per Week</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="7"
+                        placeholder="e.g., 2"
+                        className="h-11"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Number of rest days you prefer between workouts (0-7)
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
