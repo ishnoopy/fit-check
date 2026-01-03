@@ -144,15 +144,18 @@ export default function LogV2Page() {
     select: (data) => data.data,
   });
 
-  const activeExercises =
+  const activeExercisesList =
     workouts
       ?.find((workout: Workout) => workout.id === activeWorkoutId)
       ?.exercises.filter((exercise: Exercise) => exercise.active) || [];
 
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  const today = new Date();
+  const startOfDay = new Date(
+    today.toISOString().split("T")[0] + "T00:00:00.000Z"
+  );
+  const endOfDay = new Date(
+    today.toISOString().split("T")[0] + "T23:59:59.999Z"
+  );
 
   const getTodayLogs = async () => {
     return api.get<{ data: Log[] }>(
@@ -169,7 +172,7 @@ export default function LogV2Page() {
 
   const getLatestLogs = async () => {
     return api.get<{ data: Log[] }>(
-      `/api/logs/latest?${activeExercises
+      `/api/logs/latest?${activeExercisesList
         .map((exercise: Exercise) => `exercise_ids=${exercise.id}`)
         .join("&")}`
     );
@@ -178,12 +181,13 @@ export default function LogV2Page() {
   const { data: latestLogs } = useQuery({
     queryKey: ["latestLogs", activePlanId, activeWorkoutId],
     queryFn: getLatestLogs,
-    enabled: !!activePlanId && !!activeWorkoutId && activeExercises.length > 0,
+    enabled:
+      !!activePlanId && !!activeWorkoutId && activeExercisesList.length > 0,
     select: (data) => data.data,
   });
 
   const progress = todayLogs
-    ? Math.round((todayLogs.length / activeExercises.length) * 100)
+    ? Math.round((todayLogs.length / activeExercisesList.length) * 100)
     : 0;
 
   const createLogMutation = useMutation({
@@ -224,9 +228,11 @@ export default function LogV2Page() {
   };
 
   // Save form draft to local storage on change
-  const formVal = form.watch();
+  const formValues = form.watch();
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    const DRAFT_SAVE_DELAY_MS = 800;
+
     if (saveTimeout.current) {
       clearTimeout(saveTimeout.current);
     }
@@ -238,7 +244,7 @@ export default function LogV2Page() {
         const draftDocumentCollection = getItemFromLocalStorage("logFormDrafts")
           ? JSON.parse(getItemFromLocalStorage("logFormDrafts") || "")
           : {};
-        const draftData = formVal;
+        const draftData = formValues;
         draftDocumentCollection[activeExerciseId] = draftData;
         localStorage.setItem(
           "logFormDrafts",
@@ -247,25 +253,25 @@ export default function LogV2Page() {
       } catch (error) {
         console.log("Failed to save draft: ", error);
       }
-    }, 800);
+    }, DRAFT_SAVE_DELAY_MS);
 
     return () => {
       if (saveTimeout.current) {
         clearTimeout(saveTimeout.current);
       }
     };
-  }, [formVal, form]);
+  }, [formValues, form]);
 
   // Update form values when exercise changes or when log data is available for the day.
   useEffect(() => {
     if (!activeExerciseId) return;
 
     // Find log data for the current exercise
-    const logData = todayLogs?.find(
+    const todayLogForExercise = todayLogs?.find(
       (log: Log) => log.exerciseId?.id === activeExerciseId
     );
 
-    const draftLogData = (() => {
+    const draftFormData = (() => {
       try {
         const draftDocumentCollection = getItemFromLocalStorage("logFormDrafts")
           ? JSON.parse(getItemFromLocalStorage("logFormDrafts") || "")
@@ -277,49 +283,55 @@ export default function LogV2Page() {
       }
     })();
 
-    const previousLogData = latestLogs?.find(
+    const previousLogForExercise = latestLogs?.find(
       (log: Log) => log.exerciseId?.id === activeExerciseId
     );
 
     // Update form with log data if available
-    if (logData) {
+    if (todayLogForExercise) {
       form.setValue("exerciseId", activeExerciseId);
       form.setValue("planId", activePlanId || "");
       form.setValue("workoutId", activeWorkoutId || "");
-      form.setValue("sets", logData.sets || DEFAULT_SETS);
-      form.setValue("durationMinutes", logData.durationMinutes || 0);
-      form.setValue("notes", logData.notes || "");
-      if (logData.workoutDate) {
-        form.setValue("workoutDate", logData.workoutDate);
+      form.setValue("sets", todayLogForExercise.sets || DEFAULT_SETS);
+      form.setValue(
+        "durationMinutes",
+        todayLogForExercise.durationMinutes || 0
+      );
+      form.setValue("notes", todayLogForExercise.notes || "");
+      if (todayLogForExercise.workoutDate) {
+        form.setValue("workoutDate", todayLogForExercise.workoutDate);
       }
-    } else if (draftLogData) {
+    } else if (draftFormData) {
       // Load draft data if available for the active exercise
-      form.setValue("exerciseId", draftLogData.exerciseId);
-      form.setValue("planId", draftLogData.planId);
-      form.setValue("workoutId", draftLogData.workoutId);
-      form.setValue("sets", draftLogData.sets || DEFAULT_SETS);
-      form.setValue("durationMinutes", draftLogData.durationMinutes || 0);
-      form.setValue("notes", draftLogData.notes || "");
+      form.setValue("exerciseId", draftFormData.exerciseId);
+      form.setValue("planId", draftFormData.planId);
+      form.setValue("workoutId", draftFormData.workoutId);
+      form.setValue("sets", draftFormData.sets || DEFAULT_SETS);
+      form.setValue("durationMinutes", draftFormData.durationMinutes || 0);
+      form.setValue("notes", draftFormData.notes || "");
       form.setValue(
         "workoutDate",
-        draftLogData.workoutDate || new Date().toISOString()
+        draftFormData.workoutDate || new Date().toISOString()
       );
     } else {
-      const previousLogNumberOfSets = previousLogData?.sets?.length || 3;
+      const DEFAULT_NUMBER_OF_SETS = 3;
+      const numberOfSetsToResetTo =
+        previousLogForExercise?.sets?.length || DEFAULT_NUMBER_OF_SETS;
+
+      const createEmptySets = (numberOfSets: number) => {
+        return Array(numberOfSets).map((_, index) => ({
+          setNumber: index + 1,
+          reps: 0,
+          weight: 0,
+          notes: "",
+        }));
+      };
 
       // Reset to defaults if no log data exists
       form.setValue("exerciseId", activeExerciseId);
       form.setValue("planId", activePlanId || "");
       form.setValue("workoutId", activeWorkoutId || "");
-      form.setValue(
-        "sets",
-        Array(previousLogNumberOfSets).fill({
-          setNumber: previousLogNumberOfSets + 1,
-          reps: 0,
-          weight: 0,
-          notes: "",
-        })
-      );
+      form.setValue("sets", createEmptySets(numberOfSetsToResetTo));
       form.setValue("durationMinutes", 0);
       form.setValue("notes", "");
       form.setValue("workoutDate", new Date().toISOString());
@@ -394,7 +406,7 @@ export default function LogV2Page() {
             <SelectValue placeholder="Select workout" />
           </SelectTrigger>
           <SelectContent>
-            {workouts?.map((workout: Workout) => (
+            {workouts?.map((workout) => (
               <SelectItem key={workout.id} value={workout.id}>
                 {workout.title}
               </SelectItem>
@@ -422,7 +434,7 @@ export default function LogV2Page() {
             setActiveExerciseId("");
           }}
         >
-          {activeExercises.map((exercise: Exercise) => {
+          {activeExercisesList.map((exercise: Exercise) => {
             const isLogged = todayLogs?.some(
               (log: Log) => log.exerciseId?.id === exercise.id
             );
