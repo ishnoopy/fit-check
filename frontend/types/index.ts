@@ -73,4 +73,6 @@ export interface ILogStats {
     exercisesThisWeek: number;
     datesWithWorkouts: number[];
     streak: number;
+    bufferDaysUsed?: number;
+    restDaysBuffer?: number;
 }

@@ -10,7 +10,7 @@ import { getDayName } from "@/lib/store";
 import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { CalendarPlus, Flame, Target, TrendingUp } from "lucide-react";
+import { CalendarPlus, Flame, Shield, Target, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "../../providers";
 
@@ -47,6 +47,15 @@ export default function DashboardPage() {
   const exercisesToday = statsData?.data?.exercisesToday || 0;
   const exercisesThisWeek = statsData?.data?.exercisesThisWeek || 0;
   const streak = statsData?.data?.streak || 0;
+  const bufferDaysUsed = statsData?.data?.bufferDaysUsed || 0;
+  const restDaysBuffer = statsData?.data?.restDaysBuffer || 0;
+
+  // Check if buffer is being used
+  const isBufferActive = bufferDaysUsed > 0;
+
+  // Check if buffer is fully used up (reminder to log workout today)
+  const isBufferUsedUp =
+    bufferDaysUsed === restDaysBuffer && bufferDaysUsed > 0;
 
   const stats = [
     {
@@ -54,6 +63,7 @@ export default function DashboardPage() {
       value: streak.toString(),
       label: "Day Streak",
       color: "text-orange-500",
+      showBuffer: true,
     },
     {
       icon: Target,
@@ -103,6 +113,34 @@ export default function DashboardPage() {
               </p>
             </div>
 
+            {/* Reminder: Buffer used up */}
+            {isBufferUsedUp && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <Card className="border-blue-500/30 bg-blue-500/5 backdrop-blur-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-blue-500/10 rounded-lg shrink-0">
+                        <Shield className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <h3 className="font-semibold text-sm text-blue-600 dark:text-blue-400">
+                          Reminder 💪
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          You&apos;ve used all your rest days buffer. Log a
+                          workout today to maintain your {streak}-day streak!
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
             {/* Show guide hint for new users */}
             {totalLogs === 0 && (
               <Card className="border-primary/30 bg-primary/5 backdrop-blur-sm">
@@ -138,20 +176,52 @@ export default function DashboardPage() {
         >
           {stats.map((stat) => (
             <motion.div key={stat.label} variants={item}>
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300 group">
-                <CardContent className="p-6 text-center space-y-3">
+              <Card
+                className={`bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300 group h-full flex flex-col ${
+                  stat.showBuffer && isBufferUsedUp ? "border-blue-500/30" : ""
+                }`}
+              >
+                <CardContent className="p-6 text-center space-y-3 flex flex-col flex-1">
                   <div
-                    className={`inline-flex items-center justify-center rounded-full bg-muted/50 p-3 group-hover:scale-110 transition-transform ${stat.color}`}
+                    className={`inline-flex items-center justify-center rounded-full p-3 group-hover:scale-110 transition-transform ${stat.color}`}
                   >
                     <stat.icon className="h-5 w-5" />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-3xl font-bold text-foreground">
-                      {stat.value}
-                    </p>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      {stat.label}
-                    </p>
+                  <div className="space-y-1 flex-1 flex flex-col justify-between">
+                    <div>
+                      <p className="text-3xl font-bold text-foreground">
+                        {stat.value}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-medium">
+                        {stat.label}
+                      </p>
+                    </div>
+                    {/* Buffer indicator inside streak card */}
+                    {stat.showBuffer && isBufferActive && streak > 0 ? (
+                      <div className="mt-2 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-center gap-1.5 text-xs">
+                          <Shield
+                            className={`h-3.5 w-3.5 ${
+                              isBufferUsedUp ? "text-blue-500" : "text-blue-500"
+                            }`}
+                          />
+                          <span className="text-muted-foreground">
+                            {bufferDaysUsed}/{restDaysBuffer} rest days used
+                          </span>
+                        </div>
+                        {isBufferUsedUp && (
+                          <div className="flex items-center justify-center gap-1 mt-1">
+                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                              Log workout today
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-2 pt-2 border-t border-transparent">
+                        <div className="h-6"></div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
