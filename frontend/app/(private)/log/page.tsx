@@ -279,6 +279,10 @@ export default function LogV2Page() {
       }
     })();
 
+    const previousLogData = latestLogs?.find(
+      (log: Log) => log.exerciseId?.id === activeExerciseId
+    );
+
     // Update form with log data if available, otherwise use defaults
     if (logData) {
       form.setValue("exerciseId", activeExerciseId);
@@ -303,11 +307,21 @@ export default function LogV2Page() {
         draftLogData.workoutDate || new Date().toISOString()
       );
     } else {
+      const previousLogNumberOfSets = previousLogData?.sets?.length || 3;
+
       // Reset to defaults if no log data exists
       form.setValue("exerciseId", activeExerciseId);
       form.setValue("planId", activePlanId || "");
       form.setValue("workoutId", activeWorkoutId || "");
-      form.setValue("sets", DEFAULT_SETS);
+      form.setValue(
+        "sets",
+        Array(previousLogNumberOfSets).fill({
+          setNumber: previousLogNumberOfSets + 1,
+          reps: 0,
+          weight: 0,
+          notes: "",
+        })
+      );
       form.setValue("durationMinutes", 0);
       form.setValue("notes", "");
       form.setValue("workoutDate", new Date().toISOString());
