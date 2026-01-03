@@ -7,6 +7,11 @@ export function cn(...inputs: ClassValue[]) {
 
 
 export const getItemFromLocalStorage = (key: string) => {
+
+  if (localStorage === undefined) {
+    return null;
+  }
+
   const item = localStorage?.getItem(key);
   return item || null;
 };
