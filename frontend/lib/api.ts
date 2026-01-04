@@ -38,9 +38,16 @@ export async function apiFetch<T = unknown>(
         const error = await res.json();
         if (error?.message === "Unauthorized") {
             toast.error("Session expired. Please login again.");
+            localStorage.removeItem("logFormDrafts");
             window.location.href = "/login";
             throw new Error("Unauthorized");
         }
+    }
+
+    if (res.status === 429) {
+        const retryAfter = res.headers.get("Retry-After");
+        toast.error(`Too many requests. Please try again in ${retryAfter} seconds.`);
+        throw new Error(`Too many requests. Please try again in ${retryAfter} seconds.`);
     }
 
     // Handle other errors

@@ -10,6 +10,7 @@ import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
+  AlertCircle,
   Calendar as CalendarIcon,
   Flame,
   Target,
@@ -114,7 +115,23 @@ export default function StatsPage() {
   }
 
   if (error) {
-    return <div>Error: {error.message}</div>;
+    return (
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+        <div className="p-6 max-w-2xl mx-auto">
+          <PageHeader title="Error" subtitle="Failed to load stats" />
+          <Card className="border-destructive/50 bg-destructive/10">
+            <CardContent className="p-6 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <p className="text-destructive text-sm font-medium">
+                {error instanceof Error
+                  ? error.message
+                  : "Failed to load stats"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (

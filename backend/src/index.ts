@@ -22,6 +22,7 @@ app.use(cors({
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
+  exposeHeaders: ['Retry-After'],
 }))
 
 app.use('*', async (c, next) => {

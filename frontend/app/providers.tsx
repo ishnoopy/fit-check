@@ -111,7 +111,40 @@ export function useGeneral() {
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: (failureCount, error) => {
+              // Don't retry on 429 (rate limit) errors
+              if (
+                error instanceof Error &&
+                error.message.includes("Too many requests")
+              ) {
+                return false;
+              }
+              // Default retry logic for other errors (max 3 retries)
+              return failureCount < 3;
+            },
+          },
+          mutations: {
+            retry: (failureCount, error) => {
+              // Don't retry mutations on rate limit errors
+              if (
+                error instanceof Error &&
+                error.message.includes("Too many requests")
+              ) {
+                return false;
+              }
+              // Don't retry mutations by default (they're usually user actions)
+              return false;
+            },
+          },
+        },
+      })
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
       <NextThemesProvider
