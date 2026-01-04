@@ -318,8 +318,10 @@ export default function LogPage() {
       const numberOfSetsToResetTo =
         previousLogForExercise?.sets?.length || DEFAULT_NUMBER_OF_SETS;
 
-      const createEmptySets = (numberOfSets: number) => {
-        return Array(numberOfSets).map((_, index) => ({
+      const createEmptySets = (
+        numberOfSets: number = DEFAULT_NUMBER_OF_SETS
+      ) => {
+        return Array.from({ length: numberOfSets }, (_, index) => ({
           setNumber: index + 1,
           reps: 0,
           weight: 0,
