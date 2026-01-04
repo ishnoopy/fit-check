@@ -189,7 +189,7 @@ export async function getLogStats(userId: string) {
   const DAYS_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
   const daysSinceMostRecentWorkout = Math.floor((currentDate.getTime() - mostRecentWorkoutDate.getTime()) / DAYS_IN_MILLISECONDS);
 
-  const isStreakActive = daysSinceMostRecentWorkout <= restDaysBuffer + 1 && daysSinceMostRecentWorkout > 0;
+  const isStreakActive = daysSinceMostRecentWorkout <= restDaysBuffer && daysSinceMostRecentWorkout > 0;
 
   // compare x index with x + 1 index to see if the difference is less than or equal to the rest days buffer
   for (let i = 0; i < uniqueDatesWithWorkouts.length - 1; i++) {
@@ -212,7 +212,7 @@ export async function getLogStats(userId: string) {
     streak += daysSinceMostRecentWorkout - 1;
   }
 
-  let bufferDaysUsed = restDaysBuffer - (restDaysBuffer - daysSinceMostRecentWorkout + 1);
+  let bufferDaysUsed = restDaysBuffer - (restDaysBuffer - daysSinceMostRecentWorkout);
 
   if (!isStreakActive) {
     streak = 0;
