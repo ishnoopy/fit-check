@@ -260,9 +260,9 @@ export default function Login() {
                           tabIndex={0}
                         >
                           {showPassword ? (
-                            <EyeOff className="h-5 w-5" />
+                            <EyeOff className="cursor-pointer h-5 w-5" />
                           ) : (
-                            <Eye className="h-5 w-5" />
+                            <Eye className="cursor-pointer h-5 w-5" />
                           )}
                         </button>
                       </div>
