@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
-import { getItemFromLocalStorage } from "@/lib/utils";
+import { cn, getItemFromLocalStorage } from "@/lib/utils";
 import { ILog, IWorkout } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,7 +38,11 @@ import {
   CheckCircle2,
   HistoryIcon,
   InfoIcon,
+  Pause,
+  Play,
   PlusIcon,
+  Square,
+  Timer,
   XIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -108,6 +112,7 @@ const DEFAULT_SETS = [
 
 export default function LogPage() {
   const queryClient = useQueryClient();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [activePlanId] = useState<string>(
     getItemFromLocalStorage("activePlanId") || ""
   );
@@ -117,6 +122,9 @@ export default function LogPage() {
   const [activeExerciseId, setActiveExerciseId] = useState<string>(
     getItemFromLocalStorage("activeExerciseId") || ""
   );
+  const [countdown, setCountdown] = useState<number>(0);
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -148,6 +156,100 @@ export default function LogPage() {
     workouts
       ?.find((workout) => workout.id === activeWorkoutId)
       ?.exercises.filter((exercise) => exercise.active) || [];
+
+  const activeExerciseDetails = activeExercisesList.find(
+    (exercise) => exercise.id === activeExerciseId
+  );
+
+  useEffect(() => {
+    const restTime = activeExerciseDetails?.restTime || 0;
+    setCountdown(restTime);
+
+    // Clear any running timer when exercise changes
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    setIsTimerRunning(false);
+  }, [activeExerciseDetails]);
+
+  const startRestTime = (e?: React.MouseEvent) => {
+    e?.stopPropagation(); // Prevent accordion from toggling
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    // Resume from current countdown if paused, otherwise start from rest time
+    const initialCountdown = activeExerciseDetails?.restTime || 0;
+    const currentCountdown =
+      countdown > 0 && countdown < initialCountdown
+        ? countdown
+        : initialCountdown;
+
+    if (currentCountdown <= 0) {
+      toast.error("No rest time set for this exercise");
+      return;
+    }
+
+    setCountdown(currentCountdown);
+    setIsTimerRunning(true);
+
+    let countdownInSeconds = currentCountdown;
+
+    intervalRef.current = setInterval(() => {
+      countdownInSeconds -= 1;
+      setCountdown(countdownInSeconds);
+
+      if (countdownInSeconds <= 0) {
+        setIsTimerRunning(false);
+        setCountdown(initialCountdown);
+
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        if (audioRef.current) {
+          audioRef.current.play();
+        }
+        toast.success("Rest time complete! 💪");
+      }
+    }, 1000);
+  };
+
+  const pauseRestTime = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    setIsTimerRunning(false);
+  };
+
+  // clean up
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  const stopRestTime = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    setIsTimerRunning(false);
+    setCountdown(activeExerciseDetails?.restTime || 0);
+  };
 
   const today = new Date();
   const startOfDay = new Date(
@@ -386,6 +488,9 @@ export default function LogPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      {/* Hidden audio element */}
+      <audio ref={audioRef} src="/notif-sound.mp3" />
+
       <div className="p-4 max-w-xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <PageHeader title="Log" subtitle="Log your workouts" />
@@ -450,6 +555,12 @@ export default function LogPage() {
             );
 
             const isActiveExercise = activeExerciseId === exercise.id;
+            const isCurrentExerciseTimer =
+              isActiveExercise &&
+              (isTimerRunning || countdown < (exercise.restTime || 0));
+            const displayCountdown = isCurrentExerciseTimer
+              ? countdown
+              : exercise.restTime || 0;
 
             return (
               <AccordionItem
@@ -477,6 +588,56 @@ export default function LogPage() {
                       <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                         Done
                       </span>
+                    )}
+                    {/* Rest Timer */}
+                    {exercise.restTime && isActiveExercise && (
+                      <div
+                        className="flex items-center gap-1.5 shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div
+                          className={cn(
+                            "flex items-center gap-1.5 px-2 py-1 rounded-md border transition-colors",
+                            isTimerRunning
+                              ? "bg-primary/10 border-primary/20 text-primary"
+                              : "bg-muted/30 border-border/50 text-muted-foreground"
+                          )}
+                        >
+                          <Timer className="h-3.5 w-3.5 shrink-0" />
+                          <span className="text-xs font-mono font-semibold tabular-nums min-w-8 text-center">
+                            {displayCountdown}s
+                          </span>
+                          {isTimerRunning ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 shrink-0 hover:bg-primary/20"
+                              onClick={pauseRestTime}
+                            >
+                              <Pause className="h-3 w-3" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 shrink-0 hover:bg-primary/20"
+                              onClick={startRestTime}
+                            >
+                              <Play className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {countdown < (exercise.restTime || 0) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 shrink-0 hover:bg-destructive/20 text-destructive"
+                              onClick={stopRestTime}
+                            >
+                              <Square className="h-2.5 w-2.5 fill-current" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     )}
                     {exercise.restTime || exercise.notes ? (
                       <Dialog>
