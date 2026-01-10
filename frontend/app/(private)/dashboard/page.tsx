@@ -11,6 +11,7 @@ import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { CalendarPlus, Flame, Shield, Target, TrendingUp } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "../../providers";
 
@@ -212,7 +213,9 @@ export default function DashboardPage() {
                         {isBufferUsedUp && (
                           <div className="flex items-center justify-center gap-1 mt-1">
                             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                              Log workout today
+                              <Link href="/log" className="underline">
+                                Log workout today
+                              </Link>
                             </span>
                           </div>
                         )}
