@@ -608,33 +608,51 @@ export default function LogPage() {
                             {displayCountdown}s
                           </span>
                           {isTimerRunning ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 shrink-0 hover:bg-primary/20"
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              className="h-5 w-5 shrink-0 hover:bg-primary/20 rounded-md flex items-center justify-center cursor-pointer transition-colors"
                               onClick={pauseRestTime}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  pauseRestTime();
+                                }
+                              }}
                             >
                               <Pause className="h-3 w-3" />
-                            </Button>
+                            </div>
                           ) : (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 shrink-0 hover:bg-primary/20"
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              className="h-5 w-5 shrink-0 hover:bg-primary/20 rounded-md flex items-center justify-center cursor-pointer transition-colors"
                               onClick={startRestTime}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  startRestTime();
+                                }
+                              }}
                             >
                               <Play className="h-3 w-3" />
-                            </Button>
+                            </div>
                           )}
                           {countdown < (exercise.restTime || 0) && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 shrink-0 hover:bg-destructive/20 text-destructive"
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              className="h-5 w-5 shrink-0 hover:bg-destructive/20 text-destructive rounded-md flex items-center justify-center cursor-pointer transition-colors"
                               onClick={stopRestTime}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  stopRestTime();
+                                }
+                              }}
                             >
                               <Square className="h-2.5 w-2.5 fill-current" />
-                            </Button>
+                            </div>
                           )}
                         </div>
                       </div>
