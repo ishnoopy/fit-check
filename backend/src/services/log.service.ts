@@ -43,8 +43,9 @@ export async function getLogByIdService(id: string, userId: string) {
 }
 
 export async function getLogsByQueryService(query: Record<string, unknown>, userId: string) {
-  let options: { limit?: number, sort?: Record<string, SortOrder> } = {};
+  let options: { limit?: number, skip?: number, sort?: Record<string, SortOrder> } = {};
   let customizedOptions: { llmMessage?: boolean, startDate?: Date, endDate?: Date } = {};
+  let pagination: { page?: number, limit?: number } = {};
 
   if (query.startDate && query.endDate) {
     customizedOptions = { ...customizedOptions, startDate: new Date(query.startDate as string), endDate: new Date(query.endDate as string) };
@@ -68,6 +69,20 @@ export async function getLogsByQueryService(query: Record<string, unknown>, user
   if (query.latest === true) {
     delete query.latest;
     options = { ...options, limit: 1, sort: { createdAt: -1 } };
+  }
+
+  if (query.page !== undefined && query.limit !== undefined) {
+    const page = query.page as number;
+    const limit = query.limit as number;
+    pagination = { page, limit };
+    options = { ...options, limit, skip: (page - 1) * limit };
+    delete query.page;
+    delete query.limit;
+  } else if (query.limit !== undefined) {
+    const limit = query.limit as number;
+    pagination = { page: 1, limit };
+    options = { ...options, limit };
+    delete query.limit;
   }
 
   if (query.llmMessage === true) {
@@ -124,7 +139,28 @@ ${logsData.map((log, idx) =>
 
     return message;
   }
-  return logs;
+
+  if (pagination.page !== undefined && pagination.limit !== undefined) {
+    const total = await logRepository.countByQuery(userId, query);
+    const totalPages = Math.ceil(total / pagination.limit);
+
+    return {
+      data: logs,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages,
+        hasNextPage: pagination.page < totalPages,
+        hasPrevPage: pagination.page > 1,
+      },
+    };
+  }
+
+  return {
+    data: logs,
+    pagination: null,
+  };
 }
 export async function createLogService(payload: Omit<ILog, "userId">, userId: string) {
   return await logRepository.createLog({ ...payload, userId: userId });

@@ -22,6 +22,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -29,10 +36,25 @@ import {
 import { api } from "@/lib/api";
 import { ILog } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import {
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Tooltip as ChartTooltip,
+  Filler,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Title,
+} from "chart.js";
+import { format, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import {
   CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ClockIcon,
   DumbbellIcon,
   EditIcon,
@@ -40,13 +62,43 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
-const fetchLogs = async () => {
-  return api.get<{ data: ILog[] }>("/api/logs");
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  ChartTooltip,
+  Legend,
+  Filler
+);
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+interface LogsResponse {
+  success: boolean;
+  data: ILog[];
+  pagination: PaginationInfo | null;
+}
+
+const fetchLogs = async (page: number = 1, limit: number = 10) => {
+  return api.get<LogsResponse>(
+    `/api/logs?page=${page}&limit=${limit}&sort_by=workout_date&sort_order=desc`
+  );
 };
 
 const deleteLog = async (logId: string) => {
@@ -59,29 +111,32 @@ const fetchLogsByQuery = async (query: string) => {
 
 export default function LogsArchivePage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [logToDelete, setLogToDelete] = useState<ILog | null>(null);
   const [isDateRangeDialogOpen, setIsDateRangeDialogOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: (() => {
-      const today = new Date();
-      const tenDaysAgo = new Date(today);
-      tenDaysAgo.setDate(today.getDate() - 9);
-      return tenDaysAgo;
-    })(),
+    from: subDays(new Date(), 9),
     to: new Date(),
   });
-  const router = useRouter();
+  const [page, setPage] = useState(() => {
+    const pageParam = searchParams.get("page");
+    return pageParam ? parseInt(pageParam, 10) : 1;
+  });
+  const [limit, setLimit] = useState(10);
+
   const {
-    data: logs,
+    data: logsResponse,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["logs"],
-    queryFn: fetchLogs,
-    select: (data) => data.data,
+    queryKey: ["logs", page, limit],
+    queryFn: () => fetchLogs(page, limit),
   });
 
-  // Build query string with date range
+  const logs = useMemo(() => logsResponse?.data || [], [logsResponse]);
+  const pagination = logsResponse?.pagination || null;
+
   const buildQueryString = () => {
     if (!dateRange?.from || !dateRange?.to) {
       return "llm_message=true";
@@ -94,7 +149,7 @@ export default function LogsArchivePage() {
   };
 
   const llmMessageQuery = useQuery({
-    queryKey: ["llmMessage"],
+    queryKey: ["llmMessage", dateRange],
     queryFn: () => fetchLogsByQuery(buildQueryString()),
     enabled: !!dateRange?.from && !!dateRange?.to,
   });
@@ -118,6 +173,12 @@ export default function LogsArchivePage() {
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    router.push(`/logs/archive?page=${newPage}`, { scroll: false });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   if (isLoading) {
     return <LoadingState />;
   }
@@ -125,7 +186,7 @@ export default function LogsArchivePage() {
   if (error) {
     return (
       <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="p-6 max-w-6xl mx-auto">
           <PageHeader
             title="Logs Archive"
             subtitle="View and manage your workout logs 📚"
@@ -145,13 +206,13 @@ export default function LogsArchivePage() {
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <BackButton href="/log" />
 
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <PageHeader
             title="Logs Archive"
             subtitle="View and manage your workout logs 📚"
           />
 
-          {logs && logs.length > 0 && (
+          {logs.length > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -174,7 +235,7 @@ export default function LogsArchivePage() {
           )}
         </div>
 
-        {logs && logs.length === 0 ? (
+        {logs.length === 0 ? (
           <EmptyState
             icon={DumbbellIcon}
             title="No logs yet"
@@ -187,9 +248,43 @@ export default function LogsArchivePage() {
             }}
           />
         ) : (
-          <div className="space-y-4">
-            {logs &&
-              logs.map((log, index) => (
+          <>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Items per page:
+                </span>
+                <Select
+                  value={limit.toString()}
+                  onValueChange={(value) => {
+                    setLimit(parseInt(value, 10));
+                    setPage(1);
+                    router.push("/logs/archive?page=1", { scroll: false });
+                  }}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {pagination && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Page {pagination.page} of {pagination.totalPages} (
+                    {pagination.total} total)
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {logs.map((log: ILog, index: number) => (
                 <motion.div
                   key={log.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -250,7 +345,7 @@ export default function LogsArchivePage() {
                           Sets
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                          {log.sets.map((set, idx) => (
+                          {log.sets.map((set, idx: number) => (
                             <div
                               key={idx}
                               className="flex items-center gap-2 bg-muted/30 border border-border/50 rounded-lg p-2.5"
@@ -296,7 +391,67 @@ export default function LogsArchivePage() {
                   </Card>
                 </motion.div>
               ))}
-          </div>
+            </div>
+
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={!pagination.hasPrevPage}
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from(
+                    { length: pagination.totalPages },
+                    (_, i) => i + 1
+                  )
+                    .filter((p) => {
+                      if (pagination.totalPages <= 7) return true;
+                      return (
+                        p === 1 ||
+                        p === pagination.totalPages ||
+                        (p >= page - 1 && p <= page + 1)
+                      );
+                    })
+                    .map((p, idx, arr) => {
+                      const showEllipsis = idx > 0 && arr[idx - 1] !== p - 1;
+                      return (
+                        <div key={p} className="flex items-center gap-1">
+                          {showEllipsis && (
+                            <span className="px-2 text-muted-foreground">
+                              ...
+                            </span>
+                          )}
+                          <Button
+                            variant={p === page ? "default" : "outline"}
+                            size="sm"
+                            className="w-10"
+                            onClick={() => handlePageChange(p)}
+                          >
+                            {p}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={!pagination.hasNextPage}
+                >
+                  Next
+                  <ChevronRightIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

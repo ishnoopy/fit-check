@@ -53,9 +53,23 @@ const getLogsQuerySchema = z.object({
     .string()
     .transform((val) => val === "true")
     .optional(),
-  sort_by: z.enum(["created_at", "updated_at"]).optional(),
+  sort_by: z.enum(["created_at", "updated_at", "workout_date"]).optional(),
   sort_order: z.enum(["asc", "desc"]).optional(),
   llm_message: z.string().transform((val) => val === "true").optional(),
+  page: z
+    .string()
+    .transform((val) => {
+      const num = parseInt(val, 10);
+      return isNaN(num) || num < 1 ? 1 : num;
+    })
+    .optional(),
+  limit: z
+    .string()
+    .transform((val) => {
+      const num = parseInt(val, 10);
+      return isNaN(num) || num < 1 ? 10 : Math.min(num, 100);
+    })
+    .optional(),
 });
 
 export type ICreateLogPayload = z.infer<typeof createLogSchema>;
@@ -71,11 +85,19 @@ export async function getLogs(c: Context) {
   const query = toCamelCase(params.data);
 
   const userId = c.get("user").id;
-  const logs = await logService.getLogsByQueryService(query, userId);
+  const result = await logService.getLogsByQueryService(query, userId);
+
+  if (typeof result === "string") {
+    return c.json({
+      success: true,
+      data: result,
+    }, StatusCodes.OK);
+  }
 
   return c.json({
     success: true,
-    data: logs,
+    data: result.data,
+    pagination: result.pagination,
   }, StatusCodes.OK);
 }
 
