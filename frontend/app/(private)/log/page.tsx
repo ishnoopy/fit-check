@@ -473,8 +473,18 @@ export default function LogPage() {
                 <AlertCircleIcon className="h-5 w-5 text-muted-foreground" />
               </div>
               <h3 className="font-semibold text-base mb-1">No Active Plan</h3>
+              <p className="text-xs text-muted-foreground mb-2 max-w-xs mx-auto">
+                You must set a plan as active to start logging workouts.
+              </p>
               <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
-                Set a plan as active to start logging workouts
+                Go to{" "}
+                <Link
+                  href="/plans"
+                  className="text-primary underline font-medium"
+                >
+                  Plans
+                </Link>{" "}
+                to set an active plan.
               </p>
               <Button size="sm" asChild>
                 <Link href="/plans">Go to Plans</Link>

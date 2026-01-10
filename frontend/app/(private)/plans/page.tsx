@@ -56,8 +56,8 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -100,10 +100,19 @@ const item = {
 export default function PlansPage() {
   const { activePlanId, setActivePlanId } = useGeneral();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(
+    searchParams.get("create") === "true"
+  );
+
+  useEffect(() => {
+    if (searchParams.get("create") === "true") {
+      router.replace("/plans", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const createPlanForm = useForm<FormValues>({
     resolver: zodResolver(createPlanSchema),
@@ -226,7 +235,15 @@ export default function PlansPage() {
           />
 
           {/* Create Plan Dialog */}
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <Dialog
+            open={createDialogOpen}
+            onOpenChange={(open) => {
+              setCreateDialogOpen(open);
+              if (!open) {
+                router.replace("/plans", { scroll: false });
+              }
+            }}
+          >
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Create New Plan</DialogTitle>
@@ -478,7 +495,15 @@ export default function PlansPage() {
         </Dialog>
 
         {/* Create Plan Dialog */}
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <Dialog
+          open={createDialogOpen}
+          onOpenChange={(open) => {
+            setCreateDialogOpen(open);
+            if (!open) {
+              router.replace("/plans", { scroll: false });
+            }
+          }}
+        >
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Create New Plan</DialogTitle>
