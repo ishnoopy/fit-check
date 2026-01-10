@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import type { FilterQuery, SortOrder } from 'mongoose';
 import { Types } from 'mongoose';
 import LogModel, { type ILog } from '../models/log.model.js';
@@ -99,76 +100,46 @@ export async function getLogStats(userId: string) {
   const logs = await LogModel.aggregate([
     { $match: { user_id: new Types.ObjectId(userId) } },
     { $sort: { workout_date: -1 } },
-    {
-      $project: {
-        workout_date: 1,
-      },
-    },
+    { $project: { workout_date: 1 } },
   ]);
 
-  // Get user settings for rest days buffer
   const settings = await SettingRepository.findByUserId(userId);
   const restDaysBuffer = settings?.settings?.restDays ?? 0;
 
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  // Helper to compare dates (only year, month, day)
-  const isSameDate = (date1: Date, date2: Date) => {
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
-    d1.setUTCHours(0, 0, 0, 0);
-    d2.setUTCHours(0, 0, 0, 0);
-    return d1.getTime() === d2.getTime();
+  const normalizeDate = (date: Date | string): Date => {
+    const normalized = new Date(date);
+    normalized.setUTCHours(0, 0, 0, 0);
+    return normalized;
   };
 
+  const getDaysDifference = (date1: Date, date2: Date): number => {
+    return Math.floor((date1.getTime() - date2.getTime()) / (24 * 60 * 60 * 1000));
+  };
 
-  // Get unique workout dates sorted descending (most recent first)
-  const uniqueDatesWithWorkouts = Array.from(
-    new Set(
-      logs.map((log) => {
-        const date = new Date(log.workout_date);
-        date.setUTCHours(0, 0, 0, 0);
-        return date.getTime();
-      })
-    )
-  )
-    .map((timestamp) => new Date(timestamp))
-    .sort((a, b) => b.getTime() - a.getTime()); // Sort descending
-
+  const today = normalizeDate(new Date());
   const totalLogs = logs.length;
 
-  // Count exercises today
-  const exercisesToday = logs.filter((log) => {
-    const logDate = new Date(log.workout_date);
-    logDate.setUTCHours(0, 0, 0, 0);
-    return isSameDate(logDate, today);
-  }).length;
+  const workoutDates = logs.map((log) => normalizeDate(log.workout_date));
+  const uniqueDatesWithWorkouts = _.sortBy(
+    _.uniqBy(workoutDates, (date) => date.getTime()),
+    (date) => -date.getTime()
+  );
 
-  // Count exercises this week
+  const datesWithWorkouts = uniqueDatesWithWorkouts.map((date) => date.getTime());
+
+  const exercisesToday = _.filter(workoutDates, (date) => date.getTime() === today.getTime()).length;
+
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay());
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
   endOfWeek.setUTCHours(23, 59, 59, 999);
 
-  const exercisesThisWeek = logs.filter((log) => {
-    const logDate = new Date(log.workout_date);
-    return logDate >= startOfWeek && logDate <= endOfWeek;
-  }).length;
+  const exercisesThisWeek = _.filter(
+    workoutDates,
+    (date) => date >= startOfWeek && date <= endOfWeek
+  ).length;
 
-  const datesWithWorkouts = Array.from(
-    new Set(
-      logs.map((log) => {
-        const logDate = new Date(log.workout_date);
-        logDate.setUTCHours(0, 0, 0, 0);
-        return logDate.getTime();
-      })
-    )
-  );
-
-
-  // If no workouts, return early
   if (uniqueDatesWithWorkouts.length === 0) {
     return {
       totalLogs,
@@ -177,26 +148,20 @@ export async function getLogStats(userId: string) {
       datesWithWorkouts,
       streak: 0,
       bufferDaysUsed: 0,
-      restDaysBuffer: restDaysBuffer,
+      restDaysBuffer,
     };
   }
 
-  let streak = 1;
-  const currentDate = new Date();
-  currentDate.setUTCHours(0, 0, 0, 0);
-
-  const mostRecentWorkoutDate = new Date(Math.max(...uniqueDatesWithWorkouts.map(date => new Date(date).getTime())));
-  const DAYS_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
-  const daysSinceMostRecentWorkout = Math.floor((currentDate.getTime() - mostRecentWorkoutDate.getTime()) / DAYS_IN_MILLISECONDS);
-
+  const mostRecentWorkoutDate = _.maxBy(uniqueDatesWithWorkouts, (date) => date.getTime())!;
+  const daysSinceMostRecentWorkout = getDaysDifference(today, mostRecentWorkoutDate);
   const isStreakActive = daysSinceMostRecentWorkout <= restDaysBuffer;
 
-  // compare x index with x + 1 index to see if the difference is less than or equal to the rest days buffer
+  let streak = 1;
   for (let i = 0; i < uniqueDatesWithWorkouts.length - 1; i++) {
-    const currentDate = uniqueDatesWithWorkouts[i].getTime();
-    const previousDate = uniqueDatesWithWorkouts[i + 1].getTime();
-    const daysDifference = Math.floor((currentDate - previousDate) / DAYS_IN_MILLISECONDS);
-
+    const daysDifference = getDaysDifference(
+      uniqueDatesWithWorkouts[i],
+      uniqueDatesWithWorkouts[i + 1]
+    );
     if (daysDifference <= restDaysBuffer + 1) {
       streak += daysDifference;
     } else {
@@ -204,27 +169,20 @@ export async function getLogStats(userId: string) {
     }
   }
 
-
-  // Rest days buffer - handle gap between today and most recent workout
   if (daysSinceMostRecentWorkout <= restDaysBuffer + 1 && daysSinceMostRecentWorkout > 0) {
-    // The most recent workout is already counted in the streak above
-    // This adds the buffer days between today and the most recent workout
     streak += daysSinceMostRecentWorkout - 1;
   }
 
-  let bufferDaysUsed = restDaysBuffer - (restDaysBuffer - daysSinceMostRecentWorkout);
-
-  if (!isStreakActive) {
-    streak = 0;
-    bufferDaysUsed = 0;
-  }
+  const bufferDaysUsed = isStreakActive
+    ? Math.min(daysSinceMostRecentWorkout, restDaysBuffer)
+    : 0;
 
   return {
     totalLogs,
     exercisesToday,
     exercisesThisWeek,
     datesWithWorkouts,
-    streak,
+    streak: isStreakActive ? streak : 0,
     bufferDaysUsed,
     restDaysBuffer,
   };
