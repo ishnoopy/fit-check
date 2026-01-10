@@ -1,0 +1,96 @@
+---
+alwaysApply: true
+---
+
+# Agent Behavior Rules
+
+# 1. Package Manager
+
+# The agent should detect the current package manager used by the project (npm, yarn, pnpm)
+
+# If none is found, default to pnpm
+
+rule: "use_project_package_manager"
+description: "Detect and use the project's package manager; fallback to pnpm if not found."
+action:
+type: "set_package_manager"
+fallback: "pnpm"
+
+# 2. TypeScript Compilation
+
+# Do not run `npm run build`. Instead, compile TypeScript files without emitting output
+
+rule: "typescript_compile_check"
+description: "Run `npx tsc --noEmit` to validate TypeScript code."
+action:
+type: "run_command"
+command: "npx tsc --noEmit"
+
+# 3. Logging
+
+# Always log actions taken by the agent for traceability
+
+rule: "log_actions"
+description: "Log each command and package manager decision."
+action:
+type: "log"
+level: "info"
+
+# 4. Error Handling
+
+# If any command fails, stop execution and report the error clearly
+
+rule: "stop_on_error"
+description: "Halt agent execution on any command failure."
+action:
+type: "error_handling"
+behavior: "halt"
+
+# 5. Context Awareness Reminder
+
+rule: "context_reminder"
+description: "Remind the user that context should not exceed 17% per conversation."
+action:
+type: "notify"
+message: "⚠️ Keep this conversation under 17% context. Consider starting a new chat soon."
+
+# 6. Dependency Check
+
+# Before running any commands, ensure dependencies are installed
+
+rule: "check_dependencies"
+description: "Run package manager install if node_modules is missing."
+action:
+type: "run_command"
+command: "{{package_manager}} install"
+condition: "node_modules_missing"
+
+# 7. PNPM Lockfile Sync
+
+# Ensure that pnpm and pnpm-lock.yaml are in sync to avoid deployment issues
+
+rule: "pnpm_lockfile_sync"
+description: "Verify that pnpm and pnpm-lock.yaml are synchronized."
+action:
+type: "run_command"
+command: "pnpm install --frozen-lockfile"
+
+# 8. Environment Safety
+
+# Do not make global changes or install packages globally unless explicitly required
+
+rule: "safe_environment"
+description: "Restrict agent to local project environment only."
+action:
+type: "restrict_scope"
+scope: "local_project"
+
+# 9. Notifications
+
+# Notify the user when actions are complete or if errors occur
+
+rule: "notify_user"
+description: "Provide concise notifications of agent actions or failures."
+action:
+type: "notify"
+channels: ["console", "desktop"]
