@@ -74,7 +74,7 @@ const formSchema = z.object({
       })
     )
     .min(1, { message: "At least one set is required" })
-    .refine((sets) => sets.every((set) => set.reps > 0 && set.weight > 0), {
+    .refine((sets) => sets.every((set) => set.reps > 0 && set.weight > -1), {
       message: "Please fill in reps and weight for all sets",
     }),
   workoutDate: z.string().datetime().optional(),
@@ -844,7 +844,7 @@ export default function LogPage() {
                                             step="0.5"
                                             min={0}
                                             placeholder="W"
-                                            value={set.weight || ""}
+                                            value={set.weight ?? ""}
                                             onChange={(e) => {
                                               const sets =
                                                 field.value?.slice() || [];
