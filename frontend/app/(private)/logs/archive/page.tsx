@@ -36,19 +36,6 @@ import {
 import { api } from "@/lib/api";
 import { ILog } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  Tooltip as ChartTooltip,
-  Filler,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Title,
-} from "chart.js";
 import { format, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import {
@@ -66,19 +53,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  ChartTooltip,
-  Legend,
-  Filler
-);
 
 interface PaginationInfo {
   page: number;
