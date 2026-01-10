@@ -279,7 +279,7 @@ export default function EditLogPage() {
                                     type="number"
                                     step="0.5"
                                     placeholder="kg"
-                                    value={set.weight || ""}
+                                    value={set.weight ?? ""}
                                     onChange={(e) => {
                                       const sets = field.value?.slice() || [];
                                       sets[idx] = {
