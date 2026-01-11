@@ -873,6 +873,22 @@ export default function LogPage() {
                                             min={0}
                                             placeholder="W"
                                             value={set.weight ?? ""}
+                                            onFocus={(e) => {
+                                              if (e.target.value === "0") {
+                                                e.target.value = "";
+                                              }
+                                            }}
+                                            onBlur={(e) => {
+                                              // remove leading zeros
+                                              e.target.value =
+                                                e.target.value.replace(
+                                                  /^0+/,
+                                                  ""
+                                                );
+                                              if (e.target.value === "") {
+                                                e.target.value = "0";
+                                              }
+                                            }}
                                             onChange={(e) => {
                                               const sets =
                                                 field.value?.slice() || [];
