@@ -35,7 +35,7 @@ export async function handleGoogleOAuthCallback(c: Context) {
 	setCookie(c, 'access_token', user?.token, {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
-		maxAge: 60 * 60 * 1000, // 1 hour
+		maxAge: 60 * 120 * 1000, // 2 hours
 		sameSite: 'lax', // To allow frontend redirect to the dashboard
 	});
 
@@ -62,7 +62,7 @@ export async function login(c: Context) {
 	setCookie(c, 'access_token', user.token, {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
-		maxAge: 60 * 60 * 1000, // 1 hour
+		maxAge: 60 * 120 * 1000, // 2 hours
 		sameSite: 'strict',
 	});
 
