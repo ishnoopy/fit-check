@@ -30,7 +30,7 @@ const getClientIp = (c: Context): string => {
 // General API rate limiter - 100 requests per 15 minutes
 export const generalRateLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100, // Limit each IP to 100 requests per window
+    limit: 500, // Limit each IP to 500 requests per window
     standardHeaders: 'draft-7', // Return rate limit info in headers
     keyGenerator: (c) => getClientIp(c),
     handler: (c) => {
@@ -48,7 +48,7 @@ export const generalRateLimiter = rateLimiter({
 // Strict rate limiter for auth endpoints - 5 requests per 15 minutes
 export const authRateLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 5, // Limit each IP to 5 login/register attempts per window
+    limit: 20, // Limit each IP to 20 login/register attempts per window
     standardHeaders: 'draft-7',
     keyGenerator: (c) => getClientIp(c),
     handler: (c) => {
@@ -66,7 +66,7 @@ export const authRateLimiter = rateLimiter({
 // Moderate rate limiter for sensitive operations - 30 requests per 15 minutes
 export const moderateRateLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000,
-    limit: 30,
+    limit: 100,
     standardHeaders: 'draft-7',
     keyGenerator: (c) => getClientIp(c),
     handler: (c) => {
