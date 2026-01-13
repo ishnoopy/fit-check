@@ -43,10 +43,13 @@ import {
   PlusIcon,
   Square,
   Timer,
+  TrendingDown,
+  TrendingUp,
+  Trophy,
   XIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -88,6 +91,10 @@ const createLog = async (values: FormValues) => {
   return api.post("/api/logs", values);
 };
 
+const getExerciseHistory = async (exerciseId: string) => {
+  return api.get<{ data: ILog[] }>(`/api/logs/exercise/${exerciseId}/history`);
+};
+
 // Default empty sets structure
 const DEFAULT_SETS = [
   {
@@ -110,6 +117,313 @@ const DEFAULT_SETS = [
   },
 ];
 
+interface ExerciseHistoryDialogProps {
+  exerciseName: string;
+  restTime?: number;
+  notes?: string;
+  historyData?: ILog[];
+  isLoading: boolean;
+}
+
+function ExerciseHistoryDialog({
+  exerciseName,
+  restTime,
+  notes,
+  historyData,
+  isLoading,
+}: ExerciseHistoryDialogProps) {
+  const past3Logs = historyData?.slice(0, 3) || [];
+
+  const progressionData = React.useMemo(() => {
+    if (!historyData || historyData.length === 0) return null;
+
+    const calculateVolume = (log: ILog): number => {
+      if (!log.sets || log.sets.length === 0) return 0;
+      return log.sets.reduce((total, set) => total + set.reps * set.weight, 0);
+    };
+
+    const calculateMaxWeight = (log: ILog): number => {
+      if (!log.sets || log.sets.length === 0) return 0;
+      return Math.max(...log.sets.map((set) => set.weight));
+    };
+
+    const calculateMaxReps = (log: ILog): number => {
+      if (!log.sets || log.sets.length === 0) return 0;
+      return Math.max(...log.sets.map((set) => set.reps));
+    };
+
+    const calculateAvgWeight = (log: ILog): number => {
+      if (!log.sets || log.sets.length === 0) return 0;
+      const totalWeight = log.sets.reduce((sum, set) => sum + set.weight, 0);
+      return totalWeight / log.sets.length;
+    };
+
+    const sessions = historyData
+      .map((log) => ({
+        log,
+        volume: calculateVolume(log),
+        maxWeight: calculateMaxWeight(log),
+        maxReps: calculateMaxReps(log),
+        avgWeight: calculateAvgWeight(log),
+        date: new Date(log.workoutDate || log.createdAt),
+      }))
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    const latest = sessions[0];
+    const previous = sessions[1];
+
+    const bestVolume = Math.max(...sessions.map((s) => s.volume));
+    const bestWeight = Math.max(...sessions.map((s) => s.maxWeight));
+    const bestReps = Math.max(...sessions.map((s) => s.maxReps));
+
+    const volumeChange =
+      previous && latest
+        ? ((latest.volume - previous.volume) / previous.volume) * 100
+        : null;
+
+    const weightChange =
+      previous && latest
+        ? ((latest.maxWeight - previous.maxWeight) / previous.maxWeight) * 100
+        : null;
+
+    const isVolumePR = latest.volume === bestVolume && sessions.length > 1;
+    const isWeightPR = latest.maxWeight === bestWeight && sessions.length > 1;
+    const isRepsPR = latest.maxReps === bestReps && sessions.length > 1;
+
+    return {
+      latest,
+      previous,
+      bestVolume,
+      bestWeight,
+      bestReps,
+      volumeChange,
+      weightChange,
+      isVolumePR,
+      isWeightPR,
+      isRepsPR,
+      totalSessions: sessions.length,
+    };
+  }, [historyData]);
+
+  return (
+    <DialogContent
+      className="max-w-[90vw] sm:max-w-[500px] p-4 space-y-4 text-xs max-h-[90vh] overflow-y-auto"
+      showCloseButton={true}
+      onInteractOutside={(e) => {
+        e.stopPropagation();
+      }}
+      onPointerDownOutside={(e) => {
+        e.stopPropagation();
+      }}
+      onEscapeKeyDown={(e) => {
+        e.stopPropagation();
+      }}
+      onCloseClick={(e) => {
+        e.stopPropagation();
+      }}
+      onOverlayClick={(e) => {
+        e.stopPropagation();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle className="text-sm font-medium flex items-center gap-2">
+          <InfoIcon className="h-4 w-4 text-muted-foreground" />
+          {exerciseName}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          {restTime && `Rest time: ${restTime} seconds. `}
+          {notes && `Notes: ${notes}`}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        {(restTime || notes) && (
+          <div className="space-y-2 pb-2 border-b">
+            {restTime && (
+              <div className="font-medium leading-tight">Rest: {restTime}s</div>
+            )}
+            {notes && (
+              <div className="text-muted-foreground/90 leading-snug">
+                {notes}
+              </div>
+            )}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="text-center py-4 text-muted-foreground">
+            Loading history...
+          </div>
+        ) : (
+          <>
+            {past3Logs.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Past 3 Logs
+                </h3>
+                <div className="space-y-1">
+                  {past3Logs.map((log: ILog, idx: number) => {
+                    const logDate = format(
+                      new Date(log.workoutDate || log.createdAt),
+                      "MMM d"
+                    );
+                    return (
+                      <div
+                        key={log.id || idx}
+                        className="flex items-center gap-2 text-[10px] py-1 border-b border-border/30 last:border-0"
+                      >
+                        <span className="text-muted-foreground min-w-12">
+                          {logDate}
+                        </span>
+                        <div className="flex flex-wrap gap-1 flex-1">
+                          {log.sets?.map(
+                            (
+                              set: { reps: number; weight: number },
+                              setIdx: number
+                            ) => (
+                              <span
+                                key={setIdx}
+                                className="text-foreground font-medium"
+                              >
+                                {set.reps}×{set.weight}kg
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {progressionData && (
+              <div className="space-y-3 pt-2 border-t">
+                <h3 className="text-xs font-semibold text-foreground">
+                  Progression
+                </h3>
+                <div className="space-y-2.5">
+                  {/* Latest Session Stats */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 bg-muted/30 rounded border border-border/50">
+                      <div className="text-[10px] text-muted-foreground mb-1">
+                        Volume
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-semibold">
+                          {Math.round(progressionData.latest.volume)} kg
+                        </span>
+                        {progressionData.isVolumePR && (
+                          <Trophy className="h-3 w-3 text-yellow-500" />
+                        )}
+                        {progressionData.volumeChange !== null && (
+                          <span
+                            className={cn(
+                              "text-[10px] font-medium flex items-center gap-0.5",
+                              progressionData.volumeChange > 0
+                                ? "text-green-600"
+                                : progressionData.volumeChange < 0
+                                ? "text-red-600"
+                                : "text-muted-foreground"
+                            )}
+                          >
+                            {progressionData.volumeChange > 0 ? (
+                              <TrendingUp className="h-3 w-3" />
+                            ) : progressionData.volumeChange < 0 ? (
+                              <TrendingDown className="h-3 w-3" />
+                            ) : null}
+                            {progressionData.volumeChange > 0 ? "+" : ""}
+                            {Math.round(progressionData.volumeChange)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-2 bg-muted/30 rounded border border-border/50">
+                      <div className="text-[10px] text-muted-foreground mb-1">
+                        Max Weight
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-semibold">
+                          {progressionData.latest.maxWeight} kg
+                        </span>
+                        {progressionData.isWeightPR && (
+                          <Trophy className="h-3 w-3 text-yellow-500" />
+                        )}
+                        {progressionData.weightChange !== null && (
+                          <span
+                            className={cn(
+                              "text-[10px] font-medium flex items-center gap-0.5",
+                              progressionData.weightChange > 0
+                                ? "text-green-600"
+                                : progressionData.weightChange < 0
+                                ? "text-red-600"
+                                : "text-muted-foreground"
+                            )}
+                          >
+                            {progressionData.weightChange > 0 ? (
+                              <TrendingUp className="h-3 w-3" />
+                            ) : progressionData.weightChange < 0 ? (
+                              <TrendingDown className="h-3 w-3" />
+                            ) : null}
+                            {progressionData.weightChange > 0 ? "+" : ""}
+                            {Math.round(progressionData.weightChange)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Personal Records */}
+                  <div className="p-2 bg-muted/20 rounded border border-border/50">
+                    <div className="text-[10px] text-muted-foreground mb-2">
+                      Personal Records
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-[10px]">
+                      <div>
+                        <div className="text-muted-foreground">Best Volume</div>
+                        <div className="font-semibold text-xs">
+                          {Math.round(progressionData.bestVolume)} kg
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Best Weight</div>
+                        <div className="font-semibold text-xs">
+                          {progressionData.bestWeight} kg
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Best Reps</div>
+                        <div className="font-semibold text-xs">
+                          {progressionData.bestReps} reps
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Session Count */}
+                  <div className="text-[10px] text-muted-foreground text-center pt-1">
+                    {progressionData.totalSessions}{" "}
+                    {progressionData.totalSessions === 1
+                      ? "session"
+                      : "sessions"}{" "}
+                    tracked
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!isLoading && past3Logs.length === 0 && (
+              <div className="text-center py-4 text-muted-foreground text-xs">
+                No history available for this exercise yet.
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </DialogContent>
+  );
+}
+
 export default function LogPage() {
   const queryClient = useQueryClient();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -125,6 +439,12 @@ export default function LogPage() {
   const [countdown, setCountdown] = useState<number>(0);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [exerciseHistoryCache, setExerciseHistoryCache] = useState<
+    Record<string, ILog[]>
+  >({});
+  const [loadingHistory, setLoadingHistory] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -298,6 +618,15 @@ export default function LogPage() {
       // invalidate today logs and latest logs
       queryClient.invalidateQueries({ queryKey: ["todayLogs"] });
       queryClient.invalidateQueries({ queryKey: ["latestLogs"] });
+
+      // Clear exercise history cache for the active exercise so it refetches when info icon is clicked
+      if (activeExerciseId) {
+        setExerciseHistoryCache((prev) => {
+          const updated = { ...prev };
+          delete updated[activeExerciseId];
+          return updated;
+        });
+      }
 
       toast.success("Log created successfully");
 
@@ -667,61 +996,55 @@ export default function LogPage() {
                         </div>
                       </div>
                     )}
-                    {exercise.restTime || exercise.notes ? (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <span
-                            className="shrink-0 p-0.5 rounded hover:bg-muted/50 transition-colors cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <InfoIcon className="h-3.5 w-3.5 text-muted-foreground opacity-60" />
-                          </span>
-                        </DialogTrigger>
-                        <DialogContent
-                          className="max-w-[280px] p-4 space-y-2 text-xs"
-                          showCloseButton={true}
-                          onInteractOutside={(e) => {
-                            e.stopPropagation();
-                          }}
-                          onPointerDownOutside={(e) => {
-                            e.stopPropagation();
-                          }}
-                          onEscapeKeyDown={(e) => {
-                            e.stopPropagation();
-                          }}
-                          onCloseClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          onOverlayClick={(e) => {
-                            e.stopPropagation();
-                          }}
+                    <Dialog
+                      onOpenChange={(open) => {
+                        if (
+                          open &&
+                          !exerciseHistoryCache[exercise.id] &&
+                          !loadingHistory[exercise.id]
+                        ) {
+                          setLoadingHistory((prev) => ({
+                            ...prev,
+                            [exercise.id]: true,
+                          }));
+                          getExerciseHistory(exercise.id)
+                            .then((response) => {
+                              setExerciseHistoryCache((prev) => ({
+                                ...prev,
+                                [exercise.id]: response.data,
+                              }));
+                            })
+                            .catch((error) => {
+                              console.error(
+                                "Failed to fetch exercise history",
+                                error
+                              );
+                            })
+                            .finally(() => {
+                              setLoadingHistory((prev) => ({
+                                ...prev,
+                                [exercise.id]: false,
+                              }));
+                            });
+                        }
+                      }}
+                    >
+                      <DialogTrigger asChild>
+                        <span
+                          className="shrink-0 p-0.5 rounded hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <DialogHeader>
-                            <DialogTitle className="text-sm font-medium flex items-center gap-2">
-                              <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                              {exercise.name}
-                            </DialogTitle>
-                            <DialogDescription className="sr-only">
-                              {exercise.restTime &&
-                                `Rest time: ${exercise.restTime} seconds. `}
-                              {exercise.notes && `Notes: ${exercise.notes}`}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-2">
-                            {exercise.restTime && (
-                              <div className="font-medium leading-tight">
-                                Rest: {exercise.restTime}s
-                              </div>
-                            )}
-                            {exercise.notes && (
-                              <div className="text-muted-foreground/90 leading-snug">
-                                {exercise.notes}
-                              </div>
-                            )}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    ) : null}
+                          <InfoIcon className="h-3.5 w-3.5 text-muted-foreground opacity-60" />
+                        </span>
+                      </DialogTrigger>
+                      <ExerciseHistoryDialog
+                        exerciseName={exercise.name}
+                        restTime={exercise.restTime}
+                        notes={exercise.notes}
+                        historyData={exerciseHistoryCache[exercise.id]}
+                        isLoading={loadingHistory[exercise.id] || false}
+                      />
+                    </Dialog>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-3 py-3 space-y-2.5">
