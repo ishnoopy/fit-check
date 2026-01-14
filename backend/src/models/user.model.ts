@@ -22,6 +22,10 @@ export interface IUser {
   googleId?: string | null;
   avatar?: string | null;
   authProvider?: "local" | "google" | null;
+
+  // Refresh Token Fields
+  refreshTokenHash?: string | null;
+  refreshTokenExpiresAt?: Date | null;
 }
 
 // Interface for the user model
@@ -47,6 +51,10 @@ export interface IUserModel {
   google_id?: string | null;
   avatar?: string | null;
   auth_provider?: "local" | "google" | null;
+
+  // Refresh Token Fields
+  refresh_token_hash?: string | null;
+  refresh_token_expires_at?: Date | null;
 }
 
 const UserSchema = new mongoose.Schema({
@@ -69,11 +77,14 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"]
   },
-
   // OAuth Fields
   google_id: { type: String, unique: true, sparse: true },
   avatar: { type: String },
   auth_provider: { type: String, enum: ["local", "google"], default: "local" },
+
+  // Refresh Token Fields
+  refresh_token_hash: { type: String, required: false },
+  refresh_token_expires_at: { type: Date, required: false },
 }, {
   timestamps: {
     createdAt: 'created_at',

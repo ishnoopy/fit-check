@@ -1,9 +1,10 @@
-import { hash } from "bcrypt";
+import { compare, hash } from "bcrypt";
 import type { Context } from "hono";
-import { deleteCookie, setCookie } from "hono/cookie";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { StatusCodes } from "http-status-codes";
+import * as jose from "jose";
 import { z } from "zod";
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
+import { BadRequestError, NotFoundError, UnauthorizedError } from "../lib/errors.js";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
 import * as OAuthService from "../services/oauth.service.js";
@@ -39,6 +40,13 @@ export async function handleGoogleOAuthCallback(c: Context) {
 		sameSite: 'lax', // To allow frontend redirect to the dashboard
 	});
 
+	setCookie(c, 'refresh_token', user?.refreshToken, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		maxAge: 60 * 60 * 24 * 30, // 30 days
+		sameSite: 'lax', // To allow frontend redirect to the dashboard
+	});
+
 	return c.redirect(`${process.env.FRONTEND_URL}/dashboard`, StatusCodes.TEMPORARY_REDIRECT);
 }
 
@@ -66,6 +74,13 @@ export async function login(c: Context) {
 		sameSite: 'strict',
 	});
 
+	setCookie(c, 'refresh_token', user.refreshToken, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		maxAge: 60 * 60 * 24 * 30, // 30 days
+		sameSite: 'strict',
+	});
+
 	return c.json({
 		success: true,
 		data: user.user,
@@ -89,16 +104,105 @@ export async function me(c: Context) {
 }
 
 export async function logout(c: Context) {
+	const user = c.get('user');
+
 	deleteCookie(c, 'access_token', {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
 		sameSite: 'strict',
 	});
 
-	return c.json({
-		success: true,
-		message: 'Logged out successfully',
-	}, StatusCodes.OK);
+	deleteCookie(c, 'refresh_token', {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		sameSite: 'strict',
+	});
+
+	await UserRepository.updateUser(user.id, {
+		refreshTokenHash: "",
+		refreshTokenExpiresAt: new Date(0),
+	});
+
+	return c.json({ success: true, message: 'Logged out successfully' }, StatusCodes.OK);
+}
+
+export async function refreshToken(c: Context) {
+	const refreshToken = getCookie(c, 'refresh_token');
+	if (!refreshToken) {
+		throw new UnauthorizedError("Unauthorized");
+	}
+
+	let decodedToken: jose.JWTPayload;
+	try {
+		const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+		const { payload } = await jose.jwtVerify(refreshToken, secret);
+		decodedToken = payload;
+	} catch (error) {
+		throw new UnauthorizedError("Unauthorized");
+	}
+
+	if (!decodedToken.id) {
+		throw new UnauthorizedError("Unauthorized");
+	}
+
+	const user = await UserRepository.findOne({ id: decodedToken.id as string });
+
+	if (!user) {
+		throw new UnauthorizedError("Unauthorized");
+	}
+
+	if (!user.refreshTokenHash) {
+		throw new UnauthorizedError("Unauthorized");
+	}
+
+	const isRefreshTokenValid = await compare(refreshToken, user.refreshTokenHash);
+
+	if (!isRefreshTokenValid) {
+		throw new UnauthorizedError("Unauthorized");
+	}
+
+	if (user.refreshTokenExpiresAt && new Date(user.refreshTokenExpiresAt) < new Date()) {
+		throw new UnauthorizedError("Unauthorized");
+	}
+
+	const token = await new jose.SignJWT({
+		id: user.id,
+		email: user.email,
+		role: user.role,
+	})
+		.setProtectedHeader({ alg: "HS256" })
+		.setExpirationTime("15m")
+		.sign(new TextEncoder().encode(process.env.JWT_SECRET));
+
+	setCookie(c, 'access_token', token, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		maxAge: 60 * 120 * 1000, // 2 hours
+		sameSite: 'strict',
+	});
+
+	const newRefreshToken = await new jose.SignJWT({
+		id: user.id,
+		email: user.email,
+		role: user.role,
+	})
+		.setProtectedHeader({ alg: "HS256" })
+		.setExpirationTime("7d")
+		.sign(new TextEncoder().encode(process.env.JWT_SECRET));
+
+	setCookie(c, 'refresh_token', newRefreshToken, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		maxAge: 60 * 60 * 24 * 30, // 30 days
+		sameSite: 'strict',
+	});
+
+	await UserRepository.updateUser(user.id as string, {
+		refreshTokenHash: await hash(newRefreshToken, 10),
+		refreshTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+	});
+
+	return c.json({ success: true, data: { token, refreshToken: newRefreshToken } }, StatusCodes.OK);
 }
 
 export async function register(c: Context) {

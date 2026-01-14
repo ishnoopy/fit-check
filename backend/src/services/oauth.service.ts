@@ -1,3 +1,4 @@
+import { hash } from "bcrypt";
 import { google } from "googleapis";
 import * as jose from "jose";
 import { BadRequestError } from "../lib/errors.js";
@@ -66,10 +67,25 @@ export async function handleGoogleOAuthCallback(code: string) {
             role: userWithoutPassword?.role,
         })
             .setProtectedHeader({ alg: "HS256" })
-            .setExpirationTime("1h")
+            .setExpirationTime("15m")
             .sign(new TextEncoder().encode(process.env.JWT_SECRET));
 
-        return { user: userWithoutPassword, token };
+        const refreshToken = await new jose.SignJWT({
+            id: userWithoutPassword.id,
+            email: userWithoutPassword.email,
+            role: userWithoutPassword?.role,
+        })
+            .setProtectedHeader({ alg: "HS256" })
+            .setExpirationTime("7d")
+            .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+
+
+        await UserRepository.updateUser(userWithoutPassword.id as string, {
+            refreshTokenHash: await hash(refreshToken, 10),
+            refreshTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        });
+
+        return { user: userWithoutPassword, token, refreshToken };
     } catch (error) {
         console.error("Google OAuth error:", error);
         throw new BadRequestError("Failed to authenticate with Google");

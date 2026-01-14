@@ -2,6 +2,7 @@ import { compare, hash } from "bcrypt";
 import * as jose from "jose";
 import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { IUser } from "../models/user.model.js";
+import * as UserRepository from "../repositories/user.repository.js";
 import { createUser, findOne } from "../repositories/user.repository.js";
 
 export async function loginService(email: string, password: string) {
@@ -33,10 +34,24 @@ export async function loginService(email: string, password: string) {
 		role: userWithoutPassword?.role,
 	})
 		.setProtectedHeader({ alg: "HS256" })
-		.setExpirationTime("1h")
+		.setExpirationTime("15m")
 		.sign(new TextEncoder().encode(process.env.JWT_SECRET));
 
-	return { user: userWithoutPassword, token };
+	const refreshToken = await new jose.SignJWT({
+		id: userWithoutPassword.id,
+		email: userWithoutPassword.email,
+		role: userWithoutPassword?.role,
+	})
+		.setProtectedHeader({ alg: "HS256" })
+		.setExpirationTime("7d")
+		.sign(new TextEncoder().encode(process.env.JWT_SECRET));
+
+	await UserRepository.updateUser(userWithoutPassword.id as string, {
+		refreshTokenHash: await hash(refreshToken, 10),
+		refreshTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+	});
+
+	return { user: userWithoutPassword, token, refreshToken };
 }
 
 export async function registerService(payload: Omit<IUser, 'password'> & { password: string }) {
