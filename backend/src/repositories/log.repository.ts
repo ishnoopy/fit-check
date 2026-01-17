@@ -140,7 +140,12 @@ export async function getLogStats(userId: string) {
 
   const datesWithWorkouts = uniqueDatesWithWorkouts.map((date) => date.getTime());
 
-  const exercisesToday = _.filter(workoutDates, (date) => date.getTime() === today.getTime()).length;
+  const logsToday = await LogModel.find({
+    user_id: new Types.ObjectId(userId),
+    workout_date: { $gte: today, $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) },
+  }).lean()
+
+  const exercisesToday = _.uniqBy(logsToday, 'exercise_id').length;
 
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay());
@@ -148,10 +153,11 @@ export async function getLogStats(userId: string) {
   endOfWeek.setDate(startOfWeek.getDate() + 6);
   endOfWeek.setUTCHours(23, 59, 59, 999);
 
-  const exercisesThisWeek = _.filter(
-    workoutDates,
-    (date) => date >= startOfWeek && date <= endOfWeek
-  ).length;
+  const logsThisWeek = await LogModel.find({
+    user_id: new Types.ObjectId(userId),
+    workout_date: { $gte: startOfWeek, $lte: endOfWeek },
+  }).lean();
+  const exercisesThisWeek = _.uniqBy(logsThisWeek, 'exercise_id').length;
 
   if (uniqueDatesWithWorkouts.length === 0) {
     return {
