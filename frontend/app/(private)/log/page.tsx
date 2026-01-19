@@ -323,8 +323,8 @@ function ExerciseHistoryDialog({
                               progressionData.volumeChange > 0
                                 ? "text-green-600"
                                 : progressionData.volumeChange < 0
-                                ? "text-red-600"
-                                : "text-muted-foreground"
+                                  ? "text-red-600"
+                                  : "text-muted-foreground"
                             )}
                           >
                             {progressionData.volumeChange > 0 ? (
@@ -356,8 +356,8 @@ function ExerciseHistoryDialog({
                               progressionData.weightChange > 0
                                 ? "text-green-600"
                                 : progressionData.weightChange < 0
-                                ? "text-red-600"
-                                : "text-muted-foreground"
+                                  ? "text-red-600"
+                                  : "text-muted-foreground"
                             )}
                           >
                             {progressionData.weightChange > 0 ? (
@@ -908,18 +908,16 @@ export default function LogPage() {
                 className="border-b"
               >
                 <AccordionTrigger
-                  className={`cursor-pointer py-2.5 px-3 hover:no-underline ${
-                    isLogged ? "bg-muted/30" : ""
-                  }`}
+                  className={`cursor-pointer py-2.5 px-3 hover:no-underline ${isLogged ? "bg-muted/30" : ""
+                    }`}
                 >
                   <div className="flex items-center gap-2 w-full">
                     {isLogged && (
                       <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                     )}
                     <span
-                      className={`flex-1 text-left text-sm ${
-                        isLogged ? "font-medium" : ""
-                      } ${isActiveExercise ? "font-bold text-primary" : ""}`}
+                      className={`flex-1 text-left text-sm ${isLogged ? "font-medium" : ""
+                        } ${isActiveExercise ? "font-bold text-primary" : ""}`}
                     >
                       {exercise.name}
                     </span>
@@ -1057,7 +1055,7 @@ export default function LogPage() {
                           {format(
                             new Date(
                               latestExerciseLog.createdAt ||
-                                latestExerciseLog.workoutDate
+                              latestExerciseLog.workoutDate
                             ),
                             "MMM d"
                           )}
@@ -1308,39 +1306,84 @@ export default function LogPage() {
                                     </div>
 
                                     {!isLogged && (
-                                      <div className="flex gap-2 pt-1">
+                                      <div className="space-y-2 pt-1">
+                                        <div className="flex gap-2">
+                                          <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex-1 h-8 text-xs border-dashed"
+                                            onClick={() => {
+                                              const currentSets = Array.isArray(
+                                                field.value
+                                              )
+                                                ? field.value.slice()
+                                                : [];
+                                              field.onChange([
+                                                ...currentSets,
+                                                {
+                                                  setNumber:
+                                                    currentSets.length + 1,
+                                                  reps: 0,
+                                                  weight: 0,
+                                                  notes: "",
+                                                },
+                                              ]);
+                                            }}
+                                          >
+                                            <PlusIcon className="h-3.5 w-3.5 mr-1" />
+                                            Add Set
+                                          </Button>
+                                          <Button
+                                            type="submit"
+                                            size="sm"
+                                            className="flex-1 h-8 text-xs"
+                                          >
+                                            Submit
+                                          </Button>
+                                        </div>
                                         <Button
                                           type="button"
-                                          variant="outline"
+                                          variant="ghost"
                                           size="sm"
-                                          className="flex-1 h-8 text-xs border-dashed"
+                                          className="w-full h-8 text-xs text-muted-foreground hover:text-destructive"
                                           onClick={() => {
-                                            const currentSets = Array.isArray(
-                                              field.value
-                                            )
-                                              ? field.value.slice()
-                                              : [];
-                                            field.onChange([
-                                              ...currentSets,
-                                              {
-                                                setNumber:
-                                                  currentSets.length + 1,
+                                            const DEFAULT_NUMBER_OF_SETS = 3;
+                                            const previousLogForExercise = latestLogs?.find(
+                                              (log) => log.exerciseId?.id === activeExerciseId
+                                            );
+                                            const numberOfSetsToResetTo =
+                                              previousLogForExercise?.sets?.length || DEFAULT_NUMBER_OF_SETS;
+
+                                            const createEmptySets = (
+                                              numberOfSets: number = DEFAULT_NUMBER_OF_SETS
+                                            ) => {
+                                              return Array.from({ length: numberOfSets }, (_, index) => ({
+                                                setNumber: index + 1,
                                                 reps: 0,
                                                 weight: 0,
                                                 notes: "",
-                                              },
-                                            ]);
+                                              }));
+                                            };
+
+                                            form.setValue("sets", createEmptySets(numberOfSetsToResetTo));
+                                            form.setValue("durationMinutes", 0);
+                                            form.setValue("notes", "");
+
+                                            // Remove draft from local storage
+                                            const draftDocumentCollection = getItemFromLocalStorage("logFormDrafts")
+                                              ? JSON.parse(getItemFromLocalStorage("logFormDrafts") || "")
+                                              : {};
+                                            delete draftDocumentCollection[activeExerciseId];
+                                            localStorage.setItem(
+                                              "logFormDrafts",
+                                              JSON.stringify(draftDocumentCollection)
+                                            );
+
+                                            toast.success("Form reset");
                                           }}
                                         >
-                                          <PlusIcon className="h-3.5 w-3.5 mr-1" />
-                                          Add Set
-                                        </Button>
-                                        <Button
-                                          type="submit"
-                                          size="sm"
-                                          className="flex-1 h-8 text-xs"
-                                        >
-                                          Submit
+                                          Reset
                                         </Button>
                                       </div>
                                     )}
