@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -26,26 +25,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api } from "@/lib/api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { api, apiFetch } from "@/lib/api";
 import { IUser } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import {
-  Activity,
-  Calendar,
-  Edit,
-  Mail,
-  Ruler,
-  Settings,
-  Sparkles,
-  Target,
-  TrendingUp,
-  UserIcon,
-  Weight,
+  Camera,
+  Grid3x3,
+  Settings2,
+  Upload,
+  UserIcon
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -97,6 +90,13 @@ interface Setting {
   updatedAt?: string;
 }
 
+interface GalleryImage {
+  id: string;
+  url: string;
+  caption?: string;
+  createdAt: string;
+}
+
 const updateProfile = (values: ProfileFormValues) => {
   const transformedValues: Partial<IUser> = {
     firstName: values.firstName,
@@ -111,7 +111,6 @@ const updateProfile = (values: ProfileFormValues) => {
     activityLevel: values.activityLevel,
   };
 
-  // Only include password if it's provided and not empty
   if (values.password && values.password !== "") {
     transformedValues.password = values.password;
   }
@@ -123,20 +122,58 @@ const getSettings = () => api.get<{ data: Setting }>("/api/settings");
 const updateSettings = (values: SettingsFormValues) =>
   api.put("/api/settings", { settings: values });
 
+const uploadImage = async (file: File) => {
+  const { data } = await apiFetch<{ data: { uploadUrl: string, key: string } }>("/api/upload/presign", {
+    method: "POST",
+    body: JSON.stringify({ fileName: file.name, fileType: file.type }),
+  });
+
+  const { uploadUrl, key } = data;
+
+  await fetch(uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: {
+      "Content-Type": file.type,
+    },
+  });
+
+  return api.post("/api/upload/files", {
+    s3Key: key,
+    mimeType: file.type,
+    fileName: file.name,
+    fileSize: file.size
+  });
+};
+
+const getGalleryImages = () =>
+  api.get<{ data: GalleryImage[] }>("/api/gallery");
+
+const deleteGalleryImage = (imageId: string) =>
+  api.delete(`/api/gallery/${imageId}`);
+
 export default function ProfilePage() {
   const { user } = useUser();
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isGoogleUser = user?.authProvider === "google";
 
-  // Fetch settings
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: getSettings,
     retry: false,
     select: (data) => data.data,
+  });
+
+  const { data: galleryImages = [] } = useQuery({
+    queryKey: ["gallery"],
+    queryFn: getGalleryImages,
+    retry: false,
+    select: (data) => data.data || [],
   });
 
   const profileForm = useForm<ProfileFormValues>({
@@ -206,12 +243,39 @@ export default function ProfilePage() {
     mutationFn: updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
-      toast.success("Settings updated successfully! ⚙️");
+      toast.success("Settings updated successfully");
       setIsSettingsDialogOpen(false);
     },
     onError: (error) => {
       toast.error(
         error instanceof Error ? error.message : "Failed to update settings"
+      );
+    },
+  });
+
+  const uploadImageMutation = useMutation({
+    mutationFn: uploadImage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gallery"] });
+      toast.success("Image uploaded successfully");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload image"
+      );
+    },
+  });
+
+  const deleteImageMutation = useMutation({
+    mutationFn: deleteGalleryImage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gallery"] });
+      toast.success("Image deleted successfully");
+      setSelectedImage(null);
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete image"
       );
     },
   });
@@ -224,7 +288,22 @@ export default function ProfilePage() {
     updateSettingsMutation.mutate(values);
   };
 
-  // Helper function to format field labels
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadImageMutation.mutate(file);
+    }
+  };
+
+  const calculateStats = () => {
+    const posts = galleryImages.length;
+    const workouts = 0;
+    const streak = 0;
+    return { posts, workouts, streak };
+  };
+
+  const stats = calculateStats();
+
   const formatLabel = (key: string) => {
     return key
       .split("_")
@@ -232,344 +311,214 @@ export default function ProfilePage() {
       .join(" ");
   };
 
-  // Helper function to format values
-  const formatValue = (key: string, value: string | number | undefined) => {
-    if (!value) return "Not set";
-
-    switch (key) {
-      case "weight":
-        return `${value} kg`;
-      case "height":
-        return `${value} cm`;
-      case "fitnessGoal":
-      case "activityLevel":
-      case "gender":
-        return formatLabel(String(value));
-      default:
-        return value;
-    }
-  };
-
-  // Calculate BMI if height and weight are available
-  const calculateBMI = () => {
-    if (user?.height && user?.weight) {
-      const heightInMeters = user.height / 100;
-      const bmi = user.weight / (heightInMeters * heightInMeters);
-      return bmi.toFixed(1);
-    }
-    return null;
-  };
-
-  const getBMICategory = (bmi: number) => {
-    if (bmi < 18.5)
-      return {
-        label: "Underweight",
-        color: "text-blue-600 dark:text-blue-400",
-        bg: "bg-blue-500/10",
-      };
-    if (bmi < 25)
-      return {
-        label: "Normal",
-        color: "text-green-600 dark:text-green-400",
-        bg: "bg-green-500/10",
-      };
-    if (bmi < 30)
-      return {
-        label: "Overweight",
-        color: "text-orange-600 dark:text-orange-400",
-        bg: "bg-orange-500/10",
-      };
-    return {
-      label: "Obese",
-      color: "text-red-600 dark:text-red-400",
-      bg: "bg-red-500/10",
-    };
-  };
-
-  const bmi = calculateBMI();
-  const bmiCategory = bmi ? getBMICategory(parseFloat(bmi)) : null;
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-      },
-    },
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0 },
-  };
-
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-5">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Profile 🎯</h1>
+      <div className="p-6 max-w-2xl mx-auto">
+        {/* Instagram-style Header */}
+        <div className="p-6 border-b">
+          <div className="flex items-start gap-8 md:gap-16">
+            {/* Profile Picture */}
+            <div className="relative">
+              <div className="h-20 w-20 md:h-32 md:w-32 rounded-full bg-linear-to-br from-purple-500 via-pink-500 to-orange-500 p-0.5">
+                <div className="h-full w-full rounded-full bg-background p-1">
+                  {user?.avatar ? (
+                    <Image
+                      src={user.avatar}
+                      alt="Profile"
+                      width={128}
+                      height={128}
+                      className="rounded-full object-cover w-full h-full"
+                    />
+                  ) : (
+                    <div className="h-full w-full rounded-full bg-linear-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center">
+                      <UserIcon className="h-8 w-8 md:h-12 md:w-12 text-white" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-4 mb-4 flex-wrap">
+                <h1 className="text-xl font-light">
+                  {user?.firstName?.toLowerCase()}
+                  {user?.lastName?.toLowerCase()}
+                </h1>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsEditDialogOpen(true)}
+                  className="rounded-lg"
+                >
+                  Edit profile
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsSettingsDialogOpen(true)}
+                  className="rounded-lg"
+                >
+                  <Settings2 className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* Stats */}
+              <div className="flex gap-8 mb-4">
+                <div className="text-center md:text-left">
+                  <span className="font-semibold">{stats.posts}</span>{" "}
+                  <span className="text-muted-foreground">posts</span>
+                </div>
+                <div className="text-center md:text-left">
+                  <span className="font-semibold">{stats.workouts}</span>{" "}
+                  <span className="text-muted-foreground">workouts</span>
+                </div>
+                <div className="text-center md:text-left">
+                  <span className="font-semibold">{stats.streak}</span>{" "}
+                  <span className="text-muted-foreground">day streak</span>
+                </div>
+              </div>
+
+              {/* Bio */}
+              <div className="space-y-1">
+                <p className="font-semibold">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                {user?.fitnessGoal && (
+                  <p className="text-sm">
+                    {formatLabel(user.fitnessGoal)} • {user.activityLevel && formatLabel(user.activityLevel)}
+                  </p>
+                )}
+                {(user?.age || user?.weight || user?.height) && (
+                  <p className="text-sm text-muted-foreground">
+                    {user?.age && `${user.age}yo`}
+                    {user?.weight && ` • ${user.weight}kg`}
+                    {user?.height && ` • ${user.height}cm`}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="space-y-4"
-        >
-          {/* User Header Card */}
-          <motion.div variants={item}>
-            <Card className="border shadow-sm overflow-hidden">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-linear-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-2xl shrink-0 shadow-lg">
-                    {user?.avatar ? (
-                      <Image
-                        src={user.avatar}
-                        alt="Profile"
-                        width={64}
-                        height={64}
-                        className="rounded-full object-cover"
-                      />
-                    ) : (
-                      <UserIcon className="h-8 w-8 text-white" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h2 className="font-bold text-lg mb-1">
-                      {user?.firstName} {user?.lastName}
-                    </h2>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Mail className="h-3.5 w-3.5" />
-                        <span className="truncate">{user?.email}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {user?.role && (
-                      <div className="rounded-full bg-primary/10 px-3 py-1.5">
-                        <p className="text-sm font-semibold text-primary capitalize">
-                          {user.role}
-                        </p>
-                      </div>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setIsEditDialogOpen(true)}
-                      className="shrink-0"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+        {/* Tabs */}
+        <Tabs defaultValue="posts" className="w-full">
+          <TabsList className="w-full justify-center border-t bg-transparent h-auto p-0 rounded-none">
+            <TabsTrigger
+              value="posts"
+              className="flex items-center gap-2 data-[state=active]:border-t-2 data-[state=active]:border-foreground rounded-none px-6 py-3"
+            >
+              <Grid3x3 className="h-4 w-4" />
+              <span className="hidden sm:inline">POSTS</span>
+            </TabsTrigger>
+          </TabsList>
 
-          {/* BMI Card */}
-          {bmi && bmiCategory && (
-            <motion.div variants={item}>
-              <Card
-                className={`border shadow-sm overflow-hidden ${bmiCategory.bg}`}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-primary" />
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Body Mass Index
-                        </p>
-                      </div>
-                      <div className="flex items-baseline gap-3">
-                        <p className="text-4xl font-bold">{bmi}</p>
-                        <p className={`text-lg font-bold ${bmiCategory.color}`}>
-                          {bmiCategory.label}
-                        </p>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Based on your height and weight
-                      </p>
-                    </div>
-                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                      <TrendingUp className="h-8 w-8 text-primary" />
-                    </div>
+          <TabsContent value="posts" className="mt-0">
+            {/* Gallery Grid */}
+            <div className="p-1">
+              {galleryImages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 px-4">
+                  <div className="rounded-full border-4 border-foreground p-6 mb-4">
+                    <Camera className="h-12 w-12" />
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Physical Stats Card */}
-          <motion.div variants={item}>
-            <Card className="border shadow-sm">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Activity className="h-4 w-4 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-base">Physical Stats</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Age
-                      </p>
-                    </div>
-                    <p className="text-lg font-bold">
-                      {user?.age ? `${user.age} years` : "Not set"}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <UserIcon className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Gender
-                      </p>
-                    </div>
-                    <p className="text-lg font-bold">
-                      {formatValue("gender", user?.gender)}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Weight className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Weight
-                      </p>
-                    </div>
-                    <p className="text-lg font-bold">
-                      {formatValue("weight", user?.weight)}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Ruler className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Height
-                      </p>
-                    </div>
-                    <p className="text-lg font-bold">
-                      {formatValue("height", user?.height)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Fitness Goals Card */}
-          <motion.div variants={item}>
-            <Card className="border shadow-sm">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Target className="h-4 w-4 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-base">Fitness Goals</h3>
-                </div>
-                <div className="space-y-3">
-                  <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Primary Goal
-                      </p>
-                    </div>
-                    <p className="text-lg font-bold">
-                      {formatValue("fitnessGoal", user?.fitnessGoal)}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Activity className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Activity Level
-                      </p>
-                    </div>
-                    <p className="text-lg font-bold">
-                      {formatValue("activityLevel", user?.activityLevel)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Settings Card */}
-          <motion.div variants={item}>
-            <Card className="border shadow-sm">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Settings className="h-4 w-4 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-base">Settings</h3>
-                  </div>
+                  <h2 className="text-2xl font-light mb-2">Share Photos</h2>
+                  <p className="text-muted-foreground mb-6 text-center max-w-sm">
+                    When you share photos, they will appear on your profile.
+                  </p>
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsSettingsDialogOpen(true)}
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="link"
+                    className="text-blue-500 hover:text-blue-600"
                   >
-                    <Edit className="h-3.5 w-3.5 mr-1.5" />
-                    Edit
+                    Share your first photo
                   </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
                 </div>
-                <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Rest Days per Week
-                    </p>
-                  </div>
-                  <p className="text-lg font-bold">
-                    {settings?.settings?.restDays ?? "Not set"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+              ) : (
+                <div className="grid grid-cols-3 gap-1">
+                  {/* Upload Button */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-square bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors group"
+                  >
+                    <Upload className="h-8 w-8 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
 
-          {/* Account Information Card */}
-          <motion.div variants={item}>
-            <Card className="border shadow-sm">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-base">
-                    Account Information
-                  </h3>
+                  {/* Gallery Images */}
+                  {galleryImages.map((image) => (
+                    <button
+                      key={image.id}
+                      onClick={() => setSelectedImage(image)}
+                      className="aspect-square relative overflow-hidden group"
+                    >
+                      <Image
+                        src={image.url}
+                        alt={image.caption || "Gallery image"}
+                        fill
+                        className="object-cover"
+                        loading="eager"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                    </button>
+                  ))}
                 </div>
-                <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Member Since
-                    </p>
-                  </div>
-                  <p className="text-lg font-bold">
-                    {user?.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })
-                      : "N/A"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </motion.div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {/* Image Viewer Dialog */}
+      <Dialog
+        open={selectedImage !== null}
+        onOpenChange={() => setSelectedImage(null)}
+      >
+        <DialogContent className="max-w-4xl p-0" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle></DialogTitle>
+            <DialogDescription></DialogDescription>
+          </DialogHeader>
+          {selectedImage && (
+            <div className="relative">
+              <div className="relative w-full aspect-square">
+                <Image
+                  src={selectedImage.url}
+                  alt={selectedImage.caption || "Gallery image"}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+
+              <div className="p-4 border-t flex justify-between items-center">
+                <p className="text-xs text-muted-foreground">
+                  {new Date(selectedImage.createdAt).toLocaleDateString()}
+                </p>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => deleteImageMutation.mutate(selectedImage.id)}
+                  disabled={deleteImageMutation.isPending}
+                >
+                  {deleteImageMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Profile Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
