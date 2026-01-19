@@ -486,7 +486,11 @@ export default function ProfilePage() {
         open={selectedImage !== null}
         onOpenChange={() => setSelectedImage(null)}
       >
-        <DialogContent className="max-w-4xl p-0" showCloseButton={false}>
+        <DialogContent
+          className="max-w-4xl p-0"
+          showCloseButton={false}
+          onOverlayClick={() => setSelectedImage(null)}
+        >
           <DialogHeader>
             <DialogTitle></DialogTitle>
             <DialogDescription></DialogDescription>
