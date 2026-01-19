@@ -264,7 +264,7 @@ function ExerciseHistoryDialog({
                 <div className="space-y-1">
                   {past3Logs.map((log: ILog, idx: number) => {
                     const logDate = format(
-                      new Date(log.workoutDate || log.createdAt),
+                      new Date(log.createdAt),
                       "MMM d"
                     );
                     return (

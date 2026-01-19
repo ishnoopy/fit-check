@@ -111,7 +111,7 @@ export default function LogsArchivePage() {
     const grouped = new Map<string, ILog[]>();
 
     logs.forEach((log) => {
-      const dateKey = format(new Date(log.workoutDate), "yyyy-MM-dd");
+      const dateKey = format(new Date(log.createdAt), "yyyy-MM-dd");
       if (!grouped.has(dateKey)) {
         grouped.set(dateKey, []);
       }
@@ -481,7 +481,7 @@ export default function LogsArchivePage() {
                 {logToDelete.exerciseId?.name || "Unknown Exercise"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {format(new Date(logToDelete.workoutDate), "MMMM d, yyyy")}
+                {format(new Date(logToDelete.createdAt), "MMMM d, yyyy")}
               </p>
               <p className="text-sm">
                 {logToDelete.sets.length} set
