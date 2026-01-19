@@ -4,6 +4,12 @@ import BackButton from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
 import { PageHeader } from "@/components/PageHeader";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -100,6 +106,22 @@ export default function LogsArchivePage() {
 
   const logs = useMemo(() => logsResponse?.data || [], [logsResponse]);
   const pagination = logsResponse?.pagination || null;
+
+  const groupedLogsByDate = useMemo(() => {
+    const grouped = new Map<string, ILog[]>();
+
+    logs.forEach((log) => {
+      const dateKey = format(new Date(log.workoutDate), "yyyy-MM-dd");
+      if (!grouped.has(dateKey)) {
+        grouped.set(dateKey, []);
+      }
+      grouped.get(dateKey)?.push(log);
+    });
+
+    return Array.from(grouped.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([date, logs]) => ({ date, logs }));
+  }, [logs]);
 
 
   const deleteLogMutation = useMutation({
@@ -210,115 +232,138 @@ export default function LogsArchivePage() {
               )}
             </div>
 
-            <div className="space-y-4">
-              {logs.map((log: ILog, index: number) => (
+            <Accordion type="multiple" className="space-y-4">
+              {groupedLogsByDate.map((group, groupIndex: number) => (
                 <motion.div
-                  key={log.id}
+                  key={group.date}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: groupIndex * 0.05 }}
                 >
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-1">
-                          <CardTitle className="flex items-center gap-2 text-xl">
-                            <div className="p-1.5 bg-blue-500/10 rounded-lg">
-                              <DumbbellIcon className="h-4 w-4 text-blue-500" />
-                            </div>
-                            {log.exerciseId?.name || "Unknown Exercise"}
-                          </CardTitle>
-                          <CardDescription className="flex flex-wrap items-center gap-3 text-sm">
-                            <span className="flex items-center gap-1">
-                              <CalendarIcon className="h-3.5 w-3.5" />
-                              {format(
-                                new Date(log.workoutDate),
-                                "MMMM d, yyyy"
-                              )}
-                            </span>
-                            {log.durationMinutes && (
-                              <span className="flex items-center gap-1">
-                                <ClockIcon className="h-3.5 w-3.5" />
-                                {log.durationMinutes} min
-                              </span>
-                            )}
-                          </CardDescription>
+                  <AccordionItem
+                    value={group.date}
+                    className="border border-border/50 rounded-lg bg-card/50 backdrop-blur-sm overflow-hidden"
+                  >
+                    <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3 text-left w-full">
+                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                          <CalendarIcon className="h-5 w-5 text-blue-500" />
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9"
-                            asChild
-                          >
-                            <Link href={`/logs/${log.id}/edit`}>
-                              <EditIcon className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
-                            onClick={() => setLogToDelete(log)}
-                          >
-                            <Trash2Icon className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Sets
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                          {log.sets.map((set, idx: number) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-2 bg-muted/30 border border-border/50 rounded-lg p-2.5"
-                            >
-                              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-linear-to-br from-blue-500/20 to-purple-500/20 text-foreground font-bold text-xs shrink-0 border border-border/30">
-                                {set.setNumber}
-                              </div>
-                              <span className="text-sm font-medium">
-                                {set.reps} × {set.weight}kg
-                              </span>
-                              {set.notes && (
-                                <span className="text-xs text-muted-foreground truncate">
-                                  ({set.notes})
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {log.notes && (
-                        <div className="space-y-1 pt-2 border-t">
-                          <p className="text-sm font-medium text-muted-foreground">
-                            Notes
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold">
+                            {format(new Date(group.date), "EEEE, MMMM d, yyyy")}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {group.logs.length} exercise
+                            {group.logs.length !== 1 ? "s" : ""} logged
                           </p>
-                          <p className="text-sm">{log.notes}</p>
                         </div>
-                      )}
-
-                      <div className="flex flex-wrap gap-2 pt-2 text-xs text-muted-foreground">
-                        {log.workoutId?.title && (
-                          <span className="px-2 py-1 bg-muted/50 rounded-md">
-                            Workout: {log.workoutId.title}
-                          </span>
-                        )}
-                        {log.planId?.title && (
-                          <span className="px-2 py-1 bg-muted/50 rounded-md">
-                            Plan: {log.planId?.title}
-                          </span>
-                        )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-6 pb-4">
+                      <div className="space-y-4 pt-2">
+                        {group.logs.map((log: ILog) => (
+                          <Card
+                            key={log.id}
+                            className="bg-background/50 border-border/50"
+                          >
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 space-y-1">
+                                  <CardTitle className="flex items-center gap-2 text-lg">
+                                    <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                                      <DumbbellIcon className="h-4 w-4 text-blue-500" />
+                                    </div>
+                                    {log.exerciseId?.name || "Unknown Exercise"}
+                                  </CardTitle>
+                                  <CardDescription className="flex flex-wrap items-center gap-3 text-sm">
+                                    {log.durationMinutes && (
+                                      <span className="flex items-center gap-1">
+                                        <ClockIcon className="h-3.5 w-3.5" />
+                                        {log.durationMinutes} min
+                                      </span>
+                                    )}
+                                  </CardDescription>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9"
+                                    asChild
+                                  >
+                                    <Link href={`/logs/${log.id}/edit`}>
+                                      <EditIcon className="h-4 w-4" />
+                                    </Link>
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
+                                    onClick={() => setLogToDelete(log)}
+                                  >
+                                    <Trash2Icon className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium text-muted-foreground">
+                                  Sets
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                  {log.sets.map((set, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center gap-2 bg-muted/30 border border-border/50 rounded-lg p-2.5"
+                                    >
+                                      <div className="flex items-center justify-center w-7 h-7 rounded-full bg-linear-to-br from-blue-500/20 to-purple-500/20 text-foreground font-bold text-xs shrink-0 border border-border/30">
+                                        {set.setNumber}
+                                      </div>
+                                      <span className="text-sm font-medium">
+                                        {set.reps} × {set.weight}kg
+                                      </span>
+                                      {set.notes && (
+                                        <span className="text-xs text-muted-foreground truncate">
+                                          ({set.notes})
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {log.notes && (
+                                <div className="space-y-1 pt-2 border-t">
+                                  <p className="text-sm font-medium text-muted-foreground">
+                                    Notes
+                                  </p>
+                                  <p className="text-sm">{log.notes}</p>
+                                </div>
+                              )}
+
+                              <div className="flex flex-wrap gap-2 pt-2 text-xs text-muted-foreground">
+                                {log.workoutId?.title && (
+                                  <span className="px-2 py-1 bg-muted/50 rounded-md">
+                                    Workout: {log.workoutId.title}
+                                  </span>
+                                )}
+                                {log.planId?.title && (
+                                  <span className="px-2 py-1 bg-muted/50 rounded-md">
+                                    Plan: {log.planId?.title}
+                                  </span>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 </motion.div>
               ))}
-            </div>
+            </Accordion>
 
             {pagination && pagination.totalPages > 1 && (
               <div className="flex items-center justify-center gap-2">
