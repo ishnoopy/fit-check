@@ -11,7 +11,7 @@ export async function findAll(where: FilterQuery<ILog> = {}) {
     .populate('plan_id')
     .populate('workout_id')
     .populate('exercise_id')
-    .sort({ workout_date: -1 })
+    .sort({ created_at: -1 })
     .lean();
   return toCamelCase(logs) as ILog[];
 }
@@ -56,7 +56,7 @@ export async function deleteLog(id: string) {
 export async function findByDateRange(userId: string, startDate: Date, endDate: Date) {
   const logs = await LogModel.find({
     user_id: userId,
-    workout_date: {
+    created_at: {
       $gte: startDate,
       $lte: endDate,
     },
@@ -64,7 +64,7 @@ export async function findByDateRange(userId: string, startDate: Date, endDate: 
     .populate('plan_id')
     .populate('workout_id')
     .populate('exercise_id')
-    .sort({ workout_date: -1 })
+    .sort({ created_at: -1 })
     .lean();
   return toCamelCase(logs) as ILog[];
 }
@@ -78,7 +78,7 @@ export async function findByExercise(userId: string, exerciseId: string) {
     .populate('plan_id')
     .populate('workout_id')
     .populate('exercise_id')
-    .sort({ workout_date: -1 })
+    .sort({ created_at: -1 })
     .lean();
   return toCamelCase(logs) as ILog[];
 }
@@ -112,8 +112,8 @@ export async function countByQuery(userId: string, query: Record<string, unknown
 export async function getLogStats(userId: string) {
   const logs = await LogModel.aggregate([
     { $match: { user_id: new Types.ObjectId(userId) } },
-    { $sort: { workout_date: -1 } },
-    { $project: { workout_date: 1 } },
+    { $sort: { created_at: -1 } },
+    { $project: { created_at: 1 } },
   ]);
 
   const settings = await SettingRepository.findByUserId(userId);
@@ -132,7 +132,7 @@ export async function getLogStats(userId: string) {
   const today = normalizeDate(new Date());
   const totalLogs = logs.length;
 
-  const workoutDates = logs.map((log) => normalizeDate(log.workout_date));
+  const workoutDates = logs.map((log) => normalizeDate(log.created_at));
   const uniqueDatesWithWorkouts = _.sortBy(
     _.uniqBy(workoutDates, (date) => date.getTime()),
     (date) => -date.getTime()
@@ -142,7 +142,7 @@ export async function getLogStats(userId: string) {
 
   const logsToday = await LogModel.find({
     user_id: new Types.ObjectId(userId),
-    workout_date: { $gte: today, $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) },
+    created_at: { $gte: today, $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) },
   }).lean()
 
   const exercisesToday = _.uniqBy(logsToday, 'exercise_id').length;
@@ -155,7 +155,7 @@ export async function getLogStats(userId: string) {
 
   const logsThisWeek = await LogModel.find({
     user_id: new Types.ObjectId(userId),
-    workout_date: { $gte: startOfWeek, $lte: endOfWeek },
+    created_at: { $gte: startOfWeek, $lte: endOfWeek },
   }).lean();
   const exercisesThisWeek = _.uniqBy(logsThisWeek, 'exercise_id').length;
 
@@ -219,7 +219,7 @@ export async function findLatestLogs(userId: string, exerciseIds: string[]) {
       }
     },
     {
-      $sort: { workout_date: -1 }
+      $sort: { created_at: -1 }
     },
     {
       $group: {
