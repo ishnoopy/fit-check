@@ -28,11 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 import { ILog } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -45,8 +40,7 @@ import {
   ClockIcon,
   DumbbellIcon,
   EditIcon,
-  SparklesIcon,
-  Trash2Icon,
+  Trash2Icon
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -79,10 +73,6 @@ const deleteLog = async (logId: string) => {
   return api.delete(`/api/logs/${logId}`);
 };
 
-const fetchLogsByQuery = async (query: string) => {
-  return api.get<{ data: ILog[] | string }>(`/api/logs?${query}`);
-};
-
 export default function LogsArchivePage() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -111,22 +101,6 @@ export default function LogsArchivePage() {
   const logs = useMemo(() => logsResponse?.data || [], [logsResponse]);
   const pagination = logsResponse?.pagination || null;
 
-  const buildQueryString = () => {
-    if (!dateRange?.from || !dateRange?.to) {
-      return "llm_message=true";
-    }
-    const startDate = new Date(dateRange.from);
-    startDate.setUTCHours(0, 0, 0, 0);
-    const endDate = new Date(dateRange.to);
-    endDate.setUTCHours(23, 59, 59, 999);
-    return `llm_message=true&start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`;
-  };
-
-  const llmMessageQuery = useQuery({
-    queryKey: ["llmMessage", dateRange],
-    queryFn: () => fetchLogsByQuery(buildQueryString()),
-    enabled: !!dateRange?.from && !!dateRange?.to,
-  });
 
   const deleteLogMutation = useMutation({
     mutationFn: deleteLog,
@@ -186,27 +160,6 @@ export default function LogsArchivePage() {
             subtitle="View and manage your workout logs 📚"
           />
 
-          {logs.length > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => setIsDateRangeDialogOpen(true)}
-                >
-                  <SparklesIcon className="h-4 w-4" />
-                  Generate LLM Message
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs" side="bottom">
-                <p>
-                  Generate AI-powered workout analysis message for selected date
-                  range and feed to AI.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          )}
         </div>
 
         {logs.length === 0 ? (
@@ -462,46 +415,6 @@ export default function LogsArchivePage() {
               onClick={() => setIsDateRangeDialogOpen(false)}
             >
               Cancel
-            </Button>
-            <Button
-              onClick={async () => {
-                if (dateRange?.from && dateRange?.to) {
-                  setIsDateRangeDialogOpen(false);
-
-                  try {
-                    const result = await llmMessageQuery.refetch();
-                    const message =
-                      typeof result.data?.data === "string"
-                        ? result.data.data
-                        : null;
-                    if (message) {
-                      navigator.clipboard.writeText(message);
-                      toast.success("LLM message copied to clipboard");
-                    } else {
-                      toast.error("Failed to generate message");
-                    }
-                  } catch {
-                    toast.error("Failed to generate message");
-                  }
-                } else {
-                  toast.error("Please select a date range");
-                }
-              }}
-              disabled={
-                !dateRange?.from || !dateRange?.to || llmMessageQuery.isLoading
-              }
-            >
-              {llmMessageQuery.isLoading ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <SparklesIcon className="h-4 w-4 mr-2" />
-                  Generate & Copy
-                </>
-              )}
             </Button>
           </DialogFooter>
         </DialogContent>
