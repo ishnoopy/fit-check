@@ -1,4 +1,5 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
@@ -23,36 +24,48 @@ const createFileUploadSchema = z.object({
  * Generate a presigned URL for uploading a file to S3
  */
 export async function generatePresignedUploadUrl(c: Context) {
-  const body = await c.req.json();
-  const validation = await presignSchema.safeParseAsync(body);
+  const { fileName, fileType } = await c.req.json();
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/jpg",
+    "image/heic",
+    "image/heif",
+    "image/heics",
+    "image/heifs",
+    "image/tiff",
+    "image/x-tiff"
+  ];
 
-  if (!validation.success) {
-    throw new BadRequestError(validation.error);
+  if (!ALLOWED_TYPES.includes(fileType)) {
+    return c.json({ message: "Invalid file type" }, 400);
   }
 
-  const { fileName, fileType } = validation.data;
   const key = `uploads/${crypto.randomUUID()}-${fileName}`;
 
-  const command = new PutObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
+  const presignedPost = await createPresignedPost(s3, {
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: key,
-    ContentType: fileType,
-  });
-
-  const uploadUrl = await getSignedUrl(s3, command, {
-    expiresIn: 60,
-  });
-
-  return c.json(
-    {
-      success: true,
-      data: {
-        uploadUrl,
-        key,
-      },
+    Conditions: [
+      ["content-length-range", 0, MAX_FILE_SIZE],
+      ["eq", "$Content-Type", fileType]
+    ],
+    Fields: {
+      "Content-Type": fileType
     },
-    StatusCodes.OK,
-  );
+    Expires: 60
+  });
+
+  return c.json({
+    success: true,
+    data: {
+      url: presignedPost.url,
+      fields: presignedPost.fields,
+      key
+    }
+  }, StatusCodes.OK);
 }
 
 /**

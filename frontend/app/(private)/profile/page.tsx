@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api, apiFetch } from "@/lib/api";
+import { api } from "@/lib/api";
 import { IUser } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -123,31 +123,42 @@ const updateSettings = (values: SettingsFormValues) =>
   api.put("/api/settings", { settings: values });
 
 const uploadImage = async (file: File) => {
-  const { data } = await apiFetch<{ data: { uploadUrl: string, key: string } }>("/api/upload/presign", {
+  // 1. Generate presigned URL
+  const data = await api.post<{ data: { url: string, fields: Record<string, string>, key: string } }>("/api/upload/presign", {
+    fileName: file.name,
+    fileType: file.type,
+  });
+
+  const { url, fields, key } = data.data;
+
+  // 2. Upload file to S3 using FormData as this is needed by the presigned URL
+  const formData = new FormData();
+  for (const [key, value] of Object.entries(fields)) {
+    formData.append(key, value);
+  }
+  formData.append("file", file);
+
+  const uploadResponse = await fetch(url, {
     method: "POST",
-    body: JSON.stringify({ fileName: file.name, fileType: file.type }),
+    body: formData,
   });
 
-  const { uploadUrl, key } = data;
+  if (!uploadResponse.ok) {
+    throw new Error("Failed to upload image");
+  }
 
-  await fetch(uploadUrl, {
-    method: "PUT",
-    body: file,
-    headers: {
-      "Content-Type": file.type,
-    },
-  });
-
-  return api.post("/api/upload/files", {
+  // 3. Create file upload record
+  return await api.post("/api/upload/files", {
     s3Key: key,
     mimeType: file.type,
     fileName: file.name,
-    fileSize: file.size
+    fileSize: file.size,
   });
 };
 
 const getGalleryImages = () =>
   api.get<{ data: GalleryImage[] }>("/api/gallery");
+
 
 const deleteGalleryImage = (imageId: string) =>
   api.delete(`/api/gallery/${imageId}`);
@@ -157,6 +168,7 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -272,6 +284,7 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["gallery"] });
       toast.success("Image deleted successfully");
       setSelectedImage(null);
+      setIsDeleteConfirmOpen(false);
     },
     onError: (error) => {
       toast.error(
@@ -297,9 +310,7 @@ export default function ProfilePage() {
 
   const calculateStats = () => {
     const posts = galleryImages.length;
-    const workouts = 0;
-    const streak = 0;
-    return { posts, workouts, streak };
+    return { posts };
   };
 
   const stats = calculateStats();
@@ -368,14 +379,6 @@ export default function ProfilePage() {
                 <div className="text-center md:text-left">
                   <span className="font-semibold">{stats.posts}</span>{" "}
                   <span className="text-muted-foreground">posts</span>
-                </div>
-                <div className="text-center md:text-left">
-                  <span className="font-semibold">{stats.workouts}</span>{" "}
-                  <span className="text-muted-foreground">workouts</span>
-                </div>
-                <div className="text-center md:text-left">
-                  <span className="font-semibold">{stats.streak}</span>{" "}
-                  <span className="text-muted-foreground">day streak</span>
                 </div>
               </div>
 
@@ -488,7 +491,7 @@ export default function ProfilePage() {
       >
         <DialogContent
           className="max-w-4xl p-0"
-          showCloseButton={false}
+          showCloseButton={true}
           onOverlayClick={() => setSelectedImage(null)}
         >
           <DialogHeader>
@@ -513,14 +516,43 @@ export default function ProfilePage() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => deleteImageMutation.mutate(selectedImage.id)}
-                  disabled={deleteImageMutation.isPending}
+                  onClick={() => setIsDeleteConfirmOpen(true)}
                 >
-                  {deleteImageMutation.isPending ? "Deleting..." : "Delete"}
+                  Delete
                 </Button>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Image</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this image? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              disabled={deleteImageMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => selectedImage && deleteImageMutation.mutate(selectedImage.id)}
+              disabled={deleteImageMutation.isPending}
+            >
+              {deleteImageMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
