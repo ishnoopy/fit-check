@@ -246,7 +246,7 @@ export default function BottomNav({ className }: { className?: string }) {
             <DropdownMenuContent align="end" className="w-48 rounded-xl">
               <DropdownMenuItem asChild>
                 <Link href="/profile" className="cursor-pointer rounded-xl">
-                  Profile
+                  <UserIcon className="mr-2 h-4 w-4" /> Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
