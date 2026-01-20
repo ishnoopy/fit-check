@@ -21,22 +21,23 @@ interface User {
   weight?: number;
   height?: number;
   fitnessGoal?:
-    | "lose_weight"
-    | "gain_muscle"
-    | "maintain"
-    | "improve_endurance"
-    | "general_fitness";
+  | "lose_weight"
+  | "gain_muscle"
+  | "maintain"
+  | "improve_endurance"
+  | "general_fitness";
   activityLevel?:
-    | "sedentary"
-    | "lightly_active"
-    | "moderately_active"
-    | "very_active"
-    | "extremely_active";
+  | "sedentary"
+  | "lightly_active"
+  | "moderately_active"
+  | "very_active"
+  | "extremely_active";
   createdAt: string;
   updatedAt: string;
   avatar?: string;
   authProvider?: "local" | "google";
   googleId?: string;
+  isPioneer?: boolean;
 }
 
 interface UserContextType {

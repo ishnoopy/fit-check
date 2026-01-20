@@ -330,7 +330,7 @@ export default function ProfilePage() {
           <div className="flex items-start gap-8 md:gap-16">
             {/* Profile Picture */}
             <div className="relative">
-              <div className="h-20 w-20 md:h-32 md:w-32 rounded-full bg-linear-to-br from-purple-500 via-pink-500 to-orange-500 p-0.5">
+              <div className="h-20 w-20 md:h-32 md:w-32 rounded-full bg-primary p-0.5">
                 <div className="h-full w-full rounded-full bg-background p-1">
                   {user?.avatar ? (
                     <Image
@@ -347,15 +347,38 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
+
+              {/* Pioneer Easter Egg */}
+              {user?.isPioneer && (
+                <div className="absolute -bottom-1 -left-1 md:-bottom-2 md:-left-2">
+                  <div className="relative rounded-full p-0.5 bg-primary">
+                    <Image
+                      src="/psyduck.gif"
+                      alt="Pioneer Badge"
+                      width={32}
+                      height={32}
+                      className="h-8 w-8 md:h-10 md:w-10"
+                      title="Pioneer User"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Profile Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-4 mb-4 flex-wrap">
-                <h1 className="text-xl font-light">
-                  {user?.firstName?.toLowerCase()}
-                  {user?.lastName?.toLowerCase()}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-light">
+                    {user?.firstName?.toLowerCase()}
+                    {user?.lastName?.toLowerCase()}
+                  </h1>
+                  {user?.isPioneer && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-linear-to-r from-blue-500 to-purple-500 text-white shadow-sm font-mono tracking-tight">
+                      &lt;/&gt;
+                    </span>
+                  )}
+                </div>
                 <Button
                   variant="secondary"
                   size="sm"

@@ -26,6 +26,9 @@ export interface IUser {
   // Refresh Token Fields
   refreshTokenHash?: string | null;
   refreshTokenExpiresAt?: Date | null;
+
+  // personalized fields
+  isPioneer?: boolean;
 }
 
 // Interface for the user model
@@ -55,6 +58,9 @@ export interface IUserModel {
   // Refresh Token Fields
   refresh_token_hash?: string | null;
   refresh_token_expires_at?: Date | null;
+
+  // personalized fields
+  is_pioneer?: boolean;
 }
 
 const UserSchema = new mongoose.Schema({
@@ -85,6 +91,9 @@ const UserSchema = new mongoose.Schema({
   // Refresh Token Fields
   refresh_token_hash: { type: String, required: false },
   refresh_token_expires_at: { type: Date, required: false },
+
+  // personalized fields
+  is_pioneer: { type: Boolean, default: false },
 }, {
   timestamps: {
     createdAt: 'created_at',
