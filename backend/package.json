@@ -4,7 +4,11 @@
   "scripts": {
     "dev": "NODE_ENV=local tsx watch src/index.ts",
     "start": "NODE_ENV=production tsx src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "migration:create": "npx migrate-mongo create",
+    "migration:up": "npx migrate-mongo up",
+    "migration:down": "npx migrate-mongo down",
+    "migration:status": "npx migrate-mongo status"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.971.0",
