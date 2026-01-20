@@ -2,9 +2,10 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
-import { NotFoundError } from "../lib/errors.js";
+import { BadRequestError } from "../lib/errors.js";
 import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
+import * as galleryService from "../services/gallery.service.js";
 
 /**
  * Get all gallery images for the authenticated user
@@ -50,29 +51,16 @@ export async function getGalleryImages(c: Context) {
  */
 export async function deleteGalleryImage(c: Context) {
   const imageId = c.req.param("id");
-  const userId = c.get("user").id;
 
   if (!imageId) {
-    throw new NotFoundError("Image ID is required");
+    throw new BadRequestError("Image ID is required");
   }
 
-  const fileUpload = await fileUploadRepository.findOne({ id: imageId });
+  const userId = c.get("user").id;
+  await galleryService.deleteGalleryImageService(imageId, userId);
 
-  if (!fileUpload) {
-    throw new NotFoundError("Image not found");
-  }
-
-  if (fileUpload.userId !== userId) {
-    throw new NotFoundError("Image not found");
-  }
-
-  await fileUploadRepository.deleteFileUpload(imageId);
-
-  return c.json(
-    {
-      success: true,
-      message: "Image deleted successfully",
-    },
-    StatusCodes.OK,
-  );
+  return c.json({
+    success: true,
+    message: "Image deleted successfully",
+  }, StatusCodes.OK);
 }
