@@ -75,6 +75,7 @@ const profileFormSchema = z.object({
 
 const settingsFormSchema = z.object({
   restDays: z.number().int().nonnegative().optional(),
+  timezone: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -85,6 +86,7 @@ interface Setting {
   userId: string;
   settings: {
     restDays?: number;
+    timezone?: string;
   };
   createdAt?: string;
   updatedAt?: string;
@@ -208,6 +210,7 @@ export default function ProfilePage() {
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
       restDays: settings?.settings?.restDays || 0,
+      timezone: settings?.settings?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
   });
 
@@ -227,12 +230,13 @@ export default function ProfilePage() {
         activityLevel: user.activityLevel,
       });
     }
-  }, [user, profileForm]);
+  }, [user]);
 
   useEffect(() => {
     if (settings) {
       settingsForm.reset({
         restDays: settings.settings?.restDays,
+        timezone: settings.settings?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
     }
   }, [settings, settingsForm]);
@@ -872,6 +876,29 @@ export default function ProfilePage() {
                     <FormMessage />
                     <p className="text-xs text-muted-foreground">
                       Number of rest days you prefer between workouts (0-7)
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={settingsForm.control}
+                name="timezone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Timezone</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="text"
+                        value={field.value ?? ""}
+                        readOnly
+                        placeholder="Auto-detected"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground">
+                      Your timezone is automatically detected for accurate workout tracking
                     </p>
                   </FormItem>
                 )}

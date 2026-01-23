@@ -105,7 +105,7 @@ export async function getLogsByQueryService(query: Record<string, unknown>, user
       ).join(', ');
 
       return {
-        date: log.workoutDate ? formatInTimeZone(log.workoutDate, 'UTC', "yyyy-MM-dd") : null,
+        date: log.createdAt ? formatInTimeZone(log.createdAt, 'UTC', "yyyy-MM-dd") : null,
         plan: log.planId?.title || 'N/A',
         workout: log.workoutId?.title || 'N/A',
         exercise: log.exerciseId?.name || 'N/A',

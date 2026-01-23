@@ -194,7 +194,7 @@ export default function StatsPage() {
               <Calendar
                 mode="multiple"
                 selected={datesWithWorkouts.map(
-                  (date: number) => new Date(date)
+                  (dateStr: string) => new Date(dateStr + 'T00:00:00')
                 )}
                 disabled={true}
                 className="rounded-2xl border-0"

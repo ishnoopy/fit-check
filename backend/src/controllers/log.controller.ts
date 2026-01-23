@@ -18,7 +18,6 @@ const createLogSchema = z.object({
   workoutId: z.string().length(24, "Invalid workout ID"),
   exerciseId: z.string().length(24, "Invalid exercise ID"),
   sets: z.array(setDataSchema).min(1, "At least one set is required"),
-  workoutDate: z.string().datetime().optional(),
   durationMinutes: z.number().int().positive().optional(),
   notes: z.string().optional(),
 });
@@ -28,7 +27,6 @@ const updateLogSchema = z.object({
   workoutId: z.string().length(24).optional(),
   exerciseId: z.string().length(24).optional(),
   sets: z.array(setDataSchema).min(1).optional(),
-  workoutDate: z.string().datetime().optional(),
   durationMinutes: z.number().int().positive().optional(),
   notes: z.string().optional(),
 });
@@ -112,15 +110,7 @@ export async function createLog(c: Context) {
 
   const userId = c.get("user").id;
 
-  // Convert workout_date string to Date if provided
-  const logData = {
-    ...validation.data,
-    workoutDate: validation.data.workoutDate
-      ? new Date(validation.data.workoutDate)
-      : new Date(),
-  };
-
-  const log = await logService.createLogService(logData, userId);
+  const log = await logService.createLogService(validation.data, userId);
 
   return c.json({
     success: true,
@@ -144,14 +134,8 @@ export async function updateLog(c: Context) {
 
   const userId = c.get("user").id;
 
-  // Convert workout_date string to Date if provided
-  const { workoutDate, ...restData } = validation.data;
-  const logData = {
-    ...restData,
-    ...(workoutDate && { workoutDate: new Date(workoutDate) }),
-  };
 
-  const log = await logService.updateLogService(params.data.id, logData, userId);
+  const log = await logService.updateLogService(params.data.id, validation.data, userId);
 
   return c.json({
     success: true,

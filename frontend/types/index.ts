@@ -56,7 +56,6 @@ export interface ILog {
     id: string;
     userId: string;
     sets: ISetData[];
-    workoutDate: string;
     durationMinutes?: number;
     notes?: string;
     createdAt: string;
@@ -71,7 +70,7 @@ export interface ILogStats {
     totalLogs: number;
     exercisesToday: number;
     exercisesThisWeek: number;
-    datesWithWorkouts: number[];
+    datesWithWorkouts: string[];
     streak: number;
     bufferDaysUsed?: number;
     restDaysBuffer?: number;

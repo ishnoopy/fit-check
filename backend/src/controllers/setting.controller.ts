@@ -7,12 +7,14 @@ import * as settingService from "../services/setting.service.js";
 const createSettingSchema = z.object({
     settings: z.object({
         restDays: z.number().int().nonnegative().optional(),
+        timezone: z.string().optional(),
     }),
 });
 
 const updateSettingSchema = z.object({
     settings: z.object({
         restDays: z.number().int().nonnegative().optional(),
+        timezone: z.string().optional(),
     }).optional(),
 });
 

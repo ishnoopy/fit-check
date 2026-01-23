@@ -32,7 +32,7 @@ import { cn, getItemFromLocalStorage } from "@/lib/utils";
 import { ILog, IWorkout } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import {
   AlertCircleIcon,
   CheckCircle2,
@@ -80,7 +80,6 @@ const formSchema = z.object({
     .refine((sets) => sets.every((set) => set.reps > 0 && set.weight > -1), {
       message: "Please fill in reps and weight for all sets",
     }),
-  workoutDate: z.string().datetime().optional(),
   durationMinutes: z.number().min(1, { message: "" }).optional(),
   notes: z.string().optional(),
 });
@@ -94,6 +93,19 @@ const createLog = async (values: FormValues) => {
 const getExerciseHistory = async (exerciseId: string) => {
   return api.get<{ data: ILog[] }>(`/api/logs/exercise/${exerciseId}/history`);
 };
+
+interface Setting {
+  id?: string;
+  userId: string;
+  settings: {
+    restDays?: number;
+    timezone?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+const getSettings = () => api.get<{ data: Setting }>("/api/settings");
 
 // Default empty sets structure
 const DEFAULT_SETS = [
@@ -123,6 +135,7 @@ interface ExerciseHistoryDialogProps {
   notes?: string;
   historyData?: ILog[];
   isLoading: boolean;
+  userTimezone: string;
 }
 
 function ExerciseHistoryDialog({
@@ -131,6 +144,7 @@ function ExerciseHistoryDialog({
   notes,
   historyData,
   isLoading,
+  userTimezone,
 }: ExerciseHistoryDialogProps) {
   const past3Logs = historyData?.slice(0, 3) || [];
 
@@ -165,7 +179,7 @@ function ExerciseHistoryDialog({
         maxWeight: calculateMaxWeight(log),
         maxReps: calculateMaxReps(log),
         avgWeight: calculateAvgWeight(log),
-        date: new Date(log.workoutDate || log.createdAt),
+        date: new Date(log.createdAt),
       }))
       .sort((a, b) => b.date.getTime() - a.date.getTime());
 
@@ -263,8 +277,9 @@ function ExerciseHistoryDialog({
                 </h3>
                 <div className="space-y-1">
                   {past3Logs.map((log: ILog, idx: number) => {
-                    const logDate = format(
+                    const logDate = formatInTimeZone(
                       new Date(log.createdAt),
+                      userTimezone,
                       "MMM d"
                     );
                     return (
@@ -446,6 +461,15 @@ export default function LogPage() {
     {}
   );
 
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: getSettings,
+    retry: false,
+    select: (data) => data.data,
+  });
+
+  const userTimezone = settings?.settings?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -453,7 +477,6 @@ export default function LogPage() {
       workoutId: activeWorkoutId || "",
       exerciseId: activeExerciseId || "",
       sets: DEFAULT_SETS,
-      workoutDate: new Date().toISOString(),
       durationMinutes: 0,
       notes: "",
     },
@@ -571,13 +594,16 @@ export default function LogPage() {
     setCountdown(activeExerciseDetails?.restTime || 0);
   };
 
-  const today = new Date();
-  const startOfDay = new Date(
-    today.toISOString().split("T")[0] + "T00:00:00.000Z"
-  );
-  const endOfDay = new Date(
-    today.toISOString().split("T")[0] + "T23:59:59.999Z"
-  );
+  const getTodayDateRange = () => {
+    const nowInUserTz = toZonedTime(new Date(), userTimezone);
+    const startOfDay = new Date(nowInUserTz);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(nowInUserTz);
+    endOfDay.setHours(23, 59, 59, 999);
+    return { startOfDay, endOfDay };
+  };
+
+  const { startOfDay, endOfDay } = getTodayDateRange();
 
   const getTodayLogs = async () => {
     return api.get<{ data: ILog[] }>(
@@ -729,9 +755,6 @@ export default function LogPage() {
         todayLogForExercise.durationMinutes || 0
       );
       form.setValue("notes", todayLogForExercise.notes || "");
-      if (todayLogForExercise.workoutDate) {
-        form.setValue("workoutDate", todayLogForExercise.workoutDate);
-      }
     } else if (draftFormData) {
       // Load draft data if available for the active exercise
       form.setValue("exerciseId", draftFormData.exerciseId);
@@ -740,10 +763,6 @@ export default function LogPage() {
       form.setValue("sets", draftFormData.sets || DEFAULT_SETS);
       form.setValue("durationMinutes", draftFormData.durationMinutes || 0);
       form.setValue("notes", draftFormData.notes || "");
-      form.setValue(
-        "workoutDate",
-        draftFormData.workoutDate || new Date().toISOString()
-      );
     } else {
       const DEFAULT_NUMBER_OF_SETS = 3;
       const numberOfSetsToResetTo =
@@ -767,7 +786,6 @@ export default function LogPage() {
       form.setValue("sets", createEmptySets(numberOfSetsToResetTo));
       form.setValue("durationMinutes", 0);
       form.setValue("notes", "");
-      form.setValue("workoutDate", new Date().toISOString());
     }
   }, [
     activeExerciseId,
@@ -1041,6 +1059,7 @@ export default function LogPage() {
                         notes={exercise.notes}
                         historyData={exerciseHistoryCache[exercise.id]}
                         isLoading={loadingHistory[exercise.id] || false}
+                        userTimezone={userTimezone}
                       />
                     </Dialog>
                   </div>
@@ -1052,11 +1071,11 @@ export default function LogPage() {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <HistoryIcon className="h-3 w-3 shrink-0 opacity-60" />
                         <span className="font-medium">
-                          {format(
+                          {formatInTimeZone(
                             new Date(
-                              latestExerciseLog.createdAt ||
-                              latestExerciseLog.workoutDate
+                              latestExerciseLog.createdAt
                             ),
+                            userTimezone,
                             "MMM d"
                           )}
                         </span>

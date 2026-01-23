@@ -13,7 +13,6 @@ export interface ILog {
     workoutId: mongoose.Schema.Types.ObjectId | string;
     exerciseId: mongoose.Schema.Types.ObjectId | string;
     sets: Array<ISetData>; // Array of set data
-    workoutDate?: Date | string; // When the workout was performed
     durationMinutes?: number; // Optional: how long the exercise took
     notes?: string; // General notes about the exercise performance
     createdAt?: Date;
@@ -36,7 +35,6 @@ export interface ILogModel {
     workout_id: mongoose.Schema.Types.ObjectId | string;
     exercise_id: mongoose.Schema.Types.ObjectId | string;
     sets: Array<ISetDataModel>; // Array of set data
-    workout_date?: Date; // When the workout was performed
     duration_minutes?: number; // Optional: how long the exercise took
     notes?: string; // General notes about the exercise performance
     created_at?: Date;
@@ -56,7 +54,6 @@ const LogSchema = new mongoose.Schema({
     workout_id: { type: mongoose.Schema.Types.ObjectId, ref: "Workout", required: true },
     exercise_id: { type: mongoose.Schema.Types.ObjectId, ref: "Exercise", required: true },
     sets: { type: [SetDataSchema], required: true },
-    workout_date: { type: Date, required: true, default: Date.now },
     duration_minutes: { type: Number, required: false },
     notes: { type: String, required: false },
 }, {
@@ -67,8 +64,8 @@ const LogSchema = new mongoose.Schema({
 });
 
 // Index for efficient querying
-LogSchema.index({ user_id: 1, workout_date: -1 });
-LogSchema.index({ user_id: 1, exercise_id: 1, workout_date: -1 });
+LogSchema.index({ user_id: 1, created_at: -1 });
+LogSchema.index({ user_id: 1, exercise_id: 1, created_at: -1 });
 
 export default model<ILogModel>("Log", LogSchema);
 

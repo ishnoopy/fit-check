@@ -1,3 +1,4 @@
+import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import _ from 'lodash';
 import type { FilterQuery, SortOrder } from 'mongoose';
 import { Types } from 'mongoose';
@@ -113,37 +114,45 @@ export async function getLogStats(userId: string) {
   const logs = await LogModel.aggregate([
     { $match: { user_id: new Types.ObjectId(userId) } },
     { $sort: { created_at: -1 } },
-    { $project: { created_at: 1 } },
+    { $project: { created_at: 1, exercise_id: 1 } },
   ]);
 
   const settings = await SettingRepository.findByUserId(userId);
   const restDaysBuffer = settings?.settings?.restDays ?? 0;
+  const userTimezone = settings?.settings?.timezone ?? 'UTC';
 
   const normalizeDate = (date: Date | string): Date => {
-    const normalized = new Date(date);
-    normalized.setUTCHours(0, 0, 0, 0);
-    return normalized;
+    const zonedDate = toZonedTime(new Date(date), userTimezone);
+    zonedDate.setHours(0, 0, 0, 0);
+    return zonedDate;
   };
 
+  const formatDateString = (date: Date): string => {
+    return formatInTimeZone(date, userTimezone, 'yyyy-MM-dd');
+  };
+
+  const MILLISECONDS_IN_DAY = 24 * 60 * 60 * 1000;
+
   const getDaysDifference = (date1: Date, date2: Date): number => {
-    return Math.floor((date1.getTime() - date2.getTime()) / (24 * 60 * 60 * 1000));
+    const differenceInMilliseconds = date1.getTime() - date2.getTime();
+    return Math.floor(differenceInMilliseconds / MILLISECONDS_IN_DAY);
   };
 
   const today = normalizeDate(new Date());
   const totalLogs = logs.length;
 
   const workoutDates = logs.map((log) => normalizeDate(log.created_at));
-  const uniqueDatesWithWorkouts = _.sortBy(
-    _.uniqBy(workoutDates, (date) => date.getTime()),
-    (date) => -date.getTime()
+  const uniqueDatesWithWorkouts = _.uniqBy(
+    workoutDates,
+    (date) => date.getTime()
   );
 
-  const datesWithWorkouts = uniqueDatesWithWorkouts.map((date) => date.getTime());
+  const datesWithWorkouts = uniqueDatesWithWorkouts.map((date) => formatDateString(date));
 
-  const logsToday = await LogModel.find({
-    user_id: new Types.ObjectId(userId),
-    created_at: { $gte: today, $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) },
-  }).lean()
+  const logsToday = logs.filter(log =>
+    log.created_at >= today &&
+    log.created_at < new Date(today.getTime() + MILLISECONDS_IN_DAY)
+  );
 
   const exercisesToday = _.uniqBy(logsToday, 'exercise_id').length;
 
@@ -151,12 +160,13 @@ export async function getLogStats(userId: string) {
   startOfWeek.setDate(today.getDate() - today.getDay());
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setUTCHours(23, 59, 59, 999);
+  endOfWeek.setHours(23, 59, 59, 999);
 
-  const logsThisWeek = await LogModel.find({
-    user_id: new Types.ObjectId(userId),
-    created_at: { $gte: startOfWeek, $lte: endOfWeek },
-  }).lean();
+  const logsThisWeek = logs.filter(log =>
+    log.created_at >= startOfWeek &&
+    log.created_at <= endOfWeek
+  );
+
   const exercisesThisWeek = _.uniqBy(logsThisWeek, 'exercise_id').length;
 
   if (uniqueDatesWithWorkouts.length === 0) {
@@ -181,7 +191,9 @@ export async function getLogStats(userId: string) {
       uniqueDatesWithWorkouts[i],
       uniqueDatesWithWorkouts[i + 1]
     );
-    if (daysDifference <= restDaysBuffer + 1) {
+
+    const restDaysConsumed = daysDifference - 1;
+    if (restDaysConsumed <= restDaysBuffer) {
       streak += daysDifference;
     } else {
       break;
