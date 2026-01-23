@@ -4,7 +4,6 @@ import BackButton from "@/components/BackButton";
 import { LoadingState } from "@/components/LoadingState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -21,25 +20,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import { ILog } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
-  CalendarIcon,
   CheckIcon,
   DumbbellIcon,
   PlusIcon,
-  XIcon,
+  XIcon
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -56,7 +47,6 @@ const formSchema = z.object({
       notes: z.string().optional(),
     })
   ),
-  workoutDate: z.date(),
   durationMinutes: z.number().min(0).optional(),
   notes: z.string().optional(),
 });
@@ -74,10 +64,7 @@ const updateLog = async ({
   logId: string;
   values: FormValues;
 }) => {
-  return api.patch(`/api/logs/${logId}`, {
-    ...values,
-    workoutDate: values.workoutDate.toISOString(),
-  });
+  return api.patch(`/api/logs/${logId}`, values);
 };
 
 export default function EditLogPage() {
@@ -90,7 +77,6 @@ export default function EditLogPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       sets: [],
-      workoutDate: new Date(),
       durationMinutes: 0,
       notes: "",
     },
@@ -111,7 +97,6 @@ export default function EditLogPage() {
     if (log) {
       form.reset({
         sets: log.sets || [],
-        workoutDate: log.workoutDate ? new Date(log.workoutDate) : new Date(),
         durationMinutes: log.durationMinutes || 0,
         notes: log.notes || "",
       });
@@ -188,50 +173,6 @@ export default function EditLogPage() {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-6"
                 >
-                  <FormField
-                    control={form.control}
-                    name="workoutDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Workout Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full justify-start text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {field.value ? (
-                                  format(new Date(field.value), "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={
-                                field.value ? new Date(field.value) : undefined
-                              }
-                              onSelect={field.onChange}
-                              disabled={(date) =>
-                                date > new Date() ||
-                                date < new Date("1900-01-01")
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
 
                   <FormField
                     control={form.control}
