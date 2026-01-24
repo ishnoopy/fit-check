@@ -1,9 +1,9 @@
-import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import _ from 'lodash';
 import type { FilterQuery, SortOrder } from 'mongoose';
 import { Types } from 'mongoose';
 import LogModel, { type ILog } from '../models/log.model.js';
-import { toCamelCase, toSnakeCase } from '../utils/transformer.js';
+import { getDaysDifference } from '../utils/index.js';
+import { formatDateString, normalizeDate, toCamelCase, toSnakeCase } from '../utils/transformer.js';
 import * as SettingRepository from './setting.repository.js';
 
 export async function findAll(where: FilterQuery<ILog> = {}) {
@@ -120,34 +120,18 @@ export async function getLogStats(userId: string) {
   const settings = await SettingRepository.findByUserId(userId);
   const restDaysBuffer = settings?.settings?.restDays ?? 0;
   const userTimezone = settings?.settings?.timezone ?? 'UTC';
-
-  const normalizeDate = (date: Date | string): Date => {
-    const zonedDate = toZonedTime(new Date(date), userTimezone);
-    zonedDate.setHours(0, 0, 0, 0);
-    return zonedDate;
-  };
-
-  const formatDateString = (date: Date): string => {
-    return formatInTimeZone(date, userTimezone, 'yyyy-MM-dd');
-  };
-
   const MILLISECONDS_IN_DAY = 24 * 60 * 60 * 1000;
 
-  const getDaysDifference = (date1: Date, date2: Date): number => {
-    const differenceInMilliseconds = date1.getTime() - date2.getTime();
-    return Math.floor(differenceInMilliseconds / MILLISECONDS_IN_DAY);
-  };
-
-  const today = normalizeDate(new Date());
+  const today = normalizeDate(new Date(), userTimezone);
   const totalLogs = logs.length;
 
-  const workoutDates = logs.map((log) => normalizeDate(log.created_at));
+  const workoutDates = logs.map((log) => normalizeDate(log.created_at, userTimezone));
   const uniqueDatesWithWorkouts = _.uniqBy(
     workoutDates,
     (date) => date.getTime()
   );
 
-  const datesWithWorkouts = uniqueDatesWithWorkouts.map((date) => formatDateString(date));
+  const datesWithWorkouts = uniqueDatesWithWorkouts.map((date) => formatDateString(date, userTimezone));
 
   const logsToday = logs.filter(log =>
     log.created_at >= today &&
@@ -181,6 +165,7 @@ export async function getLogStats(userId: string) {
     };
   }
 
+  // STREAK LOGIC
   const mostRecentWorkoutDate = _.maxBy(uniqueDatesWithWorkouts, (date) => date.getTime())!;
   const daysSinceMostRecentWorkout = getDaysDifference(today, mostRecentWorkoutDate);
   const isStreakActive = daysSinceMostRecentWorkout <= restDaysBuffer;
@@ -200,6 +185,7 @@ export async function getLogStats(userId: string) {
     }
   }
 
+  // If you haven't worked out today but it's still within buffer, add those days to the streak count
   if (daysSinceMostRecentWorkout <= restDaysBuffer + 1 && daysSinceMostRecentWorkout > 0) {
     streak += daysSinceMostRecentWorkout - 1;
   }

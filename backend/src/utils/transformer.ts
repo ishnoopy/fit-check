@@ -1,3 +1,4 @@
+import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import { Types } from "mongoose";
 
 // Utility to convert snake_case string to camelCase
@@ -85,3 +86,16 @@ export function toSnakeCase<T extends Record<string, any>>(record: T): any {
     }
     return transformed;
 }
+
+export const formatDateString = (date: Date | string, userTimezone: string): string => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return formatInTimeZone(dateObj, userTimezone, 'yyyy-MM-dd');
+};
+
+
+
+export const normalizeDate = (date: Date | string, userTimezone: string): Date => {
+    const zonedDate = toZonedTime(new Date(date), userTimezone);
+    zonedDate.setHours(0, 0, 0, 0);
+    return zonedDate;
+};
