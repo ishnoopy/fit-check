@@ -71,14 +71,14 @@ export async function login(c: Context) {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
 		maxAge: 60 * 120 * 1000, // 2 hours
-		sameSite: 'strict',
+		sameSite: 'lax',
 	});
 
 	setCookie(c, 'refresh_token', user.refreshToken, {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
 		maxAge: 60 * 60 * 24 * 30, // 30 days
-		sameSite: 'strict',
+		sameSite: 'lax',
 	});
 
 	return c.json({
@@ -109,13 +109,13 @@ export async function logout(c: Context) {
 	deleteCookie(c, 'access_token', {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
-		sameSite: 'strict',
+		sameSite: 'lax',
 	});
 
 	deleteCookie(c, 'refresh_token', {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
-		sameSite: 'strict',
+		sameSite: 'lax',
 	});
 
 	await UserRepository.updateUser(user.id, {
@@ -178,7 +178,7 @@ export async function refreshToken(c: Context) {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
 		maxAge: 60 * 120 * 1000, // 2 hours
-		sameSite: 'strict',
+		sameSite: 'lax',
 	});
 
 	const newRefreshToken = await new jose.SignJWT({
@@ -194,7 +194,7 @@ export async function refreshToken(c: Context) {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
 		maxAge: 60 * 60 * 24 * 30, // 30 days
-		sameSite: 'strict',
+		sameSite: 'lax',
 	});
 
 	await UserRepository.updateUser(user.id as string, {
