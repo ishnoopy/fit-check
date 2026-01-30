@@ -9,6 +9,7 @@ export interface IExercise {
   description?: string;
   notes?: string;
   restTime: number;
+  images: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -18,6 +19,7 @@ export interface IExerciseModel {
   description?: string;
   notes?: string;
   rest_time: number;
+  images: string[];
   created_at?: Date;
   updated_at?: Date;
 }
@@ -33,6 +35,7 @@ const ExerciseSchema = new mongoose.Schema(
     description: { type: String, required: false },
     notes: { type: String, required: false },
     rest_time: { type: Number, required: true, default: 120 }, // 2 minutes
+    images: { type: [String], required: true, default: [] },
   },
   {
     timestamps: {
