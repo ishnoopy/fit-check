@@ -31,10 +31,12 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.23",
     "@types/node": "^20.11.17",
     "migrate-mongo": "^14.0.7",
     "tsx": "^4.7.1",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.18"
   }
 }
