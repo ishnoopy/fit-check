@@ -15,22 +15,33 @@ export async function getExerciseByIdService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (exercise.userId as string !== userId) {
+  if ((exercise.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to exercise");
   }
 
   return exercise;
 }
 
-export async function createExerciseService(payload: Omit<IExercise, "userId">, userId: string) {
-  const exercise = await exerciseRepository.createExercise({ ...payload, userId: userId });
+export async function createExerciseService(
+  payload: Omit<IExercise, "userId">,
+  userId: string,
+) {
+  const exercise = await exerciseRepository.createExercise({
+    ...payload,
+    userId: userId,
+  });
 
   if (payload.workoutId) {
-    const workout = await workoutRepository.findById(payload.workoutId as string);
+    const workout = await workoutRepository.findById(
+      payload.workoutId as string,
+    );
     if (!workout) {
       throw new NotFoundError("Workout not found");
     }
-    workout.exercises.push(exercise.id as string);
+    workout.exercises.push({
+      exerciseId: exercise.id as string,
+      isActive: true,
+    });
     await workoutRepository.updateWorkout(payload.workoutId as string, {
       ...workout,
       exercises: workout.exercises,
@@ -39,7 +50,11 @@ export async function createExerciseService(payload: Omit<IExercise, "userId">, 
   return exercise;
 }
 
-export async function updateExerciseService(id: string, payload: Partial<Omit<IExercise, "userId">>, userId: string) {
+export async function updateExerciseService(
+  id: string,
+  payload: Partial<Omit<IExercise, "userId">>,
+  userId: string,
+) {
   const existingExercise = await exerciseRepository.findById(id);
 
   if (!existingExercise) {
@@ -47,7 +62,7 @@ export async function updateExerciseService(id: string, payload: Partial<Omit<IE
   }
 
   // Verify ownership
-  if (existingExercise.userId as string !== userId) {
+  if ((existingExercise.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to exercise");
   }
 
@@ -64,10 +79,9 @@ export async function deleteExerciseService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (existingExercise.userId as string !== userId) {
+  if ((existingExercise.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to exercise");
   }
 
   return await exerciseRepository.deleteExercise(id);
 }
-
