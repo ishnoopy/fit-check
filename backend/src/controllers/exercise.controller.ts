@@ -10,6 +10,7 @@ const createExerciseSchema = z.object({
   description: z.string().optional(),
   notes: z.string().optional(),
   restTime: z.number().int().positive(),
+  images: z.array(z.string()).default([]),
   active: z.boolean().default(true),
 });
 
