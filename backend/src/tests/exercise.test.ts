@@ -1,6 +1,7 @@
 import type { Mock } from "vitest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as exerciseRepo from "../repositories/exercise.repository.js";
+import * as planRepo from "../repositories/plan.repository.js";
 import * as workoutRepo from "../repositories/workout.repository.js";
 
 vi.mock("jose", async () => {
@@ -20,6 +21,10 @@ vi.mock("../repositories/workout.repository.js", () => ({
   updateWorkout: vi.fn(),
 }));
 
+vi.mock("../repositories/plan.repository.js", () => ({
+  findById: vi.fn(),
+  updatePlan: vi.fn(),
+}));
 vi.mock("../repositories/exercise.repository.js", () => ({
   createExercises: vi.fn(),
 }));
@@ -52,6 +57,21 @@ describe("POST /api/workouts", () => {
   });
 
   it("should create a new workout with exercises", async () => {
+    (planRepo.findById as unknown as Mock).mockResolvedValue({
+      id: "69629a7aaf3589c1ffd1cb23",
+      name: "Beginner Plan",
+      description: "A plan for beginners",
+      userId: "6936810d0589536bab9e11b6",
+      workouts: [],
+    });
+    (planRepo.updatePlan as unknown as Mock).mockResolvedValue({
+      id: "69629a7aaf3589c1ffd1cb23",
+      name: "Beginner Plan",
+      description: "A plan for beginners",
+      userId: "6936810d0589536bab9e11b6",
+      workouts: ["69569612638765ff314bba69"],
+    });
+
     (exerciseRepo.createExercises as unknown as Mock).mockResolvedValue([
       {
         id: "693681d70589536bab9e30bc",
@@ -74,6 +94,7 @@ describe("POST /api/workouts", () => {
         userId: "6936810d0589536bab9e11b6",
       },
     ]);
+
     (workoutRepo.createWorkout as unknown as Mock).mockResolvedValue({
       id: "69569612638765ff314bba69",
       name: "Morning Routine",
@@ -92,7 +113,7 @@ describe("POST /api/workouts", () => {
         cookie: "access_token=valid_token",
       },
       body: JSON.stringify({
-        planId: "69629a7aaf3589c1ffd1cb63",
+        planId: "69629a7aaf3589c1ffd1cb23",
         title: "Morning Routine",
         description: "A quick morning workout",
         exercises: [
@@ -138,12 +159,27 @@ describe("PUT /api/workouts/:id", () => {
   });
 
   it("should update an existing workout", async () => {
+    (planRepo.findById as unknown as Mock).mockResolvedValue({
+      id: "69629a7aaf3589c1ffd1cb23",
+      name: "Beginner Plan",
+      description: "A plan for beginners",
+      userId: "6936810d0589536bab9e11b6",
+      workouts: [],
+    });
+    (planRepo.updatePlan as unknown as Mock).mockResolvedValue({
+      id: "69629a7aaf3589c1ffd1cb23",
+      name: "Beginner Plan",
+      description: "A plan for beginners",
+      userId: "6936810d0589536bab9e11b6",
+      workouts: ["69569612638765ff314bba69"],
+    });
+
     (workoutRepo.findById as unknown as Mock).mockResolvedValue({
       id: "69569612638765ff314bba69",
       title: "Morning Routine",
       description: "A quick morning workout",
       userId: "6936810d0589536bab9e11b6",
-      planId: "69629a7aaf3589c1ffd1cb63",
+      planId: "69629a7aaf3589c1ffd1cb23",
       exercises: [
         { exerciseId: "693681d70589536bab9e30bc", isActive: true },
         { exerciseId: "693681d70589536bab9e35gh", isActive: true },
@@ -155,7 +191,7 @@ describe("PUT /api/workouts/:id", () => {
       title: "Updated Morning Routine",
       description: "An updated quick morning workout",
       userId: "6936810d0589536bab9e11b6",
-      planId: "69629a7aaf3589c1ffd1cb63",
+      planId: "69629a7aaf3589c1ffd1cb23",
       exercises: [{ exerciseId: "693681d70589536bab9e30bc", isActive: true }],
     });
 
@@ -168,7 +204,7 @@ describe("PUT /api/workouts/:id", () => {
           cookie: "access_token=valid_token",
         },
         body: JSON.stringify({
-          planId: "69629a7aaf3589c1ffd1cb63",
+          planId: "69629a7aaf3589c1ffd1cb23",
           title: "Updated Morning Routine",
           description: "An updated quick morning workout",
           exercises: [
@@ -187,7 +223,7 @@ describe("PUT /api/workouts/:id", () => {
         title: "Updated Morning Routine",
         description: "An updated quick morning workout",
         userId: "6936810d0589536bab9e11b6",
-        planId: "69629a7aaf3589c1ffd1cb63",
+        planId: "69629a7aaf3589c1ffd1cb23",
         exercises: [{ exerciseId: "693681d70589536bab9e30bc", isActive: true }],
       },
     });
