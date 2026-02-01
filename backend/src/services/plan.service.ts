@@ -8,14 +8,14 @@ export async function getAllPlansService(userId: string) {
 }
 
 export async function getPlanByIdService(id: string, userId: string) {
-  const plan = await planRepository.findById(id)
+  const plan = await planRepository.findById(id);
 
   if (!plan) {
     throw new NotFoundError("Plan not found");
   }
 
   // Verify ownership
-  if (plan.userId as string !== userId) {
+  if ((plan.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to plan");
   }
 
@@ -24,15 +24,22 @@ export async function getPlanByIdService(id: string, userId: string) {
 
   return {
     ...plan,
-    workouts: workouts
+    workouts: workouts,
   };
 }
 
-export async function createPlanService(payload: Omit<IPlan, "userId">, userId: string) {
+export async function createPlanService(
+  payload: Omit<IPlan, "userId">,
+  userId: string,
+) {
   return await planRepository.createPlan({ ...payload, userId: userId });
 }
 
-export async function updatePlanService(id: string, payload: Partial<Omit<IPlan, "userId">>, userId: string) {
+export async function updatePlanService(
+  id: string,
+  payload: Partial<Omit<IPlan, "userId">>,
+  userId: string,
+) {
   const existingPlan = await planRepository.findById(id);
 
   if (!existingPlan) {
@@ -40,7 +47,7 @@ export async function updatePlanService(id: string, payload: Partial<Omit<IPlan,
   }
 
   // Verify ownership
-  if (existingPlan.userId as string !== userId) {
+  if ((existingPlan.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to plan");
   }
 
@@ -57,10 +64,9 @@ export async function deletePlanService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (existingPlan.userId as string !== userId) {
+  if ((existingPlan.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to plan");
   }
 
   return await planRepository.deletePlan(id);
 }
-

@@ -3,7 +3,10 @@ import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
 
-export async function deleteGalleryImageService(imageId: string, userId: string) {
+export async function deleteGalleryImageService(
+  imageId: string,
+  userId: string,
+) {
   const fileUpload = await fileUploadRepository.findOne({ id: imageId });
 
   if (fileUpload?.userId !== userId) {

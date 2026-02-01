@@ -25,10 +25,13 @@ export async function getPlans(c: Context) {
 
   const plans = await planService.getAllPlansService(userId);
 
-  return c.json({
-    success: true,
-    data: plans,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: plans,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function getPlan(c: Context) {
@@ -41,10 +44,13 @@ export async function getPlan(c: Context) {
   const userId = c.get("user").id;
   const plan = await planService.getPlanByIdService(params.data.id, userId);
 
-  return c.json({
-    success: true,
-    data: plan,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: plan,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function createPlan(c: Context) {
@@ -58,10 +64,13 @@ export async function createPlan(c: Context) {
   const userId = c.get("user").id;
   const plan = await planService.createPlanService(validation.data, userId);
 
-  return c.json({
-    success: true,
-    data: plan,
-  }, StatusCodes.CREATED);
+  return c.json(
+    {
+      success: true,
+      data: plan,
+    },
+    StatusCodes.CREATED,
+  );
 }
 
 export async function updatePlan(c: Context) {
@@ -78,14 +87,20 @@ export async function updatePlan(c: Context) {
     throw new BadRequestError(validation.error);
   }
 
-
   const userId = c.get("user").id;
-  const plan = await planService.updatePlanService(params.data.id, validation.data, userId);
+  const plan = await planService.updatePlanService(
+    params.data.id,
+    validation.data,
+    userId,
+  );
 
-  return c.json({
-    success: true,
-    data: plan,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: plan,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function deletePlan(c: Context) {
@@ -98,9 +113,11 @@ export async function deletePlan(c: Context) {
   const userId = c.get("user").id;
   await planService.deletePlanService(params.data.id, userId);
 
-  return c.json({
-    success: true,
-    message: "Plan deleted successfully",
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      message: "Plan deleted successfully",
+    },
+    StatusCodes.OK,
+  );
 }
-

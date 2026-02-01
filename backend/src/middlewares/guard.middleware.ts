@@ -18,5 +18,5 @@ export const guardMiddleware = (roles: Role[]) => {
     }
 
     return next();
-  }
-}
+  };
+};

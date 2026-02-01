@@ -1,5 +1,11 @@
 import { Hono } from "hono";
-import { createPlan, deletePlan, getPlan, getPlans, updatePlan } from "../controllers/plan.controller.js";
+import {
+  createPlan,
+  deletePlan,
+  getPlan,
+  getPlans,
+  updatePlan,
+} from "../controllers/plan.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { generalRateLimiter } from "../middlewares/rate-limiter.middleware.js";
 
@@ -11,4 +17,3 @@ const router = new Hono()
   .delete("/plans/:id", authMiddleware, generalRateLimiter, deletePlan);
 
 export default router;
-

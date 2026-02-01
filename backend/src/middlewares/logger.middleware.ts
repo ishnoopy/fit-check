@@ -38,7 +38,9 @@ const maskSensitiveData = (value: unknown): unknown => {
 
   const masked: Record<string, unknown> = {};
 
-  for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
+  for (const [key, nestedValue] of Object.entries(
+    value as Record<string, unknown>,
+  )) {
     if (isSensitiveKey(key)) {
       masked[key] = REDACTED_VALUE;
       continue;
@@ -67,11 +69,14 @@ export const loggerMiddleware = async (c: Context, next: Next) => {
     }
   }
 
-  const maskedPayload = payload !== undefined ? maskSensitiveData(payload) : undefined;
+  const maskedPayload =
+    payload !== undefined ? maskSensitiveData(payload) : undefined;
 
   console.log(
     `✨[${uuid}] ${method} ${url}`,
-    maskedPayload !== undefined ? { payload: JSON.stringify(maskedPayload, null, 2) } : {},
+    maskedPayload !== undefined
+      ? { payload: JSON.stringify(maskedPayload, null, 2) }
+      : {},
   );
 
   await next();

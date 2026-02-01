@@ -1,5 +1,11 @@
 import { Hono } from "hono";
-import { createExercise, deleteExercise, getExercise, getExercises, updateExercise } from "../controllers/exercise.controller.js";
+import {
+  createExercise,
+  deleteExercise,
+  getExercise,
+  getExercises,
+  updateExercise,
+} from "../controllers/exercise.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { generalRateLimiter } from "../middlewares/rate-limiter.middleware.js";
 
@@ -11,4 +17,3 @@ const router = new Hono()
   .delete("/exercises/:id", authMiddleware, generalRateLimiter, deleteExercise);
 
 export default router;
-

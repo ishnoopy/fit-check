@@ -36,7 +36,7 @@ export async function generatePresignedUploadUrl(c: Context) {
     "image/heics",
     "image/heifs",
     "image/tiff",
-    "image/x-tiff"
+    "image/x-tiff",
   ];
 
   if (!ALLOWED_TYPES.includes(fileType)) {
@@ -50,22 +50,25 @@ export async function generatePresignedUploadUrl(c: Context) {
     Key: key,
     Conditions: [
       ["content-length-range", 0, MAX_FILE_SIZE],
-      ["eq", "$Content-Type", fileType]
+      ["eq", "$Content-Type", fileType],
     ],
     Fields: {
-      "Content-Type": fileType
+      "Content-Type": fileType,
     },
-    Expires: 60
+    Expires: 60,
   });
 
-  return c.json({
-    success: true,
-    data: {
-      url: presignedPost.url,
-      fields: presignedPost.fields,
-      key
-    }
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: {
+        url: presignedPost.url,
+        fields: presignedPost.fields,
+        key,
+      },
+    },
+    StatusCodes.OK,
+  );
 }
 
 /**

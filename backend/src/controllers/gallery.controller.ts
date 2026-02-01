@@ -34,7 +34,7 @@ export async function getGalleryImages(c: Context) {
           caption: upload.fileName,
           createdAt: upload.createdAt,
         };
-      })
+      }),
   );
 
   return c.json(
@@ -59,8 +59,11 @@ export async function deleteGalleryImage(c: Context) {
   const userId = c.get("user").id;
   await galleryService.deleteGalleryImageService(imageId, userId);
 
-  return c.json({
-    success: true,
-    message: "Image deleted successfully",
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      message: "Image deleted successfully",
+    },
+    StatusCodes.OK,
+  );
 }

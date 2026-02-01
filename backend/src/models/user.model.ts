@@ -14,8 +14,18 @@ export interface IUser {
   gender?: "male" | "female" | "other" | "prefer_not_to_say";
   weight?: number;
   height?: number;
-  fitnessGoal?: "lose_weight" | "gain_muscle" | "maintain" | "improve_endurance" | "general_fitness";
-  activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
+  fitnessGoal?:
+    | "lose_weight"
+    | "gain_muscle"
+    | "maintain"
+    | "improve_endurance"
+    | "general_fitness";
+  activityLevel?:
+    | "sedentary"
+    | "lightly_active"
+    | "moderately_active"
+    | "very_active"
+    | "extremely_active";
   createdAt?: Date;
   updatedAt?: Date;
   // OAuth Fields
@@ -45,8 +55,18 @@ export interface IUserModel {
   gender?: "male" | "female" | "other" | "prefer_not_to_say";
   weight?: number; // in kg
   height?: number; // in cm
-  fitness_goal?: "lose_weight" | "gain_muscle" | "maintain" | "improve_endurance" | "general_fitness";
-  activity_level?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
+  fitness_goal?:
+    | "lose_weight"
+    | "gain_muscle"
+    | "maintain"
+    | "improve_endurance"
+    | "general_fitness";
+  activity_level?:
+    | "sedentary"
+    | "lightly_active"
+    | "moderately_active"
+    | "very_active"
+    | "extremely_active";
   created_at?: Date;
   updated_at?: Date;
 
@@ -63,42 +83,64 @@ export interface IUserModel {
   is_pioneer?: boolean;
 }
 
-const UserSchema = new mongoose.Schema({
-  first_name: { type: String, default: undefined },
-  last_name: { type: String, default: undefined },
-  email: { type: String, required: true },
-  password: { type: String, required: false },
-  role: { type: String, required: true },
-  profile_completed: { type: Boolean, default: false },
-  // Fitness-related fields (optional)
-  age: { type: Number },
-  gender: { type: String, enum: ["male", "female", "other", "prefer_not_to_say"] },
-  weight: { type: Number }, // in kg
-  height: { type: Number }, // in cm
-  fitness_goal: {
-    type: String,
-    enum: ["lose_weight", "gain_muscle", "maintain", "improve_endurance", "general_fitness"]
-  },
-  activity_level: {
-    type: String,
-    enum: ["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"]
-  },
-  // OAuth Fields
-  google_id: { type: String, unique: true, sparse: true },
-  avatar: { type: String },
-  auth_provider: { type: String, enum: ["local", "google"], default: "local" },
+const UserSchema = new mongoose.Schema(
+  {
+    first_name: { type: String, default: undefined },
+    last_name: { type: String, default: undefined },
+    email: { type: String, required: true },
+    password: { type: String, required: false },
+    role: { type: String, required: true },
+    profile_completed: { type: Boolean, default: false },
+    // Fitness-related fields (optional)
+    age: { type: Number },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other", "prefer_not_to_say"],
+    },
+    weight: { type: Number }, // in kg
+    height: { type: Number }, // in cm
+    fitness_goal: {
+      type: String,
+      enum: [
+        "lose_weight",
+        "gain_muscle",
+        "maintain",
+        "improve_endurance",
+        "general_fitness",
+      ],
+    },
+    activity_level: {
+      type: String,
+      enum: [
+        "sedentary",
+        "lightly_active",
+        "moderately_active",
+        "very_active",
+        "extremely_active",
+      ],
+    },
+    // OAuth Fields
+    google_id: { type: String, unique: true, sparse: true },
+    avatar: { type: String },
+    auth_provider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
 
-  // Refresh Token Fields
-  refresh_token_hash: { type: String, required: false },
-  refresh_token_expires_at: { type: Date, required: false },
+    // Refresh Token Fields
+    refresh_token_hash: { type: String, required: false },
+    refresh_token_expires_at: { type: Date, required: false },
 
-  // personalized fields
-  is_pioneer: { type: Boolean, default: false },
-}, {
-  timestamps: {
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
-  }
-});
+    // personalized fields
+    is_pioneer: { type: Boolean, default: false },
+  },
+  {
+    timestamps: {
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
+  },
+);
 
 export default model<IUserModel>("User", UserSchema);

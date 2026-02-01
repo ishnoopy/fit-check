@@ -53,7 +53,10 @@ const getLogsQuerySchema = z.object({
     .optional(),
   sort_by: z.enum(["created_at", "updated_at", "workout_date"]).optional(),
   sort_order: z.enum(["asc", "desc"]).optional(),
-  llm_message: z.string().transform((val) => val === "true").optional(),
+  llm_message: z
+    .string()
+    .transform((val) => val === "true")
+    .optional(),
   page: z
     .string()
     .transform((val) => {
@@ -72,7 +75,6 @@ const getLogsQuerySchema = z.object({
 
 export type ICreateLogPayload = z.infer<typeof createLogSchema>;
 
-
 export async function getLogs(c: Context) {
   const params = await getLogsQuerySchema.safeParseAsync(c.req.query());
 
@@ -86,17 +88,23 @@ export async function getLogs(c: Context) {
   const result = await logService.getLogsByQueryService(query, userId);
 
   if (typeof result === "string") {
-    return c.json({
-      success: true,
-      data: result,
-    }, StatusCodes.OK);
+    return c.json(
+      {
+        success: true,
+        data: result,
+      },
+      StatusCodes.OK,
+    );
   }
 
-  return c.json({
-    success: true,
-    data: result.data,
-    pagination: result.pagination,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function createLog(c: Context) {
@@ -107,15 +115,17 @@ export async function createLog(c: Context) {
     throw new BadRequestError(validation.error);
   }
 
-
   const userId = c.get("user").id;
 
   const log = await logService.createLogService(validation.data, userId);
 
-  return c.json({
-    success: true,
-    data: log,
-  }, StatusCodes.CREATED);
+  return c.json(
+    {
+      success: true,
+      data: log,
+    },
+    StatusCodes.CREATED,
+  );
 }
 
 export async function updateLog(c: Context) {
@@ -134,13 +144,19 @@ export async function updateLog(c: Context) {
 
   const userId = c.get("user").id;
 
+  const log = await logService.updateLogService(
+    params.data.id,
+    validation.data,
+    userId,
+  );
 
-  const log = await logService.updateLogService(params.data.id, validation.data, userId);
-
-  return c.json({
-    success: true,
-    data: log,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: log,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function deleteLog(c: Context) {
@@ -153,10 +169,13 @@ export async function deleteLog(c: Context) {
   const userId = c.get("user").id;
   await logService.deleteLogService(params.data.id, userId);
 
-  return c.json({
-    success: true,
-    message: "Log deleted successfully",
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      message: "Log deleted successfully",
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function getExerciseHistory(c: Context) {
@@ -167,22 +186,31 @@ export async function getExerciseHistory(c: Context) {
   }
 
   const userId = c.get("user").id;
-  const history = await logService.getExerciseHistoryService(userId, params.data.id);
+  const history = await logService.getExerciseHistoryService(
+    userId,
+    params.data.id,
+  );
 
-  return c.json({
-    success: true,
-    data: history,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: history,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function getLogStats(c: Context) {
   const userId = c.get("user").id;
   const stats = await logService.getLogStatsService(userId);
 
-  return c.json({
-    success: true,
-    data: stats,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: stats,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function getLatestLogs(c: Context) {
@@ -193,9 +221,15 @@ export async function getLatestLogs(c: Context) {
   }
 
   const userId = c.get("user").id;
-  const logs = await logService.getLatestLogsService(userId, params.data.exercise_ids || []);
-  return c.json({
-    success: true,
-    data: logs,
-  }, StatusCodes.OK);
+  const logs = await logService.getLatestLogsService(
+    userId,
+    params.data.exercise_ids || [],
+  );
+  return c.json(
+    {
+      success: true,
+      data: logs,
+    },
+    StatusCodes.OK,
+  );
 }

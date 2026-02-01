@@ -1,6 +1,8 @@
-import type { FilterQuery } from 'mongoose';
-import FileUploadModel, { type IFileUpload } from '../models/file-upload.model.js';
-import { toCamelCase, toSnakeCase } from '../utils/transformer.js';
+import type { FilterQuery } from "mongoose";
+import FileUploadModel, {
+  type IFileUpload,
+} from "../models/file-upload.model.js";
+import { toCamelCase, toSnakeCase } from "../utils/transformer.js";
 
 /**
  * Find all file uploads
@@ -24,7 +26,7 @@ export async function findByUserId(userId: string) {
 export async function findOne(where: FilterQuery<IFileUpload>) {
   const query = toSnakeCase(where);
   const fileUpload = await FileUploadModel.findOne(query).lean();
-  return fileUpload ? toCamelCase(fileUpload) as IFileUpload : null;
+  return fileUpload ? (toCamelCase(fileUpload) as IFileUpload) : null;
 }
 
 /**
@@ -39,10 +41,16 @@ export async function createFileUpload(fileUpload: IFileUpload) {
 /**
  * Update a file upload record by ID
  */
-export async function updateFileUpload(id: string, fileUpload: Partial<IFileUpload>) {
+export async function updateFileUpload(
+  id: string,
+  fileUpload: Partial<IFileUpload>,
+) {
   const payload = toSnakeCase(fileUpload);
-  const doc = await FileUploadModel.findByIdAndUpdate(id, payload, { new: true, lean: true });
-  return doc ? toCamelCase(doc) as IFileUpload : null;
+  const doc = await FileUploadModel.findByIdAndUpdate(id, payload, {
+    new: true,
+    lean: true,
+  });
+  return doc ? (toCamelCase(doc) as IFileUpload) : null;
 }
 
 /**
@@ -50,7 +58,7 @@ export async function updateFileUpload(id: string, fileUpload: Partial<IFileUplo
  */
 export async function deleteFileUpload(id: string) {
   const doc = await FileUploadModel.findByIdAndDelete(id).lean();
-  return doc ? toCamelCase(doc) as IFileUpload : null;
+  return doc ? (toCamelCase(doc) as IFileUpload) : null;
 }
 
 /**
@@ -58,5 +66,5 @@ export async function deleteFileUpload(id: string) {
  */
 export async function deleteByS3Key(s3Key: string) {
   const doc = await FileUploadModel.findOneAndDelete({ s3_key: s3Key }).lean();
-  return doc ? toCamelCase(doc) as IFileUpload : null;
+  return doc ? (toCamelCase(doc) as IFileUpload) : null;
 }

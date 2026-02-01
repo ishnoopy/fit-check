@@ -8,7 +8,7 @@ export class CustomError extends Error {
   constructor(status: number, message: string | ZodError) {
     if (message instanceof ZodError) {
       const formattedMessage = message.errors
-        .map(err => `${err.path.join(".")}: ${err.message}`)
+        .map((err) => `${err.path.join(".")}: ${err.message}`)
         .join(", ");
       super(formattedMessage);
     } else {
@@ -30,11 +30,10 @@ export class NotFoundError extends CustomError {
 
 export class BadRequestError extends CustomError {
   constructor(message: string | ZodError) {
-
     if (message instanceof ZodError) {
-      const formattedMessage = message.errors.map(err =>
-        `${err.path.join('.')}: ${err.message}`
-      ).join(', ');
+      const formattedMessage = message.errors
+        .map((err) => `${err.path.join(".")}: ${err.message}`)
+        .join(", ");
 
       super(StatusCodes.BAD_REQUEST, formattedMessage);
     } else {
@@ -61,4 +60,3 @@ export class InternalServerError extends CustomError {
     super(StatusCodes.INTERNAL_SERVER_ERROR, message);
   }
 }
-

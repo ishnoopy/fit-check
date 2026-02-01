@@ -4,11 +4,14 @@ import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { ILog } from "../models/log.model.js";
 import * as logRepository from "../repositories/log.repository.js";
 
-export async function getAllLogsService(userId: string, filters?: {
-  startDate?: string;
-  endDate?: string;
-  exerciseId?: string;
-}) {
+export async function getAllLogsService(
+  userId: string,
+  filters?: {
+    startDate?: string;
+    endDate?: string;
+    exerciseId?: string;
+  },
+) {
   if (filters?.startDate && filters?.endDate) {
     const startDate = new Date(filters.startDate);
     const endDate = new Date(filters.endDate);
@@ -35,25 +38,41 @@ export async function getLogByIdService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (log.userId as string !== userId) {
+  if ((log.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to log");
   }
 
   return log;
 }
 
-export async function getLogsByQueryService(query: Record<string, unknown>, userId: string) {
-  let options: { limit?: number, skip?: number, sort?: Record<string, SortOrder> } = {};
-  let customizedOptions: { llmMessage?: boolean, startDate?: Date, endDate?: Date } = {};
-  let pagination: { page?: number, limit?: number } = {};
+export async function getLogsByQueryService(
+  query: Record<string, unknown>,
+  userId: string,
+) {
+  let options: {
+    limit?: number;
+    skip?: number;
+    sort?: Record<string, SortOrder>;
+  } = {};
+  let customizedOptions: {
+    llmMessage?: boolean;
+    startDate?: Date;
+    endDate?: Date;
+  } = {};
+  let pagination: { page?: number; limit?: number } = {};
 
   if (query.startDate && query.endDate) {
-    customizedOptions = { ...customizedOptions, startDate: new Date(query.startDate as string), endDate: new Date(query.endDate as string) };
+    customizedOptions = {
+      ...customizedOptions,
+      startDate: new Date(query.startDate as string),
+      endDate: new Date(query.endDate as string),
+    };
     query = {
-      ...query, createdAt: {
+      ...query,
+      createdAt: {
         $gte: new Date(query.startDate as string),
         $lte: new Date(query.endDate as string),
-      }
+      },
     };
 
     delete query.startDate;
@@ -61,7 +80,10 @@ export async function getLogsByQueryService(query: Record<string, unknown>, user
   }
 
   if (query.sortBy && query.sortOrder) {
-    options = { ...options, sort: { [query.sortBy as string]: query.sortOrder as SortOrder } };
+    options = {
+      ...options,
+      sort: { [query.sortBy as string]: query.sortOrder as SortOrder },
+    };
     delete query.sortBy;
     delete query.sortOrder;
   }
@@ -94,21 +116,27 @@ export async function getLogsByQueryService(query: Record<string, unknown>, user
 
   if (customizedOptions.llmMessage === true) {
     // Format date range
-    const dateRangeStr = customizedOptions.startDate && customizedOptions.endDate
-      ? `${formatInTimeZone(customizedOptions.startDate, 'UTC', "yyyy-MM-dd")} to ${formatInTimeZone(customizedOptions.endDate, 'UTC', "yyyy-MM-dd")}`
-      : null;
+    const dateRangeStr =
+      customizedOptions.startDate && customizedOptions.endDate
+        ? `${formatInTimeZone(customizedOptions.startDate, "UTC", "yyyy-MM-dd")} to ${formatInTimeZone(customizedOptions.endDate, "UTC", "yyyy-MM-dd")}`
+        : null;
 
     // Transform logs to optimized format
     const logsData = logs.map((log: any) => {
-      const sets = log.sets.map((set: any) =>
-        `${set.setNumber}: ${set.reps}×${set.weight}kg${set.notes ? ` (${set.notes})` : ''}`
-      ).join(', ');
+      const sets = log.sets
+        .map(
+          (set: any) =>
+            `${set.setNumber}: ${set.reps}×${set.weight}kg${set.notes ? ` (${set.notes})` : ""}`,
+        )
+        .join(", ");
 
       return {
-        date: log.createdAt ? formatInTimeZone(log.createdAt, 'UTC', "yyyy-MM-dd") : null,
-        plan: log.planId?.title || 'N/A',
-        workout: log.workoutId?.title || 'N/A',
-        exercise: log.exerciseId?.name || 'N/A',
+        date: log.createdAt
+          ? formatInTimeZone(log.createdAt, "UTC", "yyyy-MM-dd")
+          : null,
+        plan: log.planId?.title || "N/A",
+        workout: log.workoutId?.title || "N/A",
+        exercise: log.exerciseId?.name || "N/A",
         sets,
         notes: log.notes || null,
       };
@@ -116,9 +144,18 @@ export async function getLogsByQueryService(query: Record<string, unknown>, user
 
     // Calculate summary statistics
     const totalSessions = logs.length;
-    const uniqueExercises = new Set(logs.map((log: any) => log.exerciseId?.name).filter(Boolean)).size;
-    const totalSets = logs.reduce((sum: number, log: any) => sum + (log.sets?.length || 0), 0);
-    const avgDuration = logs.reduce((sum: number, log: any) => sum + (log.durationMinutes || 0), 0) / totalSessions || 0;
+    const uniqueExercises = new Set(
+      logs.map((log: any) => log.exerciseId?.name).filter(Boolean),
+    ).size;
+    const totalSets = logs.reduce(
+      (sum: number, log: any) => sum + (log.sets?.length || 0),
+      0,
+    );
+    const avgDuration =
+      logs.reduce(
+        (sum: number, log: any) => sum + (log.durationMinutes || 0),
+        0,
+      ) / totalSessions || 0;
 
     // Build optimized message
     const message = `You are a professional fitness coach analyzing workout logs. Provide:
@@ -129,13 +166,16 @@ export async function getLogsByQueryService(query: Record<string, unknown>, user
 
 Use emojis to make it engaging. Keep it concise but actionable.
 
-**Period:** ${dateRangeStr || 'All time'}
+**Period:** ${dateRangeStr || "All time"}
 **Sessions:** ${totalSessions} | **Exercises:** ${uniqueExercises} | **Total Sets:** ${totalSets} | **Avg Duration:** ${Math.round(avgDuration)}min
 
 **Workout Logs:**
-${logsData.map((log, idx) =>
-      `${idx + 1}. ${log.date || 'N/A'} - ${log.exercise} (${log.workout})\n   Sets: ${log.sets}${log.notes ? `\n   Notes: ${log.notes}` : ''}`
-    ).join('\n\n')}`;
+${logsData
+  .map(
+    (log, idx) =>
+      `${idx + 1}. ${log.date || "N/A"} - ${log.exercise} (${log.workout})\n   Sets: ${log.sets}${log.notes ? `\n   Notes: ${log.notes}` : ""}`,
+  )
+  .join("\n\n")}`;
 
     return message;
   }
@@ -162,11 +202,18 @@ ${logsData.map((log, idx) =>
     pagination: null,
   };
 }
-export async function createLogService(payload: Omit<ILog, "userId">, userId: string) {
+export async function createLogService(
+  payload: Omit<ILog, "userId">,
+  userId: string,
+) {
   return await logRepository.createLog({ ...payload, userId: userId });
 }
 
-export async function updateLogService(id: string, payload: Partial<Omit<ILog, "userId">>, userId: string) {
+export async function updateLogService(
+  id: string,
+  payload: Partial<Omit<ILog, "userId">>,
+  userId: string,
+) {
   const existingLog = await logRepository.findById(id);
 
   if (!existingLog) {
@@ -174,7 +221,7 @@ export async function updateLogService(id: string, payload: Partial<Omit<ILog, "
   }
 
   // Verify ownership
-  if (existingLog.userId as string !== userId) {
+  if ((existingLog.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to log");
   }
 
@@ -189,7 +236,7 @@ export async function deleteLogService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if (existingLog.userId as string !== userId) {
+  if ((existingLog.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to log");
   }
 
@@ -197,7 +244,10 @@ export async function deleteLogService(id: string, userId: string) {
 }
 
 // Get exercise history/progress
-export async function getExerciseHistoryService(userId: string, exerciseId: string) {
+export async function getExerciseHistoryService(
+  userId: string,
+  exerciseId: string,
+) {
   return await logRepository.findByExercise(userId, exerciseId);
 }
 
@@ -205,6 +255,9 @@ export async function getLogStatsService(userId: string) {
   return await logRepository.getLogStats(userId);
 }
 
-export async function getLatestLogsService(userId: string, exerciseIds: string[]) {
+export async function getLatestLogsService(
+  userId: string,
+  exerciseIds: string[],
+) {
   return await logRepository.findLatestLogs(userId, exerciseIds);
 }
