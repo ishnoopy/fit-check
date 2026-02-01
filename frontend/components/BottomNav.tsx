@@ -97,7 +97,7 @@ export default function BottomNav({ className }: { className?: string }) {
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
         "fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 sm:px-4 sm:pb-4",
-        className
+        className,
       )}
     >
       <div className="mx-auto max-w-2xl bg-background/95 backdrop-blur-xl border border-border/50 rounded-full shadow-lg shadow-black/10 dark:shadow-black/30">
@@ -119,7 +119,7 @@ export default function BottomNav({ className }: { className?: string }) {
                     "flex flex-col items-center justify-center gap-1 rounded-full py-2 px-3 transition-colors relative",
                     isActive
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {/* Pulsating ring animation */}
@@ -224,7 +224,7 @@ export default function BottomNav({ className }: { className?: string }) {
                   "flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-2 px-3 transition-colors",
                   pathname === "/profile"
                     ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {user?.avatar ? (

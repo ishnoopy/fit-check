@@ -26,12 +26,7 @@ import { ILog } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import {
-  CheckIcon,
-  DumbbellIcon,
-  PlusIcon,
-  XIcon
-} from "lucide-react";
+import { CheckIcon, DumbbellIcon, PlusIcon, XIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -45,7 +40,7 @@ const formSchema = z.object({
       reps: z.number().min(1),
       weight: z.number().min(0),
       notes: z.string().optional(),
-    })
+    }),
   ),
   durationMinutes: z.number().min(0).optional(),
   notes: z.string().optional(),
@@ -173,7 +168,6 @@ export default function EditLogPage() {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-6"
                 >
-
                   <FormField
                     control={form.control}
                     name="sets"

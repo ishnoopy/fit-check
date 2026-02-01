@@ -66,7 +66,7 @@ export default function Login() {
     (values: FormValues) => {
       loginMutation.mutate(values);
     },
-    [loginMutation]
+    [loginMutation],
   );
 
   const togglePasswordVisibility = useCallback(() => {
@@ -78,8 +78,8 @@ export default function Login() {
     loginMutation.error instanceof Error
       ? loginMutation.error.message
       : loginMutation.error
-      ? error ?? "An unexpected error occurred. Please try again."
-      : error ?? null;
+        ? (error ?? "An unexpected error occurred. Please try again.")
+        : (error ?? null);
 
   const loginWithGoogle = useCallback(async () => {
     try {

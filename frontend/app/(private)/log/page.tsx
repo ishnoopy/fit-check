@@ -74,7 +74,7 @@ const formSchema = z.object({
         reps: z.number(),
         weight: z.number(),
         notes: z.string().optional(),
-      })
+      }),
     )
     .min(1, { message: "At least one set is required" })
     .refine((sets) => sets.every((set) => set.reps > 0 && set.weight > -1), {
@@ -280,7 +280,7 @@ function ExerciseHistoryDialog({
                     const logDate = formatInTimeZone(
                       new Date(log.createdAt),
                       userTimezone,
-                      "MMM d"
+                      "MMM d",
                     );
                     return (
                       <div
@@ -294,7 +294,7 @@ function ExerciseHistoryDialog({
                           {log.sets?.map(
                             (
                               set: { reps: number; weight: number },
-                              setIdx: number
+                              setIdx: number,
                             ) => (
                               <span
                                 key={setIdx}
@@ -302,7 +302,7 @@ function ExerciseHistoryDialog({
                               >
                                 {set.reps}×{set.weight}kg
                               </span>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -339,7 +339,7 @@ function ExerciseHistoryDialog({
                                 ? "text-green-600"
                                 : progressionData.volumeChange < 0
                                   ? "text-red-600"
-                                  : "text-muted-foreground"
+                                  : "text-muted-foreground",
                             )}
                           >
                             {progressionData.volumeChange > 0 ? (
@@ -372,7 +372,7 @@ function ExerciseHistoryDialog({
                                 ? "text-green-600"
                                 : progressionData.weightChange < 0
                                   ? "text-red-600"
-                                  : "text-muted-foreground"
+                                  : "text-muted-foreground",
                             )}
                           >
                             {progressionData.weightChange > 0 ? (
@@ -443,13 +443,13 @@ export default function LogPage() {
   const queryClient = useQueryClient();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [activePlanId] = useState<string>(
-    getItemFromLocalStorage("activePlanId") || ""
+    getItemFromLocalStorage("activePlanId") || "",
   );
   const [activeWorkoutId, setActiveWorkoutId] = useState<string>(
-    getItemFromLocalStorage("activeWorkoutId") || ""
+    getItemFromLocalStorage("activeWorkoutId") || "",
   );
   const [activeExerciseId, setActiveExerciseId] = useState<string>(
-    getItemFromLocalStorage("activeExerciseId") || ""
+    getItemFromLocalStorage("activeExerciseId") || "",
   );
   const [countdown, setCountdown] = useState<number>(0);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
@@ -458,7 +458,7 @@ export default function LogPage() {
     Record<string, ILog[]>
   >({});
   const [loadingHistory, setLoadingHistory] = useState<Record<string, boolean>>(
-    {}
+    {},
   );
 
   const { data: settings } = useQuery({
@@ -468,7 +468,9 @@ export default function LogPage() {
     select: (data) => data.data,
   });
 
-  const userTimezone = settings?.settings?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const userTimezone =
+    settings?.settings?.timezone ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -484,7 +486,7 @@ export default function LogPage() {
 
   const getWorkouts = async () => {
     return api.get<{ data: IWorkout[] }>(
-      `/api/workouts?plan_id=${activePlanId}`
+      `/api/workouts?plan_id=${activePlanId}`,
     );
   };
 
@@ -501,7 +503,7 @@ export default function LogPage() {
       ?.exercises.filter((exercise) => exercise.active) || [];
 
   const activeExerciseDetails = activeExercisesList.find(
-    (exercise) => exercise.id === activeExerciseId
+    (exercise) => exercise.id === activeExerciseId,
   );
 
   useEffect(() => {
@@ -607,7 +609,7 @@ export default function LogPage() {
 
   const getTodayLogs = async () => {
     return api.get<{ data: ILog[] }>(
-      `/api/logs?plan_id=${activePlanId}&workout_id=${activeWorkoutId}&start_date=${startOfDay.toISOString()}&end_date=${endOfDay.toISOString()}`
+      `/api/logs?plan_id=${activePlanId}&workout_id=${activeWorkoutId}&start_date=${startOfDay.toISOString()}&end_date=${endOfDay.toISOString()}`,
     );
   };
 
@@ -622,7 +624,7 @@ export default function LogPage() {
     return api.get<{ data: ILog[] }>(
       `/api/logs/latest?${activeExercisesList
         .map((exercise) => `exercise_ids=${exercise.id}`)
-        .join("&")}`
+        .join("&")}`,
     );
   };
 
@@ -663,7 +665,7 @@ export default function LogPage() {
       delete draftDocumentCollection[activeExerciseId];
       localStorage.setItem(
         "logFormDrafts",
-        JSON.stringify(draftDocumentCollection)
+        JSON.stringify(draftDocumentCollection),
       );
 
       form.reset();
@@ -705,7 +707,7 @@ export default function LogPage() {
         draftDocumentCollection[activeExerciseId] = draftData;
         localStorage.setItem(
           "logFormDrafts",
-          JSON.stringify(draftDocumentCollection)
+          JSON.stringify(draftDocumentCollection),
         );
       } catch (error) {
         console.log("Failed to save draft: ", error);
@@ -725,7 +727,7 @@ export default function LogPage() {
 
     // Find log data for the current exercise
     const todayLogForExercise = todayLogs?.find(
-      (log) => log.exerciseId?.id === activeExerciseId
+      (log) => log.exerciseId?.id === activeExerciseId,
     );
 
     const draftFormData = (() => {
@@ -741,7 +743,7 @@ export default function LogPage() {
     })();
 
     const previousLogForExercise = latestLogs?.find(
-      (log) => log.exerciseId?.id === activeExerciseId
+      (log) => log.exerciseId?.id === activeExerciseId,
     );
 
     // Update form with log data if available
@@ -752,7 +754,7 @@ export default function LogPage() {
       form.setValue("sets", todayLogForExercise.sets || DEFAULT_SETS);
       form.setValue(
         "durationMinutes",
-        todayLogForExercise.durationMinutes || 0
+        todayLogForExercise.durationMinutes || 0,
       );
       form.setValue("notes", todayLogForExercise.notes || "");
     } else if (draftFormData) {
@@ -769,7 +771,7 @@ export default function LogPage() {
         previousLogForExercise?.sets?.length || DEFAULT_NUMBER_OF_SETS;
 
       const createEmptySets = (
-        numberOfSets: number = DEFAULT_NUMBER_OF_SETS
+        numberOfSets: number = DEFAULT_NUMBER_OF_SETS,
       ) => {
         return Array.from({ length: numberOfSets }, (_, index) => ({
           setNumber: index + 1,
@@ -900,15 +902,15 @@ export default function LogPage() {
         >
           {activeExercisesList.map((exercise) => {
             const isLogged = todayLogs?.some(
-              (log) => log.exerciseId?.id === exercise.id
+              (log) => log.exerciseId?.id === exercise.id,
             );
 
             const logData = todayLogs?.find(
-              (log) => log.exerciseId?.id === exercise.id
+              (log) => log.exerciseId?.id === exercise.id,
             );
 
             const latestExerciseLog = latestLogs?.find(
-              (log) => log.exerciseId?.id === exercise.id
+              (log) => log.exerciseId?.id === exercise.id,
             );
 
             const isActiveExercise = activeExerciseId === exercise.id;
@@ -926,16 +928,18 @@ export default function LogPage() {
                 className="border-b"
               >
                 <AccordionTrigger
-                  className={`cursor-pointer py-2.5 px-3 hover:no-underline ${isLogged ? "bg-muted/30" : ""
-                    }`}
+                  className={`cursor-pointer py-2.5 px-3 hover:no-underline ${
+                    isLogged ? "bg-muted/30" : ""
+                  }`}
                 >
                   <div className="flex items-center gap-2 w-full">
                     {isLogged && (
                       <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                     )}
                     <span
-                      className={`flex-1 text-left text-sm ${isLogged ? "font-medium" : ""
-                        } ${isActiveExercise ? "font-bold text-primary" : ""}`}
+                      className={`flex-1 text-left text-sm ${
+                        isLogged ? "font-medium" : ""
+                      } ${isActiveExercise ? "font-bold text-primary" : ""}`}
                     >
                       {exercise.name}
                     </span>
@@ -955,7 +959,7 @@ export default function LogPage() {
                             "flex items-center gap-1.5 px-2 py-1 rounded-md border transition-colors",
                             isTimerRunning
                               ? "bg-primary/10 border-primary/20 text-primary"
-                              : "bg-muted/30 border-border/50 text-muted-foreground"
+                              : "bg-muted/30 border-border/50 text-muted-foreground",
                           )}
                         >
                           <Timer className="h-3.5 w-3.5 shrink-0" />
@@ -1033,7 +1037,7 @@ export default function LogPage() {
                             .catch((error) => {
                               console.error(
                                 "Failed to fetch exercise history",
-                                error
+                                error,
                               );
                             })
                             .finally(() => {
@@ -1072,11 +1076,9 @@ export default function LogPage() {
                         <HistoryIcon className="h-3 w-3 shrink-0 opacity-60" />
                         <span className="font-medium">
                           {formatInTimeZone(
-                            new Date(
-                              latestExerciseLog.createdAt
-                            ),
+                            new Date(latestExerciseLog.createdAt),
                             userTimezone,
-                            "MMM d"
+                            "MMM d",
                           )}
                         </span>
                         <span className="opacity-40">•</span>
@@ -1085,7 +1087,7 @@ export default function LogPage() {
                           .map(
                             (
                               s: { reps: number; weight: number },
-                              idx: number
+                              idx: number,
                             ) => (
                               <span
                                 key={idx}
@@ -1093,7 +1095,7 @@ export default function LogPage() {
                               >
                                 {s.reps}×{s.weight}kg
                               </span>
-                            )
+                            ),
                           )}
                         {latestExerciseLog.sets &&
                           latestExerciseLog.sets.length > 3 && (
@@ -1223,7 +1225,7 @@ export default function LogPage() {
                                               e.target.value =
                                                 e.target.value.replace(
                                                   /^0+/,
-                                                  ""
+                                                  "",
                                                 );
                                               if (e.target.value === "") {
                                                 e.target.value = "0";
@@ -1294,7 +1296,7 @@ export default function LogPage() {
                                                 value={field.value || ""}
                                                 onChange={(e) =>
                                                   field.onChange(
-                                                    Number(e.target.value)
+                                                    Number(e.target.value),
                                                   )
                                                 }
                                                 className="h-8 text-xs"
@@ -1334,7 +1336,7 @@ export default function LogPage() {
                                             className="flex-1 h-8 text-xs border-dashed"
                                             onClick={() => {
                                               const currentSets = Array.isArray(
-                                                field.value
+                                                field.value,
                                               )
                                                 ? field.value.slice()
                                                 : [];
@@ -1368,35 +1370,59 @@ export default function LogPage() {
                                           className="w-full h-8 text-xs text-muted-foreground hover:text-destructive"
                                           onClick={() => {
                                             const DEFAULT_NUMBER_OF_SETS = 3;
-                                            const previousLogForExercise = latestLogs?.find(
-                                              (log) => log.exerciseId?.id === activeExerciseId
-                                            );
+                                            const previousLogForExercise =
+                                              latestLogs?.find(
+                                                (log) =>
+                                                  log.exerciseId?.id ===
+                                                  activeExerciseId,
+                                              );
                                             const numberOfSetsToResetTo =
-                                              previousLogForExercise?.sets?.length || DEFAULT_NUMBER_OF_SETS;
+                                              previousLogForExercise?.sets
+                                                ?.length ||
+                                              DEFAULT_NUMBER_OF_SETS;
 
                                             const createEmptySets = (
-                                              numberOfSets: number = DEFAULT_NUMBER_OF_SETS
+                                              numberOfSets: number = DEFAULT_NUMBER_OF_SETS,
                                             ) => {
-                                              return Array.from({ length: numberOfSets }, (_, index) => ({
-                                                setNumber: index + 1,
-                                                reps: 0,
-                                                weight: 0,
-                                                notes: "",
-                                              }));
+                                              return Array.from(
+                                                { length: numberOfSets },
+                                                (_, index) => ({
+                                                  setNumber: index + 1,
+                                                  reps: 0,
+                                                  weight: 0,
+                                                  notes: "",
+                                                }),
+                                              );
                                             };
 
-                                            form.setValue("sets", createEmptySets(numberOfSetsToResetTo));
+                                            form.setValue(
+                                              "sets",
+                                              createEmptySets(
+                                                numberOfSetsToResetTo,
+                                              ),
+                                            );
                                             form.setValue("durationMinutes", 0);
                                             form.setValue("notes", "");
 
                                             // Remove draft from local storage
-                                            const draftDocumentCollection = getItemFromLocalStorage("logFormDrafts")
-                                              ? JSON.parse(getItemFromLocalStorage("logFormDrafts") || "")
-                                              : {};
-                                            delete draftDocumentCollection[activeExerciseId];
+                                            const draftDocumentCollection =
+                                              getItemFromLocalStorage(
+                                                "logFormDrafts",
+                                              )
+                                                ? JSON.parse(
+                                                    getItemFromLocalStorage(
+                                                      "logFormDrafts",
+                                                    ) || "",
+                                                  )
+                                                : {};
+                                            delete draftDocumentCollection[
+                                              activeExerciseId
+                                            ];
                                             localStorage.setItem(
                                               "logFormDrafts",
-                                              JSON.stringify(draftDocumentCollection)
+                                              JSON.stringify(
+                                                draftDocumentCollection,
+                                              ),
                                             );
 
                                             toast.success("Form reset");

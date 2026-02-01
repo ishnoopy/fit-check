@@ -101,7 +101,7 @@ const createExercise = async (
   workoutId: string,
   planId: string,
   currentExercises: Exercise[],
-  values: ExerciseFormValues
+  values: ExerciseFormValues,
 ) => {
   // First create the exercise
   const exerciseData = await api.post<{ data: Exercise }>("/api/exercises", {
@@ -124,7 +124,7 @@ const createExercise = async (
 
 const updateExercise = async (
   exerciseId: string,
-  values: ExerciseFormValues
+  values: ExerciseFormValues,
 ) => {
   return api.patch(`/api/exercises/${exerciseId}`, values);
 };
@@ -132,7 +132,7 @@ const updateExercise = async (
 const deleteExercise = async (
   workoutId: string,
   workout: Workout,
-  exerciseId: string
+  exerciseId: string,
 ) => {
   const exercises = workout.exercises
     .filter((ex) => ex.id !== exerciseId)
@@ -164,7 +164,7 @@ export default function WorkoutDetailPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(
-    null
+    null,
   );
 
   const exerciseForm = useForm<ExerciseFormValues>({
@@ -202,7 +202,7 @@ export default function WorkoutDetailPage() {
         workoutId,
         workout.planId,
         workout.exercises || [],
-        values
+        values,
       );
     },
     onSuccess: async () => {
@@ -216,7 +216,7 @@ export default function WorkoutDetailPage() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to add exercise"
+        error instanceof Error ? error.message : "Failed to add exercise",
       );
     },
   });
@@ -242,7 +242,7 @@ export default function WorkoutDetailPage() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update exercise"
+        error instanceof Error ? error.message : "Failed to update exercise",
       );
     },
   });
@@ -261,7 +261,7 @@ export default function WorkoutDetailPage() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete exercise"
+        error instanceof Error ? error.message : "Failed to delete exercise",
       );
     },
   });
@@ -566,7 +566,7 @@ export default function WorkoutDetailPage() {
             <Form {...exerciseForm}>
               <form
                 onSubmit={exerciseForm.handleSubmit(
-                  editingExercise ? handleEditExercise : handleAddExercise
+                  editingExercise ? handleEditExercise : handleAddExercise,
                 )}
                 className="space-y-6"
               >

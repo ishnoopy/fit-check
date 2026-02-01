@@ -21,17 +21,17 @@ interface User {
   weight?: number;
   height?: number;
   fitnessGoal?:
-  | "lose_weight"
-  | "gain_muscle"
-  | "maintain"
-  | "improve_endurance"
-  | "general_fitness";
+    | "lose_weight"
+    | "gain_muscle"
+    | "maintain"
+    | "improve_endurance"
+    | "general_fitness";
   activityLevel?:
-  | "sedentary"
-  | "lightly_active"
-  | "moderately_active"
-  | "very_active"
-  | "extremely_active";
+    | "sedentary"
+    | "lightly_active"
+    | "moderately_active"
+    | "very_active"
+    | "extremely_active";
   createdAt: string;
   updatedAt: string;
   avatar?: string;
@@ -50,7 +50,7 @@ const UserContext = createContext<UserContextType | null>(null);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isPublicRoute = ["/login", "/signup", "/register", "/"].includes(
-    pathname
+    pathname,
   );
 
   const fetchUser = async () => {
@@ -143,7 +143,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             },
           },
         },
-      })
+      }),
   );
 
   return (

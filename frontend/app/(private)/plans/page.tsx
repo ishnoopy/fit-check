@@ -77,7 +77,7 @@ const createPlanSchema = z.object({
 type FormValues = z.infer<typeof createPlanSchema>;
 
 const createPlan: MutationFunction<{ data: Plan }, FormValues> = (
-  values: FormValues
+  values: FormValues,
 ) => {
   return api.post("/api/plans", values);
 };
@@ -105,7 +105,7 @@ export default function PlansPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(
-    searchParams.get("create") === "true"
+    searchParams.get("create") === "true",
   );
 
   useEffect(() => {
@@ -147,7 +147,7 @@ export default function PlansPage() {
     onSuccess: (response: { data: Plan }) => {
       queryClient.invalidateQueries({ queryKey: ["plans"] });
       toast.success(
-        "Plan created successfully! 🎉 Let's add your first workout"
+        "Plan created successfully! 🎉 Let's add your first workout",
       );
       createPlanForm.reset();
       setCreateDialogOpen(false);
@@ -158,7 +158,7 @@ export default function PlansPage() {
     onError: (error) => {
       console.error("Failed to create plan", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to create plan"
+        error instanceof Error ? error.message : "Failed to create plan",
       );
     },
   });
@@ -180,7 +180,7 @@ export default function PlansPage() {
     onError: (error) => {
       console.error("Failed to delete plan", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete plan"
+        error instanceof Error ? error.message : "Failed to delete plan",
       );
     },
   });

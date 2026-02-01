@@ -93,7 +93,7 @@ const addWorkoutFormSchema = z.object({
           .int()
           .positive()
           .max(600, { message: "Rest time must be less than 600 seconds" }),
-      })
+      }),
     )
     .min(1, { message: "At least one exercise is required" }),
 });
@@ -128,7 +128,7 @@ export default function PlanDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteType, setDeleteType] = useState<"plan" | "workout">("plan");
   const [itemToDelete, setItemToDelete] = useState<IWorkout | IPlan | null>(
-    null
+    null,
   );
 
   // Edit Plan Dialog State
@@ -199,7 +199,7 @@ export default function PlanDetailPage() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update plan"
+        error instanceof Error ? error.message : "Failed to update plan",
       );
     },
   });
@@ -230,7 +230,7 @@ export default function PlanDetailPage() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create workout"
+        error instanceof Error ? error.message : "Failed to create workout",
       );
     },
   });
@@ -253,7 +253,7 @@ export default function PlanDetailPage() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update workout"
+        error instanceof Error ? error.message : "Failed to update workout",
       );
     },
   });
@@ -270,7 +270,7 @@ export default function PlanDetailPage() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete plan"
+        error instanceof Error ? error.message : "Failed to delete plan",
       );
     },
   });
@@ -289,7 +289,7 @@ export default function PlanDetailPage() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete workout"
+        error instanceof Error ? error.message : "Failed to delete workout",
       );
     },
   });
@@ -361,7 +361,7 @@ export default function PlanDetailPage() {
 
   const openDeleteDialog = (
     type: "plan" | "workout",
-    item: IWorkout | IPlan
+    item: IWorkout | IPlan,
   ) => {
     setDeleteType(type);
     setItemToDelete(item);
@@ -915,7 +915,7 @@ export default function PlanDetailPage() {
                                           value={field.value || ""}
                                           onChange={(e) => {
                                             field.onChange(
-                                              Number(e.target.value)
+                                              Number(e.target.value),
                                             );
                                           }}
                                         />

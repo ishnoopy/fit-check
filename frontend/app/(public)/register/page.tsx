@@ -73,8 +73,8 @@ export default function RegisterPage() {
     registerMutation.error instanceof Error
       ? registerMutation.error.message
       : registerMutation.error
-      ? "An unexpected error occurred. Please try again."
-      : null;
+        ? "An unexpected error occurred. Please try again."
+        : null;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 py-12 px-6 relative overflow-hidden">

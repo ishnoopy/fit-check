@@ -46,7 +46,7 @@ import {
   ClockIcon,
   DumbbellIcon,
   EditIcon,
-  Trash2Icon
+  Trash2Icon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -71,7 +71,7 @@ interface LogsResponse {
 
 const fetchLogs = async (page: number = 1, limit: number = 10) => {
   return api.get<LogsResponse>(
-    `/api/logs?page=${page}&limit=${limit}&sort_by=workout_date&sort_order=desc`
+    `/api/logs?page=${page}&limit=${limit}&sort_by=workout_date&sort_order=desc`,
   );
 };
 
@@ -122,7 +122,6 @@ export default function LogsArchivePage() {
       .sort((a, b) => b[0].localeCompare(a[0]))
       .map(([date, logs]) => ({ date, logs }));
   }, [logs]);
-
 
   const deleteLogMutation = useMutation({
     mutationFn: deleteLog,
@@ -181,7 +180,6 @@ export default function LogsArchivePage() {
             title="Logs Archive"
             subtitle="View and manage your workout logs 📚"
           />
-
         </div>
 
         {logs.length === 0 ? (
@@ -380,7 +378,7 @@ export default function LogsArchivePage() {
                 <div className="flex items-center gap-1">
                   {Array.from(
                     { length: pagination.totalPages },
-                    (_, i) => i + 1
+                    (_, i) => i + 1,
                   )
                     .filter((p) => {
                       if (pagination.totalPages <= 7) return true;

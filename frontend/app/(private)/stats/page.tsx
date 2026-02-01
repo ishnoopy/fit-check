@@ -194,7 +194,7 @@ export default function StatsPage() {
               <Calendar
                 mode="multiple"
                 selected={datesWithWorkouts.map(
-                  (dateStr: string) => new Date(dateStr + 'T00:00:00')
+                  (dateStr: string) => new Date(dateStr + "T00:00:00"),
                 )}
                 disabled={true}
                 className="rounded-2xl border-0"
@@ -230,7 +230,9 @@ export default function StatsPage() {
                   </p>
                   <p className="text-3xl font-bold">
                     {Math.round(
-                      totalLogs / Math.max(datesWithWorkouts.length / 7, 1) / 10
+                      totalLogs /
+                        Math.max(datesWithWorkouts.length / 7, 1) /
+                        10,
                     ) * 10}
                   </p>
                   <p className="text-xs text-muted-foreground">
