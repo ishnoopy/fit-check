@@ -1,7 +1,6 @@
 import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { IExercise } from "../models/exercise.model.js";
 import * as exerciseRepository from "../repositories/exercise.repository.js";
-import * as workoutRepository from "../repositories/workout.repository.js";
 
 export async function getAllExercisesService(userId: string) {
   return await exerciseRepository.findAll({ userId });
@@ -31,23 +30,21 @@ export async function createExerciseService(
     userId: userId,
   });
 
-  if (payload.workoutId) {
-    const workout = await workoutRepository.findById(
-      payload.workoutId as string,
-    );
-    if (!workout) {
-      throw new NotFoundError("Workout not found");
-    }
-    workout.exercises.push({
-      exerciseId: exercise.id as string,
-      isActive: true,
-    });
-    await workoutRepository.updateWorkout(payload.workoutId as string, {
-      ...workout,
-      exercises: workout.exercises,
-    });
-  }
   return exercise;
+}
+
+export async function createExercisesBulkService(
+  payloads: Array<Omit<IExercise, "userId">>,
+  userId: string,
+) {
+  const exercises = await exerciseRepository.createExercises(
+    payloads.map((payload) => ({
+      ...payload,
+      userId: userId,
+    })),
+  );
+
+  return exercises;
 }
 
 export async function updateExerciseService(

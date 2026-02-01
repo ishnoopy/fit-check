@@ -4,7 +4,7 @@ import { z } from "zod";
 import { BadRequestError } from "../lib/errors.js";
 import * as exerciseService from "../services/exercise.service.js";
 
-const createExerciseSchema = z.object({
+export const createExerciseSchema = z.object({
   workoutId: z.string().min(24).max(24).optional(),
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),

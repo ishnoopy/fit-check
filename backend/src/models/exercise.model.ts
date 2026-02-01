@@ -4,7 +4,6 @@ import mongoose, { model } from "mongoose";
 
 export interface IExercise {
   id?: string;
-  workoutId?: mongoose.Schema.Types.ObjectId | string; // property is not saved. Used for linking to workout on creation
   userId?: mongoose.Schema.Types.ObjectId | string;
   name: string;
   description?: string;

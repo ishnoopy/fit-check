@@ -3,32 +3,43 @@ import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { BadRequestError } from "../lib/errors.js";
 import * as workoutService from "../services/workout.service.js";
+import { createExerciseSchema } from "./exercise.controller.js";
 
 const createWorkoutWithExercisesSchema = z.object({
   planId: z.string().length(24, "Invalid plan ID"),
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  exercises: z.array(z.object({
-    name: z.string().min(1, "Name is required"),
-    description: z.string().optional(),
-    notes: z.string().optional(),
-    restTime: z.number().int().positive(),
-    active: z.boolean().default(true),
-  })).min(1, "At least one exercise is required"),
+  exercises: z
+    .array(createExerciseSchema)
+    .min(1, "At least one exercise is required"),
 });
 
 const createWorkoutSchema = z.object({
   planId: z.string().length(24, "Invalid plan ID"),
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  exercises: z.array(z.string()).default([]),
+  exercises: z
+    .array(
+      z.object({
+        exerciseId: z.string().length(24, "Invalid exercise ID"),
+        isActive: z.boolean().default(true),
+      }),
+    )
+    .default([]),
 });
 
 const updateWorkoutSchema = z.object({
   planId: z.string().length(24).optional(),
   title: z.string().optional(),
   description: z.string().optional(),
-  exercises: z.array(z.string()).optional(),
+  exercises: z
+    .array(
+      z.object({
+        exerciseId: z.string().length(24, "Invalid exercise ID"),
+        isActive: z.boolean().default(true),
+      }),
+    )
+    .optional(),
 });
 
 const idParamSchema = z.object({
@@ -37,7 +48,10 @@ const idParamSchema = z.object({
 
 const getWorkoutsQuerySchema = z.object({
   plan_id: z.string().min(24).max(24).optional(),
-  active: z.string().transform((val) => val === "true").optional(),
+  active: z
+    .string()
+    .transform((val) => val === "true")
+    .optional(),
 });
 
 export async function getWorkouts(c: Context) {
@@ -48,12 +62,18 @@ export async function getWorkouts(c: Context) {
     throw new BadRequestError(query.error);
   }
 
-  const workouts = await workoutService.getAllWorkoutsService(userId, query.data);
+  const workouts = await workoutService.getAllWorkoutsService(
+    userId,
+    query.data,
+  );
 
-  return c.json({
-    success: true,
-    data: workouts,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: workouts,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function getWorkout(c: Context) {
@@ -64,12 +84,18 @@ export async function getWorkout(c: Context) {
   }
 
   const userId = c.get("user").id;
-  const workout = await workoutService.getWorkoutByIdService(params.data.id, userId);
+  const workout = await workoutService.getWorkoutByIdService(
+    params.data.id,
+    userId,
+  );
 
-  return c.json({
-    success: true,
-    data: workout,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: workout,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function createWorkout(c: Context) {
@@ -81,29 +107,42 @@ export async function createWorkout(c: Context) {
   }
 
   const userId = c.get("user").id;
-  const workout = await workoutService.createWorkoutService(validation.data, userId);
+  const workout = await workoutService.createWorkoutService(
+    validation.data,
+    userId,
+  );
 
-  return c.json({
-    success: true,
-    data: workout,
-  }, StatusCodes.CREATED);
+  return c.json(
+    {
+      success: true,
+      data: workout,
+    },
+    StatusCodes.CREATED,
+  );
 }
 
 export async function createWorkoutWithExercises(c: Context) {
   const body = await c.req.json();
-  const validation = await createWorkoutWithExercisesSchema.safeParseAsync(body);
+  const validation =
+    await createWorkoutWithExercisesSchema.safeParseAsync(body);
 
   if (!validation.success) {
     throw new BadRequestError(validation.error);
   }
 
   const userId = c.get("user").id;
-  const workout = await workoutService.createWorkoutWithExercisesService(validation.data, userId);
+  const workout = await workoutService.createWorkoutWithExercisesService(
+    validation.data,
+    userId,
+  );
 
-  return c.json({
-    success: true,
-    data: workout,
-  }, StatusCodes.CREATED);
+  return c.json(
+    {
+      success: true,
+      data: workout,
+    },
+    StatusCodes.CREATED,
+  );
 }
 
 export async function updateWorkout(c: Context) {
@@ -121,12 +160,19 @@ export async function updateWorkout(c: Context) {
   }
 
   const userId = c.get("user").id;
-  const workout = await workoutService.updateWorkoutService(params.data.id, validation.data, userId);
+  const workout = await workoutService.updateWorkoutService(
+    params.data.id,
+    validation.data,
+    userId,
+  );
 
-  return c.json({
-    success: true,
-    data: workout,
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      data: workout,
+    },
+    StatusCodes.OK,
+  );
 }
 
 export async function deleteWorkout(c: Context) {
@@ -139,9 +185,11 @@ export async function deleteWorkout(c: Context) {
   const userId = c.get("user").id;
   await workoutService.deleteWorkoutService(params.data.id, userId);
 
-  return c.json({
-    success: true,
-    message: "Workout deleted successfully",
-  }, StatusCodes.OK);
+  return c.json(
+    {
+      success: true,
+      message: "Workout deleted successfully",
+    },
+    StatusCodes.OK,
+  );
 }
-
