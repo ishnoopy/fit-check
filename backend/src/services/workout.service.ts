@@ -48,7 +48,7 @@ export async function createWorkoutWithExercisesService(
     userId,
   );
 
-  return await workoutRepository.createWorkout({
+  const workout = await workoutRepository.createWorkout({
     ...payload,
     userId: userId,
     exercises: [
@@ -57,6 +57,21 @@ export async function createWorkoutWithExercisesService(
       }),
     ],
   });
+
+  // Then update the plan with the new workout's _id
+  const plan = await planRepository.findById(payload.planId as string);
+  if (!plan) {
+    throw new NotFoundError("Plan not found");
+  }
+  const updatedWorkouts = [...plan.workouts, workout.id as string];
+  await planRepository.updatePlan(
+    payload.planId as string,
+    {
+      workouts: updatedWorkouts,
+    } as IPlan,
+  );
+
+  return workout;
 }
 
 export async function createWorkoutService(
