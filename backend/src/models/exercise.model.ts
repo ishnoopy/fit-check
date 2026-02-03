@@ -10,6 +10,10 @@ export interface IExercise {
   notes?: string;
   restTime: number;
   images: string[];
+  mechanic: string;
+  equipment: string;
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -20,6 +24,10 @@ export interface IExerciseModel {
   notes?: string;
   rest_time: number;
   images: string[];
+  mechanic: string;
+  equipment: string;
+  primary_muscles: string[];
+  secondary_muscles: string[];
   created_at?: Date;
   updated_at?: Date;
 }
@@ -36,6 +44,10 @@ const ExerciseSchema = new mongoose.Schema(
     notes: { type: String, required: false },
     rest_time: { type: Number, required: true, default: 120 }, // 2 minutes
     images: { type: [String], required: true, default: [] },
+    mechanic: { type: String, required: true },
+    equipment: { type: String, required: true },
+    primary_muscles: { type: [String], required: true, default: [] },
+    secondary_muscles: { type: [String], required: true, default: [] },
   },
   {
     timestamps: {

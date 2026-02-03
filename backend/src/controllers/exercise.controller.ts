@@ -12,6 +12,10 @@ export const createExerciseSchema = z.object({
   restTime: z.number().int().positive(),
   images: z.array(z.string()).default([]),
   active: z.boolean().default(true),
+  mechanic: z.string().min(1, "Mechanic is required"),
+  equipment: z.string().min(1, "Equipment is required"),
+  primaryMuscles: z.array(z.string()).default([]),
+  secondaryMuscles: z.array(z.string()).default([]),
 });
 
 const updateExerciseSchema = z.object({
@@ -20,6 +24,10 @@ const updateExerciseSchema = z.object({
   notes: z.string().optional(),
   restTime: z.number().int().positive().optional(),
   active: z.boolean().optional(),
+  mechanic: z.string().min(1, "Mechanic is required").optional(),
+  equipment: z.string().min(1, "Equipment is required").optional(),
+  primaryMuscles: z.array(z.string()).default([]).optional(),
+  secondaryMuscles: z.array(z.string()).default([]).optional(),
 });
 
 const idParamSchema = z.object({

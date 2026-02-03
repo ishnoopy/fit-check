@@ -3,7 +3,12 @@ import type { IExercise } from "../models/exercise.model.js";
 import * as exerciseRepository from "../repositories/exercise.repository.js";
 
 export async function getAllExercisesService(userId: string) {
-  return await exerciseRepository.findAll({ userId });
+  return await exerciseRepository.findAll({
+    $or: [
+      { userId: userId },
+      { userId: { $exists: false } },
+    ],
+  });
 }
 
 export async function getExerciseByIdService(id: string, userId: string) {
@@ -14,7 +19,7 @@ export async function getExerciseByIdService(id: string, userId: string) {
   }
 
   // Verify ownership
-  if ((exercise.userId as string) !== userId) {
+  if (exercise.userId && (exercise.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to exercise");
   }
 
@@ -58,6 +63,11 @@ export async function updateExerciseService(
     throw new NotFoundError("Exercise not found");
   }
 
+  // Do not allow updating of exercises without userId
+  if (!existingExercise.userId) {
+    throw new BadRequestError("Cannot update public exercise");
+  }
+
   // Verify ownership
   if ((existingExercise.userId as string) !== userId) {
     throw new BadRequestError("Unauthorized access to exercise");
@@ -73,6 +83,11 @@ export async function deleteExerciseService(id: string, userId: string) {
 
   if (!existingExercise) {
     throw new NotFoundError("Exercise not found");
+  }
+
+  // Do not allow deleting of exercises without userId
+  if (!existingExercise.userId) {
+    throw new BadRequestError("Cannot delete public exercise");
   }
 
   // Verify ownership

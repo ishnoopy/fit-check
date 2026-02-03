@@ -44,6 +44,10 @@ export async function createWorkoutWithExercisesService(
       restTime: exercise.restTime,
       active: true,
       images: exercise.images,
+      mechanic: exercise.mechanic,
+      equipment: exercise.equipment,
+      primaryMuscles: exercise.primaryMuscles,
+      secondaryMuscles: exercise.secondaryMuscles,
     })),
     userId,
   );
