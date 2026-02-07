@@ -21,7 +21,8 @@ const createWorkoutSchema = z.object({
   exercises: z
     .array(
       z.object({
-        exerciseId: z.string().length(24, "Invalid exercise ID"),
+        exercise: z.string().length(24, "Invalid exercise ID"),
+        restTime: z.number().int().positive(),
         isActive: z.boolean().default(true),
       }),
     )
@@ -35,7 +36,8 @@ const updateWorkoutSchema = z.object({
   exercises: z
     .array(
       z.object({
-        exerciseId: z.string().length(24, "Invalid exercise ID"),
+        exercise: z.string().length(24, "Invalid exercise ID"),
+        restTime: z.number().int().positive(),
         isActive: z.boolean().default(true),
       }),
     )
@@ -88,7 +90,6 @@ export async function getWorkout(c: Context) {
     params.data.id,
     userId,
   );
-
   return c.json(
     {
       success: true,

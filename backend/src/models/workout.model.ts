@@ -1,4 +1,4 @@
-import mongoose, { model } from "mongoose";
+import mongoose, { model, Schema } from "mongoose";
 
 // e.g. Push Day, Pull Day, Leg Day, etc.
 export interface IWorkout {
@@ -8,7 +8,8 @@ export interface IWorkout {
   title: string;
   description?: string;
   exercises: Array<{
-    exerciseId: mongoose.Schema.Types.ObjectId | string;
+    exercise: mongoose.Schema.Types.ObjectId | string;
+    restTime: number;
     isActive: boolean;
   }>;
   updatedAt?: Date;
@@ -22,7 +23,8 @@ export interface IWorkoutModel {
   title: string;
   description?: string;
   exercises: Array<{
-    exercise_id: mongoose.Schema.Types.ObjectId | string;
+    exercise: mongoose.Schema.Types.ObjectId | string;
+    rest_time: number;
     is_active: boolean;
   }>;
 }
@@ -41,10 +43,16 @@ const WorkoutSchema = new mongoose.Schema(
     },
     title: { type: String, required: true },
     description: { type: String, required: false },
-    exercises: Array<{
-      exercise_id: { type: mongoose.Schema.Types.ObjectId; ref: "Exercise" };
-      is_active: { type: Boolean; default: true };
-    }>,
+    exercises: [
+      {
+        exercise: { type: Schema.Types.ObjectId, ref: "Exercise" },
+        rest_time: Number,
+        is_active: Boolean,
+      },
+      {
+        _id: false,
+      },
+    ],
   },
   {
     timestamps: {

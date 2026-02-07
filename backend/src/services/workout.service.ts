@@ -17,7 +17,6 @@ export async function getAllWorkoutsService(
 
 export async function getWorkoutByIdService(id: string, userId: string) {
   const workout = await workoutRepository.findById(id);
-
   if (!workout) {
     throw new NotFoundError("Workout not found");
   }
@@ -41,8 +40,8 @@ export async function createWorkoutWithExercisesService(
       name: exercise.name,
       description: exercise.description,
       notes: exercise.notes,
-      restTime: exercise.restTime,
       active: true,
+      restTime: exercise.restTime,
       images: exercise.images,
       mechanic: exercise.mechanic,
       equipment: exercise.equipment,
@@ -57,7 +56,11 @@ export async function createWorkoutWithExercisesService(
     userId: userId,
     exercises: [
       ...exercises.map((exercise) => {
-        return { exerciseId: exercise.id as string, isActive: true };
+        return {
+          exercise: exercise.id as string,
+          restTime: exercise.restTime,
+          isActive: true,
+        };
       }),
     ],
   });

@@ -1,5 +1,6 @@
 export interface IPlan {
   id: string;
+  userId: string;
   title: string;
   description?: string;
   updatedAt: string;
@@ -8,20 +9,34 @@ export interface IPlan {
 
 export interface IWorkout {
   id: string;
+  userId: string;
+  planId: string;
   title: string;
   description?: string;
   createdAt: string;
   updatedAt: string;
-  exercises: IExercise[];
+  exercises: [
+    {
+      exercise: IExercise;
+      restTime: number;
+      isActive: boolean;
+    },
+  ];
 }
 
 export interface IExercise {
   id: string;
+  userId?: string | null;
   name: string;
   description?: string;
   notes?: string;
-  restTime?: number;
   active?: boolean;
+  mechanic?: string;
+  equipment?: string;
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
+  images?: string[];
+  restTime?: number;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -34,15 +34,45 @@ const idParamSchema = z.object({
   id: z.string().min(24).max(24),
 });
 
+const getExercisesQuerySchema = z.object({
+  page: z
+    .string()
+    .transform((val) => {
+      const num = parseInt(val, 10);
+      return isNaN(num) || num < 1 ? 1 : num;
+    })
+    .optional(),
+  limit: z
+    .string()
+    .transform((val) => {
+      const num = parseInt(val, 10);
+      return isNaN(num) || num < 1 ? 20 : Math.min(num, 100);
+    })
+    .optional(),
+  search: z.string().optional(),
+});
+
 export async function getExercises(c: Context) {
+  const params = await getExercisesQuerySchema.safeParseAsync(c.req.query());
+
+  if (!params.success) {
+    throw new BadRequestError(params.error);
+  }
+
+  const search = params.data.search?.trim();
   const userId = c.get("user").id;
 
-  const exercises = await exerciseService.getAllExercisesService(userId);
+  const result = await exerciseService.getAllExercisesService(userId, {
+    page: params.data.page,
+    limit: params.data.limit,
+    search,
+  });
 
   return c.json(
     {
       success: true,
-      data: exercises,
+      data: result.data,
+      pagination: result.pagination,
     },
     StatusCodes.OK,
   );

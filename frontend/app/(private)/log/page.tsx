@@ -27,17 +27,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/lib/api";
 import { cn, getItemFromLocalStorage } from "@/lib/utils";
-import { ILog, IWorkout } from "@/types";
+import { ILog } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import {
   AlertCircleIcon,
   CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   HistoryIcon,
+  ImageIcon,
   InfoIcon,
+  Loader2,
   Pause,
   Play,
   PlusIcon,
@@ -46,8 +49,10 @@ import {
   TrendingDown,
   TrendingUp,
   Trophy,
+  X,
   XIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -62,6 +67,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  getExerciseHistory,
+  useCreateLog,
+  useGetLatestLogs,
+  useGetSettings,
+  useGetTodayLogs,
+} from "@/hooks/query/useLog";
+import { useGetAllWorkouts } from "@/hooks/query/useWorkout";
 
 const formSchema = z.object({
   planId: z.string().min(1, { message: "Plan is required" }),
@@ -86,27 +99,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const createLog = async (values: FormValues) => {
-  return api.post("/api/logs", values);
-};
-
-const getExerciseHistory = async (exerciseId: string) => {
-  return api.get<{ data: ILog[] }>(`/api/logs/exercise/${exerciseId}/history`);
-};
-
-interface Setting {
-  id?: string;
-  userId: string;
-  settings: {
-    restDays?: number;
-    timezone?: string;
-  };
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-const getSettings = () => api.get<{ data: Setting }>("/api/settings");
-
 // Default empty sets structure
 const DEFAULT_SETS = [
   {
@@ -129,6 +121,55 @@ const DEFAULT_SETS = [
   },
 ];
 
+// Exercise Image Component with error handling
+function ExerciseImage({
+  src,
+  alt,
+  onClick,
+}: {
+  src: string;
+  alt: string;
+  onClick?: () => void;
+}) {
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border border-border/40">
+        <div className="text-center space-y-2 p-4">
+          <ImageIcon className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+          <p className="text-xs text-muted-foreground/60">Image unavailable</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "relative h-48 bg-muted/30 rounded-lg overflow-hidden border border-border/40",
+        onClick && "cursor-pointer hover:border-primary/50 transition-colors",
+      )}
+      onClick={onClick}
+    >
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/40" />
+        </div>
+      )}
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className="object-contain p-2"
+        onError={() => setError(true)}
+        onLoad={() => setLoading(false)}
+      />
+    </div>
+  );
+}
+
 interface ExerciseHistoryDialogProps {
   exerciseName: string;
   restTime?: number;
@@ -136,6 +177,9 @@ interface ExerciseHistoryDialogProps {
   historyData?: ILog[];
   isLoading: boolean;
   userTimezone: string;
+  exerciseDescription?: string;
+  exerciseImages?: string[];
+  exerciseUserId?: string | null;
 }
 
 function ExerciseHistoryDialog({
@@ -145,7 +189,14 @@ function ExerciseHistoryDialog({
   historyData,
   isLoading,
   userTimezone,
+  exerciseDescription,
+  exerciseImages,
+  exerciseUserId,
 }: ExerciseHistoryDialogProps) {
+  const [exerciseInfoExpanded, setExerciseInfoExpanded] = useState(false);
+  const [expandedImageIndex, setExpandedImageIndex] = useState<number | null>(
+    null,
+  );
   const past3Logs = historyData?.slice(0, 3) || [];
 
   const progressionData = React.useMemo(() => {
@@ -263,6 +314,56 @@ function ExerciseHistoryDialog({
             )}
           </div>
         )}
+
+        {/* Exercise Info Accordion */}
+        <div className="pb-2 border-b">
+          <button
+            onClick={(e) => {
+              setExerciseInfoExpanded(!exerciseInfoExpanded);
+              e.stopPropagation();
+            }}
+            className="w-full flex items-center justify-between py-2 text-left hover:bg-muted/30 rounded px-2 -mx-2 transition-colors"
+          >
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+              Exercise Info
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform",
+                exerciseInfoExpanded && "rotate-180",
+              )}
+            />
+          </button>
+          {exerciseInfoExpanded && (
+            <div className="pt-3 space-y-3">
+              {exerciseDescription || (exerciseImages && exerciseImages.length > 0 && !exerciseUserId) ? (
+                <>
+                  {exerciseDescription && (
+                    <p className="text-xs text-muted-foreground/90 leading-relaxed">
+                      {exerciseDescription}
+                    </p>
+                  )}
+                  {exerciseImages && exerciseImages.length > 0 && !exerciseUserId && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {exerciseImages.map((image, imgIndex) => (
+                        <ExerciseImage
+                          key={imgIndex}
+                          src={`https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${image}`}
+                          alt={`${exerciseName} - ${imgIndex + 1}`}
+                          onClick={() => setExpandedImageIndex(imgIndex)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground/60 italic">
+                  No description added
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         {isLoading ? (
           <div className="text-center py-4 text-muted-foreground">
@@ -435,12 +536,76 @@ function ExerciseHistoryDialog({
           </>
         )}
       </div>
+
+      {/* Expanded Image Dialog */}
+      {expandedImageIndex !== null &&
+        exerciseImages &&
+        exerciseImages.length > 0 && (
+          <div
+            className="fixed inset-0 z-100 bg-background/95 flex items-center justify-center"
+            onClick={() => setExpandedImageIndex(null)}
+          >
+            <button
+              onClick={() => setExpandedImageIndex(null)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-background border-2 border-border hover:bg-muted transition-colors shadow-lg"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {exerciseImages.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedImageIndex(
+                      expandedImageIndex === 0
+                        ? exerciseImages.length - 1
+                        : expandedImageIndex - 1,
+                    );
+                  }}
+                  className="absolute left-4 z-10 p-2 rounded-full bg-background/30 border-2 border-border hover:bg-muted transition-colors shadow-lg"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedImageIndex(
+                      (expandedImageIndex + 1) % exerciseImages.length,
+                    );
+                  }}
+                  className="absolute right-4 z-10 p-2 rounded-full bg-background/30 border-2 border-border hover:bg-muted transition-colors shadow-lg"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+
+            <div
+              className="relative w-full max-w-4xl h-[80vh] mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={`https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${exerciseImages[expandedImageIndex]}`}
+                alt={`${exerciseName} - ${expandedImageIndex + 1}`}
+                fill
+                className="object-contain"
+              />
+            </div>
+
+            {exerciseImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground bg-background border border-border px-3 py-1.5 rounded-full shadow-lg">
+                {expandedImageIndex + 1} / {exerciseImages.length}
+              </div>
+            )}
+          </div>
+        )}
     </DialogContent>
   );
 }
 
 export default function LogPage() {
-  const queryClient = useQueryClient();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [activePlanId] = useState<string>(
     getItemFromLocalStorage("activePlanId") || "",
@@ -461,12 +626,7 @@ export default function LogPage() {
     {},
   );
 
-  const { data: settings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: getSettings,
-    retry: false,
-    select: (data) => data.data,
-  });
+  const { data: settings } = useGetSettings();
 
   const userTimezone =
     settings?.settings?.timezone ||
@@ -484,26 +644,20 @@ export default function LogPage() {
     },
   });
 
-  const getWorkouts = async () => {
-    return api.get<{ data: IWorkout[] }>(
-      `/api/workouts?plan_id=${activePlanId}`,
-    );
-  };
-
-  const { data: workouts } = useQuery({
+  const { data: workouts } = useGetAllWorkouts({
+    planId: activePlanId,
     queryKey: ["workouts", activePlanId],
-    queryFn: getWorkouts,
-    enabled: !!activePlanId,
-    select: (data) => data.data,
   });
 
-  const activeExercisesList =
-    workouts
-      ?.find((workout) => workout.id === activeWorkoutId)
-      ?.exercises.filter((exercise) => exercise.active) || [];
+  const workoutData = workouts?.find(
+    (workout) => workout.id === activeWorkoutId,
+  );
 
+  const activeExercisesList = workoutData?.exercises?.filter(
+    (exercise) => exercise.isActive,
+  ) || [];
   const activeExerciseDetails = activeExercisesList.find(
-    (exercise) => exercise.id === activeExerciseId,
+    (exercise) => exercise.exercise.id === activeExerciseId,
   );
 
   useEffect(() => {
@@ -607,46 +761,24 @@ export default function LogPage() {
 
   const { startOfDay, endOfDay } = getTodayDateRange();
 
-  const getTodayLogs = async () => {
-    return api.get<{ data: ILog[] }>(
-      `/api/logs?plan_id=${activePlanId}&workout_id=${activeWorkoutId}&start_date=${startOfDay.toISOString()}&end_date=${endOfDay.toISOString()}`,
-    );
-  };
-
-  const { data: todayLogs } = useQuery({
-    queryKey: ["todayLogs", activePlanId, activeWorkoutId],
-    queryFn: getTodayLogs,
-    enabled: !!activePlanId && !!activeWorkoutId,
-    select: (data) => data.data,
+  const { data: todayLogs } = useGetTodayLogs({
+    activePlanId,
+    activeWorkoutId,
+    startOfDay,
+    endOfDay,
   });
 
-  const getLatestLogs = async () => {
-    return api.get<{ data: ILog[] }>(
-      `/api/logs/latest?${activeExercisesList
-        .map((exercise) => `exercise_ids=${exercise.id}`)
-        .join("&")}`,
-    );
-  };
 
-  const { data: latestLogs } = useQuery({
-    queryKey: ["latestLogs", activePlanId, activeWorkoutId],
-    queryFn: getLatestLogs,
-    enabled:
-      !!activePlanId && !!activeWorkoutId && activeExercisesList.length > 0,
-    select: (data) => data.data,
+  const { data: latestLogs } = useGetLatestLogs({
+    exerciseIds: activeExercisesList.map((exercise) => exercise.exercise.id),
   });
 
   const progress = todayLogs
     ? Math.round((todayLogs.length / activeExercisesList.length) * 100)
     : 0;
 
-  const createLogMutation = useMutation({
-    mutationFn: createLog,
+  const createLogMutation = useCreateLog({
     onSuccess: () => {
-      // invalidate today logs and latest logs
-      queryClient.invalidateQueries({ queryKey: ["todayLogs"] });
-      queryClient.invalidateQueries({ queryKey: ["latestLogs"] });
-
       // Clear exercise history cache for the active exercise so it refetches when info icon is clicked
       if (activeExerciseId) {
         setExerciseHistoryCache((prev) => {
@@ -719,7 +851,7 @@ export default function LogPage() {
         clearTimeout(saveTimeout.current);
       }
     };
-  }, [formValues, form]);
+  }, [formValues, form, activeExerciseId]);
 
   // Update form values when exercise changes or when log data is available for the day.
   useEffect(() => {
@@ -900,7 +1032,8 @@ export default function LogPage() {
             setActiveExerciseId("");
           }}
         >
-          {activeExercisesList.map((exercise) => {
+          {activeExercisesList.map((exerciseItem) => {
+            const exercise = exerciseItem.exercise;
             const isLogged = todayLogs?.some(
               (log) => log.exerciseId?.id === exercise.id,
             );
@@ -916,10 +1049,10 @@ export default function LogPage() {
             const isActiveExercise = activeExerciseId === exercise.id;
             const isCurrentExerciseTimer =
               isActiveExercise &&
-              (isTimerRunning || countdown < (exercise.restTime || 0));
+              (isTimerRunning || countdown < (exerciseItem.restTime || 0));
             const displayCountdown = isCurrentExerciseTimer
               ? countdown
-              : exercise.restTime || 0;
+              : exerciseItem.restTime || 0;
 
             return (
               <AccordionItem
@@ -928,18 +1061,16 @@ export default function LogPage() {
                 className="border-b"
               >
                 <AccordionTrigger
-                  className={`cursor-pointer py-2.5 px-3 hover:no-underline ${
-                    isLogged ? "bg-muted/30" : ""
-                  }`}
+                  className={`cursor-pointer py-2.5 px-3 hover:no-underline ${isLogged ? "bg-muted/30" : ""
+                    }`}
                 >
                   <div className="flex items-center gap-2 w-full">
                     {isLogged && (
                       <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                     )}
                     <span
-                      className={`flex-1 text-left text-sm ${
-                        isLogged ? "font-medium" : ""
-                      } ${isActiveExercise ? "font-bold text-primary" : ""}`}
+                      className={`flex-1 text-left text-sm ${isLogged ? "font-medium" : ""
+                        } ${isActiveExercise ? "font-bold text-primary" : ""}`}
                     >
                       {exercise.name}
                     </span>
@@ -949,7 +1080,7 @@ export default function LogPage() {
                       </span>
                     )}
                     {/* Rest Timer */}
-                    {exercise.restTime && isActiveExercise && (
+                    {exerciseItem.restTime !== undefined && isActiveExercise && !isLogged && (
                       <div
                         className="flex items-center gap-1.5 shrink-0"
                         onClick={(e) => e.stopPropagation()}
@@ -997,7 +1128,7 @@ export default function LogPage() {
                               <Play className="h-3 w-3" />
                             </div>
                           )}
-                          {countdown < (exercise.restTime || 0) && (
+                          {countdown < (exerciseItem.restTime || 0) && (
                             <div
                               role="button"
                               tabIndex={0}
@@ -1059,11 +1190,14 @@ export default function LogPage() {
                       </DialogTrigger>
                       <ExerciseHistoryDialog
                         exerciseName={exercise.name}
-                        restTime={exercise.restTime}
+                        restTime={exerciseItem.restTime}
                         notes={exercise.notes}
                         historyData={exerciseHistoryCache[exercise.id]}
                         isLoading={loadingHistory[exercise.id] || false}
                         userTimezone={userTimezone}
+                        exerciseDescription={exercise.description}
+                        exerciseImages={exercise.images}
+                        exerciseUserId={exercise.userId}
                       />
                     </Dialog>
                   </div>
@@ -1410,10 +1544,10 @@ export default function LogPage() {
                                                 "logFormDrafts",
                                               )
                                                 ? JSON.parse(
-                                                    getItemFromLocalStorage(
-                                                      "logFormDrafts",
-                                                    ) || "",
-                                                  )
+                                                  getItemFromLocalStorage(
+                                                    "logFormDrafts",
+                                                  ) || "",
+                                                )
                                                 : {};
                                             delete draftDocumentCollection[
                                               activeExerciseId

@@ -22,7 +22,6 @@ export interface IExerciseModel {
   name: string;
   description?: string;
   notes?: string;
-  rest_time: number;
   images: string[];
   mechanic: string;
   equipment: string;
@@ -42,7 +41,6 @@ const ExerciseSchema = new mongoose.Schema(
     name: { type: String, required: true },
     description: { type: String, required: false },
     notes: { type: String, required: false },
-    rest_time: { type: Number, required: true, default: 120 }, // 2 minutes
     images: { type: [String], required: true, default: [] },
     mechanic: { type: String, required: true },
     equipment: { type: String, required: true },

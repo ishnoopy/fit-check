@@ -12149,35 +12149,14 @@ const exercises = [
 ];
 
 export const up = async (db, client) => {
-  // check if name already exists in the database but ignore if the exercise contains a userId property
-  const existingExercises = await db
-    .collection("exercises")
-    .find({
-      name: { $in: exercises.map((exercise) => exercise.name) },
-      userId: { $exists: false },
-    })
-    .toArray();
-
-  const existingExerciseNames = existingExercises.map(
-    (exercise) => exercise.name
+  const docs = await db.collection("exercises").insertMany(
+    exercises.map((exercise) => ({
+      ...exercise,
+      created_at: new Date(),
+      updated_at: new Date(),
+    })),
   );
-
-  const newExercises = exercises.filter(
-    (exercise) => !existingExerciseNames.includes(exercise.name)
-  );
-
-  if (newExercises.length > 0) {
-    const docs = await db.collection("exercises").insertMany(
-      newExercises.map((exercise) => ({
-        ...exercise,
-        created_at: new Date(),
-        updated_at: new Date(),
-      }))
-    );
-    console.log(`${docs.insertedCount} exercises seeded`);
-  }
-
-  console.log(`${existingExercises.length} exercises already seeded`);
+  console.log(`${docs.insertedCount} exercises seeded`);
 
   console.log("Adding missing properties to existing exercises");
   // if exercises have userId property, add properties to the exercise
@@ -12198,7 +12177,7 @@ export const up = async (db, client) => {
         primary_muscles: [],
         secondary_muscles: [],
       },
-    }
+    },
   );
 };
 

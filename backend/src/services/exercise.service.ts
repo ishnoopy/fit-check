@@ -2,13 +2,56 @@ import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { IExercise } from "../models/exercise.model.js";
 import * as exerciseRepository from "../repositories/exercise.repository.js";
 
-export async function getAllExercisesService(userId: string) {
-  return await exerciseRepository.findAll({
-    $or: [
-      { userId: userId },
-      { userId: { $exists: false } },
-    ],
-  });
+export async function getAllExercisesService(
+  userId: string,
+  options?: { page?: number; limit?: number; search?: string },
+) {
+  const baseQuery = {
+    $or: [{ userId: userId }, { userId: { $exists: false } }],
+  };
+
+  const query =
+    options?.search && options.search.trim().length > 0
+      ? {
+          $and: [
+            baseQuery,
+            { name: { $regex: options.search.trim(), $options: "i" } },
+          ],
+        }
+      : baseQuery;
+
+  if (options?.page !== undefined && options?.limit !== undefined) {
+    const limit = options.limit;
+    const page = options.page;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      exerciseRepository.findByQuery(query, {
+        limit,
+        skip,
+        sort: { name: 1 },
+      }),
+      exerciseRepository.countByQuery(query),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  const data = await exerciseRepository.findByQuery(query, { sort: { name: 1 } });
+
+  return { data };
 }
 
 export async function getExerciseByIdService(id: string, userId: string) {

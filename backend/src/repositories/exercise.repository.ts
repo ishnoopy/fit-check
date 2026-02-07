@@ -1,4 +1,4 @@
-import type { FilterQuery } from "mongoose";
+import type { FilterQuery, SortOrder } from "mongoose";
 import ExerciseModel, { type IExercise } from "../models/exercise.model.js";
 import { toCamelCase, toSnakeCase } from "../utils/transformer.js";
 
@@ -6,6 +6,31 @@ export async function findAll(where: FilterQuery<IExercise> = {}) {
   const query = toSnakeCase(where);
   const exercises = await ExerciseModel.find(query).lean();
   return toCamelCase(exercises) as IExercise[];
+}
+
+export async function findByQuery(
+  where: FilterQuery<IExercise> = {},
+  options?: { limit?: number; skip?: number; sort?: Record<string, SortOrder> },
+) {
+  const query = toSnakeCase(where);
+  const sort = toSnakeCase(options?.sort || { name: 1 });
+  const queryBuilder = ExerciseModel.find(query).sort(sort);
+
+  if (options?.skip !== undefined) {
+    queryBuilder.skip(options.skip);
+  }
+
+  if (options?.limit !== undefined) {
+    queryBuilder.limit(options.limit);
+  }
+
+  const exercises = await queryBuilder.lean();
+  return toCamelCase(exercises) as IExercise[];
+}
+
+export async function countByQuery(where: FilterQuery<IExercise> = {}) {
+  const query = toSnakeCase(where);
+  return await ExerciseModel.countDocuments(query);
 }
 
 export async function findOne(where: FilterQuery<IExercise> = {}) {

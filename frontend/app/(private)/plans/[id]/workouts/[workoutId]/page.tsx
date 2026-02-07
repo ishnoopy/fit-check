@@ -8,6 +8,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,119 +39,40 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/lib/api";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  QueryFunction,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+  exerciseFormSchema,
+  ExerciseFormValues,
+  useAddExistingExercise,
+  useCreateExercise,
+  useDeleteExercise,
+  useGetExercises,
+  useUpdateExercise,
+} from "@/hooks/query/useExercise";
+import { useGetWorkout, useUpdateWorkout } from "@/hooks/query/useWorkout";
+import { IExercise } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
   Clock,
   Dumbbell,
   Edit2,
+  ImageIcon,
   Loader2,
   MoreVertical,
   Plus,
   Trash2,
 } from "lucide-react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
-
-// Types & Schemas
-const exerciseFormSchema = z.object({
-  name: z.string().min(1, { message: "Name is required" }),
-  description: z.string().optional(),
-  notes: z.string().optional(),
-  restTime: z
-    .number({ message: "Rest time is required" })
-    .int({ message: "Rest time must be an integer" })
-    .positive({ message: "Rest time must be greater than 0 seconds" })
-    .max(600, { message: "Rest time must be less than 600 seconds" }),
-  active: z.boolean().default(true),
-});
-
-type ExerciseFormValues = z.input<typeof exerciseFormSchema>;
-
-interface Exercise {
-  id: string;
-  userId: string;
-  name: string;
-  description: string;
-  notes: string;
-  restTime: number;
-  active: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Workout {
-  id: string;
-  userId: string;
-  planId: string;
-  title: string;
-  description: string;
-  exercises: Exercise[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-// API Calls
-const createExercise = async (
-  workoutId: string,
-  planId: string,
-  currentExercises: Exercise[],
-  values: ExerciseFormValues,
-) => {
-  // First create the exercise
-  const exerciseData = await api.post<{ data: Exercise }>("/api/exercises", {
-    workoutId: workoutId,
-    ...values,
-  });
-
-  const newExerciseId = exerciseData.data.id;
-
-  // Then update the workout to include the new exercise
-  const exerciseIds = [...currentExercises.map((ex) => ex.id), newExerciseId];
-
-  await api.patch(`/api/workouts/${workoutId}`, {
-    planId: planId,
-    exercises: exerciseIds,
-  });
-
-  return exerciseData;
-};
-
-const updateExercise = async (
-  exerciseId: string,
-  values: ExerciseFormValues,
-) => {
-  return api.patch(`/api/exercises/${exerciseId}`, values);
-};
-
-const deleteExercise = async (
-  workoutId: string,
-  workout: Workout,
-  exerciseId: string,
-) => {
-  const exercises = workout.exercises
-    .filter((ex) => ex.id !== exerciseId)
-    .map((ex) => ex.id);
-
-  return api.patch(`/api/workouts/${workoutId}`, {
-    workoutId: workoutId,
-    planId: workout.planId,
-    exercises,
-  });
-};
 
 const container = {
   hidden: { opacity: 0 },
@@ -155,6 +84,41 @@ const container = {
   },
 };
 
+// Exercise Image Component with error handling
+function ExerciseImage({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border border-border/40">
+        <div className="text-center space-y-2 p-4">
+          <ImageIcon className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+          <p className="text-xs text-muted-foreground/60">Image unavailable</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-48 bg-muted/30 rounded-lg overflow-hidden border border-border/40">
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/40" />
+        </div>
+      )}
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className="object-contain p-2"
+        onError={() => setError(true)}
+        onLoad={() => setLoading(false)}
+      />
+    </div>
+  );
+}
+
 // Main Component
 export default function WorkoutDetailPage() {
   const { id, workoutId } = useParams<{ id: string; workoutId: string }>();
@@ -162,9 +126,24 @@ export default function WorkoutDetailPage() {
   const queryClient = useQueryClient();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
-  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(
+  const [addMode, setAddMode] = useState<"existing" | "new">("existing");
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>("");
+  const [selectedExerciseRestTime, setSelectedExerciseRestTime] =
+    useState<number>(60);
+  const [editingExercise, setEditingExercise] = useState<IExercise | null>(
     null,
+  );
+  const [exerciseToDelete, setExerciseToDelete] = useState<IExercise | null>(
+    null,
+  );
+  const [editingRestTime, setEditingRestTime] = useState<{
+    exerciseId: string;
+    currentRestTime: number;
+  } | null>(null);
+  const [exerciseSearch, setExerciseSearch] = useState("");
+  const [debouncedExerciseSearch, setDebouncedExerciseSearch] = useState("");
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(
+    new Set(),
   );
 
   const exerciseForm = useForm<ExerciseFormValues>({
@@ -173,140 +152,273 @@ export default function WorkoutDetailPage() {
       name: "",
       description: "",
       notes: "",
-      restTime: 0,
+      restTime: 60,
+      images: [],
+      mechanic: "",
+      equipment: "",
+      primaryMuscles: [],
+      secondaryMuscles: [],
       active: true,
     },
   });
 
-  // Fetch workout details
-  const getWorkout: QueryFunction<{ data: Workout }> = () => {
-    return api.get(`/api/workouts/${workoutId}`);
-  };
+  // Debounce exercise search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedExerciseSearch(exerciseSearch.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [exerciseSearch]);
 
   const {
     data: workoutData,
     isLoading,
     error,
-  } = useQuery<{ data: Workout }>({
+  } = useGetWorkout({
+    id: workoutId,
     queryKey: ["workout", id, workoutId],
-    queryFn: getWorkout,
-    enabled: !!id && !!workoutId,
   });
 
-  const workout = workoutData?.data;
-  // Mutations
-  const createMutation = useMutation({
-    mutationFn: (values: ExerciseFormValues) => {
-      if (!workout) throw new Error("Workout not found");
-      return createExercise(
-        workoutId,
-        workout.planId,
-        workout.exercises || [],
-        values,
-      );
-    },
-    onSuccess: async () => {
-      // Refetch the query and wait for it to complete
-      await queryClient.refetchQueries({
-        queryKey: ["workout", id, workoutId],
-      });
-      toast.success("Exercise added successfully");
-      setIsAddDialogOpen(false);
-      exerciseForm.reset();
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to add exercise",
-      );
-    },
+  const {
+    data: exercisesPages,
+    isLoading: isExercisesLoading,
+    error: exercisesError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGetExercises({
+    search: debouncedExerciseSearch,
+    limit: 20,
+    queryKey: ["exercises", debouncedExerciseSearch],
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (values: ExerciseFormValues & { id: string }) =>
-      updateExercise(values.id, values),
-    onSuccess: async () => {
-      // Refetch the query and wait for it to complete
-      await queryClient.refetchQueries({
-        queryKey: ["workout", id, workoutId],
-      });
-      toast.success("Exercise updated successfully");
-      // Close dialog and reset state
-      setIsAddDialogOpen(false);
-      setEditingExercise(null);
-      exerciseForm.reset({
-        name: "",
-        description: "",
-        notes: "",
-        active: true,
-      });
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update exercise",
-      );
-    },
-  });
+  const exercises = useMemo(
+    () => exercisesPages?.pages.flatMap((page) => page.data) ?? [],
+    [exercisesPages],
+  );
 
-  const deleteMutation = useMutation({
-    mutationFn: (exerciseId: string) => {
-      if (!workout) throw new Error("Workout not found");
-      return deleteExercise(workoutId, workout, exerciseId);
-    },
-    onSuccess: async () => {
-      // Refetch the query and wait for it to complete
-      await queryClient.refetchQueries({
-        queryKey: ["workout", id, workoutId],
-      });
-      toast.success("Exercise deleted successfully");
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete exercise",
-      );
-    },
-  });
+  const { mutate: createMutation, isPending: isCreatePending } =
+    useCreateExercise({
+      workoutId: workoutData?.id ?? "",
+      planId: id,
+      queryKey: ["workout", id, workoutId],
+      onSuccess: () => {
+        closeDialogs();
+      },
+      addToWorkout: true,
+    });
+
+  const { mutate: addExistingMutation, isPending: isAddingExisting } =
+    useAddExistingExercise({
+      workoutId: workoutData?.id ?? "",
+      planId: id,
+      queryKey: ["workout", id, workoutId],
+      onSuccess: () => {
+        closeDialogs();
+      },
+    });
+
+  const { mutate: updateMutation, isPending: isUpdatePending } =
+    useUpdateExercise({
+      exerciseId: editingExercise?.id ?? "",
+      queryKey: ["workout", id, workoutId],
+      onSuccess: () => {
+        closeDialogs();
+      },
+    });
+
+  const { mutate: deleteMutation, isPending: isDeletePending } =
+    useDeleteExercise({
+      exerciseId: exerciseToDelete?.id ?? "",
+      queryKey: ["exercises"], // Only invalidate exercises query, not workout
+      enableToast: false, // We'll handle the toast in confirmDeleteExercise
+    });
+
+  const { mutate: updateWorkoutMutation, isPending: isUpdatingWorkout } =
+    useUpdateWorkout({
+      workoutId: workoutData?.id ?? "",
+      queryKey: ["workout", id, workoutId],
+      enableToast: true,
+    });
 
   // Handlers
   const handleAddExercise = (values: ExerciseFormValues) => {
-    createMutation.mutate(values);
+    createMutation(values);
+  };
+
+  const handleAddExistingExercise = () => {
+    if (!selectedExerciseId) return;
+    addExistingMutation({
+      exerciseId: selectedExerciseId,
+      restTime: selectedExerciseRestTime,
+      isActive: true,
+    });
   };
 
   const handleEditExercise = (values: ExerciseFormValues) => {
     if (!editingExercise) return;
-    updateMutation.mutate({ ...values, id: editingExercise.id });
+    updateMutation({ ...values });
   };
 
-  const handleDeleteExercise = (exercise: Exercise) => {
+  const handleDeleteExercise = (exercise: IExercise) => {
     setExerciseToDelete(exercise);
   };
 
+  const handleRemoveExerciseFromWorkout = (exerciseId: string) => {
+    if (!workoutData) return;
+
+    const updatedExercises = workoutData.exercises
+      .filter((ex) => ex.exercise.id !== exerciseId)
+      .map((ex) => ({
+        exercise: ex.exercise.id,
+        restTime: ex.restTime,
+        isActive: ex.isActive,
+      }));
+
+    updateWorkoutMutation({
+      title: workoutData.title,
+      description: workoutData.description,
+      exercises: updatedExercises,
+    });
+  };
+
   const confirmDeleteExercise = () => {
-    if (exerciseToDelete) {
-      deleteMutation.mutate(exerciseToDelete.id);
+    if (!exerciseToDelete || !workoutData) return;
+
+    if (exerciseToDelete.userId) {
+      // User-owned exercise: first update workout to remove the exercise reference,
+      // then delete the exercise
+      const updatedExercises = workoutData.exercises
+        .filter((ex) => ex.exercise.id !== exerciseToDelete.id)
+        .map((ex) => ({
+          exercise: ex.exercise.id,
+          restTime: ex.restTime,
+          isActive: ex.isActive,
+        }));
+
+      // First update the workout to remove the exercise reference (silent update)
+      updateWorkoutMutation(
+        {
+          title: workoutData.title,
+          description: workoutData.description,
+          exercises: updatedExercises,
+        },
+        {
+          onSuccess: () => {
+            // After workout is updated, delete the exercise
+            deleteMutation(undefined, {
+              onSuccess: () => {
+                // Invalidate exercises queries to refetch the list
+                queryClient.invalidateQueries({
+                  queryKey: ["exercises"],
+                });
+                setExerciseToDelete(null);
+              },
+              onError: (error) => {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to delete exercise",
+                );
+                setExerciseToDelete(null);
+              },
+            });
+          },
+          onError: (error) => {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to remove exercise from workout",
+            );
+            setExerciseToDelete(null);
+          },
+        },
+      );
+    } else {
+      // System exercise: only remove from workout
+      handleRemoveExerciseFromWorkout(exerciseToDelete.id);
       setExerciseToDelete(null);
     }
   };
 
-  const openEditDialog = (exercise: Exercise) => {
+  const handleToggleExerciseActive = (
+    exerciseId: string,
+    currentActiveStatus: boolean,
+  ) => {
+    if (!workoutData) return;
+
+    const updatedExercises = workoutData.exercises.map((ex) => ({
+      exercise: ex.exercise.id,
+      restTime: ex.restTime,
+      isActive:
+        ex.exercise.id === exerciseId ? !currentActiveStatus : ex.isActive,
+    }));
+
+    updateWorkoutMutation({
+      title: workoutData.title,
+      description: workoutData.description,
+      exercises: updatedExercises,
+    });
+  };
+
+  const handleUpdateRestTime = (restTime: number) => {
+    if (!workoutData || !editingRestTime) return;
+
+    const updatedExercises = workoutData.exercises.map((ex) => ({
+      exercise: ex.exercise.id,
+      restTime:
+        ex.exercise.id === editingRestTime.exerciseId ? restTime : ex.restTime,
+      isActive: ex.isActive,
+    }));
+
+    updateWorkoutMutation({
+      title: workoutData.title,
+      description: workoutData.description,
+      exercises: updatedExercises,
+    });
+
+    setEditingRestTime(null);
+  };
+
+  const openRestTimeDialog = (exerciseId: string, currentRestTime: number) => {
+    setEditingRestTime({ exerciseId, currentRestTime });
+  };
+
+  const openEditDialog = (exercise: IExercise) => {
     setEditingExercise(exercise);
+    setExerciseSearch("");
     exerciseForm.reset({
       name: exercise.name,
       description: exercise.description || "",
       notes: exercise.notes || "",
-      restTime: exercise.restTime,
-      active: exercise.active,
+      restTime: exercise.restTime ?? 60,
+      images: exercise.images || [],
+      mechanic: exercise.mechanic || "",
+      equipment: exercise.equipment || "",
+      primaryMuscles: exercise.primaryMuscles || [],
+      secondaryMuscles: exercise.secondaryMuscles || [],
+      active: exercise.active ?? true,
     });
   };
 
   const closeDialogs = () => {
     setIsAddDialogOpen(false);
     setEditingExercise(null);
+    setExerciseSearch("");
+    setAddMode("existing");
+    setSelectedExerciseId("");
+    setSelectedExerciseRestTime(60);
     // Explicitly reset to default values
     exerciseForm.reset({
       name: "",
       description: "",
       notes: "",
-      restTime: 0,
+      restTime: 60,
+      images: [],
+      mechanic: "",
+      equipment: "",
+      primaryMuscles: [],
+      secondaryMuscles: [],
       active: true,
     });
   };
@@ -314,12 +426,21 @@ export default function WorkoutDetailPage() {
   const handleOpenAddExerciseDialog = () => {
     // Ensure editing state is cleared first
     setEditingExercise(null);
+    setExerciseSearch("");
+    setAddMode("existing");
+    setSelectedExerciseId("");
+    setSelectedExerciseRestTime(60);
     // Explicitly reset to default values
     exerciseForm.reset({
       name: "",
       description: "",
       notes: "",
-      restTime: 0,
+      restTime: 60,
+      images: [],
+      mechanic: "",
+      equipment: "",
+      primaryMuscles: [],
+      secondaryMuscles: [],
       active: true,
     });
     // Then open the dialog
@@ -367,7 +488,7 @@ export default function WorkoutDetailPage() {
   }
 
   // No Workout Found
-  if (!workout) {
+  if (!workoutData) {
     return (
       <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
         <div className="p-6 max-w-2xl mx-auto">
@@ -385,14 +506,13 @@ export default function WorkoutDetailPage() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <BackButton href={`/plans/${id}`} />
 
         <PageHeader
-          title={workout.title}
+          title={workoutData.title}
           subtitle="Workout exercises and details"
           action={
             <Button
@@ -423,7 +543,7 @@ export default function WorkoutDetailPage() {
             </CardHeader>
             <CardContent className="relative">
               <p className="text-base text-muted-foreground">
-                {workout.description || (
+                {workoutData.description || (
                   <span className="italic opacity-70">
                     No description provided
                   </span>
@@ -439,31 +559,33 @@ export default function WorkoutDetailPage() {
             <h3 className="text-2xl font-bold flex items-center gap-3">
               <Dumbbell className="h-6 w-6 text-primary" />
               Exercises
-              {workout.exercises && workout.exercises.length > 0 && (
+              {workoutData.exercises && workoutData.exercises.length > 0 && (
                 <span className="text-lg font-normal text-muted-foreground">
-                  ({workout.exercises.length})
+                  ({workoutData.exercises.length})
                 </span>
               )}
             </h3>
           </div>
 
-          {workout.exercises && workout.exercises.length > 0 ? (
+          {workoutData.exercises && workoutData.exercises.length > 0 ? (
             <motion.div
               variants={container}
               initial="hidden"
               animate="show"
               className="space-y-3"
             >
-              {workout.exercises.map((exercise, index) => (
+              {workoutData.exercises.map((exercise, index) => (
                 <Card
-                  key={exercise.id}
+                  key={exercise.exercise.id}
                   className="group relative overflow-hidden bg-card/40 backdrop-blur-sm border-border/40 hover:border-border/60 hover:shadow-md transition-all duration-200"
                 >
-                  {/* Diagonal Active Stripe */}
-                  {exercise.active && (
-                    <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none">
-                      <div className="absolute top-0 right-0 w-32 h-8 bg-primary/90 text-primary-foreground text-[10px] font-semibold flex items-center justify-center transform rotate-45 translate-x-8 translate-y-4 shadow-sm">
-                        ACTIVE
+                  {/*Active Indicator */}
+                  {exercise.isActive && (
+                    <div className="absolute top-3 right-3 pointer-events-none z-10">
+                      <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 backdrop-blur-md">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                          Active
+                        </span>
                       </div>
                     </div>
                   )}
@@ -474,7 +596,7 @@ export default function WorkoutDetailPage() {
                       </div>
                       <div className="flex-1 space-y-1.5 min-w-0">
                         <h4 className="text-base font-semibold text-foreground">
-                          {exercise.name}
+                          {exercise.exercise.name}
                         </h4>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Clock className="h-3.5 w-3.5" />
@@ -483,14 +605,63 @@ export default function WorkoutDetailPage() {
                             rest
                           </span>
                         </div>
-                        {exercise.description && (
-                          <p className="text-sm text-muted-foreground/80 leading-relaxed">
-                            {exercise.description}
-                          </p>
+                        {exercise.exercise.description && (
+                          <div className="space-y-2">
+                            <p
+                              className={`text-sm text-muted-foreground/80 leading-relaxed whitespace-pre-wrap ${!expandedDescriptions.has(
+                                exercise.exercise.id,
+                              ) && exercise.exercise.description.length > 150
+                                ? "line-clamp-2"
+                                : ""
+                                }`}
+                            >
+                              {exercise.exercise.description}
+                            </p>
+
+                            {/* Show images when expanded for system exercises only */}
+                            {expandedDescriptions.has(exercise.exercise.id) &&
+                              !exercise.exercise.userId &&
+                              exercise.exercise.images &&
+                              exercise.exercise.images.length > 0 && (
+                                <div className="grid grid-cols-2 gap-2 mt-3">
+                                  {exercise.exercise.images.map(
+                                    (image, imgIndex) => (
+                                      <ExerciseImage
+                                        key={imgIndex}
+                                        src={`https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${image}`}
+                                        alt={`${exercise.exercise.name} - ${imgIndex + 1}`}
+                                      />
+                                    ),
+                                  )}
+                                </div>
+                              )}
+
+                            {exercise.exercise.description.length > 150 && (
+                              <Button
+                                variant={"outline"}
+                                size={"sm"}
+                                onClick={() => {
+                                  const newExpanded = new Set(
+                                    expandedDescriptions,
+                                  );
+                                  if (newExpanded.has(exercise.exercise.id)) {
+                                    newExpanded.delete(exercise.exercise.id);
+                                  } else {
+                                    newExpanded.add(exercise.exercise.id);
+                                  }
+                                  setExpandedDescriptions(newExpanded);
+                                }}
+                              >
+                                {expandedDescriptions.has(exercise.exercise.id)
+                                  ? "Show less"
+                                  : "Show more"}
+                              </Button>
+                            )}
+                          </div>
                         )}
-                        {exercise.notes && (
+                        {exercise.exercise.notes && (
                           <p className="text-xs text-muted-foreground/60 italic leading-relaxed">
-                            {exercise.notes}
+                            {exercise.exercise.notes}
                           </p>
                         )}
                       </div>
@@ -504,23 +675,72 @@ export default function WorkoutDetailPage() {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem
-                            onClick={() => openEditDialog(exercise)}
+                            onClick={() =>
+                              openRestTimeDialog(
+                                exercise.exercise.id,
+                                exercise.restTime,
+                              )
+                            }
                             className="cursor-pointer"
                           >
-                            <Edit2 className="h-4 w-4 mr-2" />
-                            Edit
+                            <Clock className="h-4 w-4 mr-2" />
+                            Edit Rest Time
                           </DropdownMenuItem>
+                          {exercise.exercise.userId ? (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => openEditDialog(exercise.exercise)}
+                                className="cursor-pointer"
+                              >
+                                <Edit2 className="h-4 w-4 mr-2" />
+                                Edit Exercise
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleDeleteExercise(exercise.exercise)
+                                }
+                                disabled={isDeletePending || isUpdatingWorkout}
+                                variant="destructive"
+                                className="cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Exercise
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleDeleteExercise(exercise.exercise)
+                                }
+                                disabled={isUpdatingWorkout}
+                                variant="destructive"
+                                className="cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Remove from Workout
+                              </DropdownMenuItem>
+                            </>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => handleDeleteExercise(exercise)}
-                            disabled={deleteMutation.isPending}
-                            variant="destructive"
+                            onClick={() =>
+                              handleToggleExerciseActive(
+                                exercise.exercise.id,
+                                exercise.isActive,
+                              )
+                            }
+                            disabled={isUpdatingWorkout}
                             className="cursor-pointer"
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            <Switch
+                              checked={exercise.isActive}
+                              className="h-4 w-4 mr-2 pointer-events-none"
+                            />
+                            {exercise.isActive ? "Deactivate" : "Activate"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -543,16 +763,14 @@ export default function WorkoutDetailPage() {
         </div>
 
         {/* Add/Edit Exercise Dialog */}
-        <Dialog
-          open={isAddDialogOpen || !!editingExercise}
-          onOpenChange={(open) => {
-            if (!open) {
-              // When closing, always reset everything
+        <Dialog open={isAddDialogOpen || !!editingExercise} modal={false}>
+          <DialogContent
+            className="rounded-3xl max-w-2xl max-h-[90vh] overflow-y-auto"
+            onCloseClick={closeDialogs}
+            onEscapeKeyDown={() => {
               closeDialogs();
-            }
-          }}
-        >
-          <DialogContent className="rounded-3xl">
+            }}
+          >
             <DialogHeader>
               <DialogTitle className="text-2xl">
                 {editingExercise ? "Edit Exercise" : "Add Exercise"}
@@ -560,141 +778,445 @@ export default function WorkoutDetailPage() {
               <DialogDescription>
                 {editingExercise
                   ? "Update the exercise details below"
-                  : "Fill in the details for your new exercise"}
+                  : "Choose to select an existing exercise or create a new one"}
               </DialogDescription>
             </DialogHeader>
-            <Form {...exerciseForm}>
-              <form
-                onSubmit={exerciseForm.handleSubmit(
-                  editingExercise ? handleEditExercise : handleAddExercise,
-                )}
-                className="space-y-6"
-              >
-                <FormField
-                  control={exerciseForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Exercise Name *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Bench Press"
-                          className="h-12 rounded-2xl"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={exerciseForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description (optional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Brief description of the exercise"
-                          className="rounded-2xl"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={exerciseForm.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes (optional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Any additional notes (form cues, tips, etc.)"
-                          className="rounded-2xl"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={exerciseForm.control}
-                  name="restTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Rest Time (seconds) *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 120"
-                          type="number"
-                          min={0}
-                          step={1}
-                          className="h-12 rounded-2xl text-center font-semibold w-24"
-                          {...field}
-                          value={field.value || ""}
-                          onChange={(e) => {
-                            field.onChange(Number(e.target.value));
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={exerciseForm.control}
-                  name="active"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center justify-between rounded-xl border border-border/50 bg-muted/30 p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-sm font-medium cursor-pointer">
-                            Active Status
-                          </FormLabel>
-                          <p className="text-xs text-muted-foreground">
-                            Exercise will be included in workouts
-                          </p>
-                        </div>
+
+            {editingExercise ? (
+              // Edit Exercise Form
+              <Form {...exerciseForm}>
+                <form
+                  onSubmit={exerciseForm.handleSubmit(handleEditExercise)}
+                  className="space-y-6"
+                >
+                  <FormField
+                    control={exerciseForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Exercise Name *</FormLabel>
                         <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="data-[state=checked]:bg-primary"
+                          <Input
+                            placeholder="e.g., Bench Press"
+                            className="h-12 rounded-2xl"
+                            {...field}
                           />
                         </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex gap-3 justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={closeDialogs}
-                    className="rounded-full"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={
-                      createMutation.isPending || updateMutation.isPending
-                    }
-                    className="rounded-full gap-2"
-                  >
-                    {(createMutation.isPending || updateMutation.isPending) && (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                        <FormMessage />
+                      </FormItem>
                     )}
-                    {editingExercise ? "Update" : "Add"} Exercise
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                  />
+                  <FormField
+                    control={exerciseForm.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notes (optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Any additional notes (form cues, tips, etc.)"
+                            className="rounded-2xl"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={exerciseForm.control}
+                    name="restTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rest Time (seconds) *</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., 120"
+                            type="number"
+                            min={0}
+                            step={1}
+                            className="h-12 rounded-2xl text-center font-semibold w-24"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => {
+                              field.onChange(Number(e.target.value));
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex gap-3 justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={closeDialogs}
+                      className="rounded-full"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isUpdatePending}
+                      className="rounded-full gap-2"
+                    >
+                      {isUpdatePending && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                      Update Exercise
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            ) : (
+              // Add Exercise with Tabs
+              <Tabs
+                value={addMode}
+                onValueChange={(value) =>
+                  setAddMode(value as "existing" | "new")
+                }
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="existing">
+                    Select Existing
+                  </TabsTrigger>
+                  <TabsTrigger value="new">Create New</TabsTrigger>
+                </TabsList>
+
+                {/* Select Existing Exercise Tab */}
+                <TabsContent value="existing" className="space-y-6 mt-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Exercise *
+                      </label>
+                      <Combobox
+                        value={selectedExerciseId}
+                        itemToStringLabel={(id) => {
+                          const exercise = exercises.find((e) => e.id === id);
+                          return exercise?.name ?? "";
+                        }}
+                        onValueChange={(value) => {
+                          if (typeof value === "string") {
+                            setSelectedExerciseId(value);
+                          }
+                        }}
+                        onInputValueChange={(value) =>
+                          setExerciseSearch(value ?? "")
+                        }
+                        onOpenChange={(open) => {
+                          if (open) {
+                            setExerciseSearch("");
+                          }
+                        }}
+                      >
+                        <ComboboxInput
+                          placeholder="Search for an exercise..."
+                          className="w-full h-12 rounded-2xl"
+                          showClear
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") {
+                              setSelectedExerciseId("");
+                              setExerciseSearch("");
+                            }
+                          }}
+                        />
+                        <ComboboxContent>
+                          <ComboboxList
+                            className="overscroll-contain"
+                            onScroll={(event) => {
+                              if (!hasNextPage || isFetchingNextPage) return;
+                              const target = event.currentTarget;
+                              const threshold = 24;
+                              const reachedBottom =
+                                target.scrollHeight -
+                                target.scrollTop -
+                                target.clientHeight <=
+                                threshold;
+                              if (reachedBottom) {
+                                fetchNextPage();
+                              }
+                            }}
+                          >
+                            {isExercisesLoading ? (
+                              <div className="p-3 text-sm text-muted-foreground">
+                                Loading exercises...
+                              </div>
+                            ) : exercisesError ? (
+                              <div className="p-3 text-sm text-destructive">
+                                Failed to load exercises.
+                              </div>
+                            ) : (
+                              <>
+                                {exercises
+                                  .filter(
+                                    (ex) =>
+                                      !workoutData?.exercises.some(
+                                        (wex) => wex.exercise.id === ex.id,
+                                      ),
+                                  )
+                                  .map((exercise) => (
+                                    <ComboboxItem
+                                      key={exercise.id}
+                                      value={exercise.id}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">
+                                          {exercise.name}
+                                        </span>
+                                        {exercise.description && (
+                                          <span className="text-xs text-muted-foreground line-clamp-1">
+                                            {exercise.description}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </ComboboxItem>
+                                  ))}
+                                <ComboboxEmpty>
+                                  No exercises found. Try creating a new one.
+                                </ComboboxEmpty>
+                              </>
+                            )}
+                          </ComboboxList>
+                          {isFetchingNextPage && (
+                            <div className="border-t p-2 text-center text-xs text-muted-foreground">
+                              Loading more...
+                            </div>
+                          )}
+                        </ComboboxContent>
+                      </Combobox>
+                    </div>
+
+                    {selectedExerciseId && (
+                      <div className="rounded-xl border border-border/50 bg-muted/30 p-4 space-y-3">
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-semibold">
+                            {
+                              exercises.find((e) => e.id === selectedExerciseId)
+                                ?.name
+                            }
+                          </h4>
+                          {exercises.find((e) => e.id === selectedExerciseId)
+                            ?.description && (
+                              <p className="text-xs text-muted-foreground">
+                                {
+                                  exercises.find(
+                                    (e) => e.id === selectedExerciseId,
+                                  )?.description
+                                }
+                              </p>
+                            )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Rest Time (seconds) *
+                      </label>
+                      <Input
+                        placeholder="e.g., 60"
+                        type="number"
+                        min={0}
+                        step={1}
+                        className="h-12 rounded-2xl text-center font-semibold w-24"
+                        value={selectedExerciseRestTime}
+                        onChange={(e) =>
+                          setSelectedExerciseRestTime(Number(e.target.value))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={closeDialogs}
+                      className="rounded-full"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleAddExistingExercise}
+                      disabled={!selectedExerciseId || isAddingExisting}
+                      className="rounded-full gap-2"
+                    >
+                      {isAddingExisting && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                      Add Exercise
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* Create New Exercise Tab */}
+                <TabsContent value="new" className="mt-6">
+                  <Form {...exerciseForm}>
+                    <form
+                      onSubmit={exerciseForm.handleSubmit(handleAddExercise)}
+                      className="space-y-6"
+                    >
+                      <FormField
+                        control={exerciseForm.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Exercise Name *</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="e.g., Bench Press"
+                                className="h-12 rounded-2xl"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={exerciseForm.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description (optional)</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Describe the exercise..."
+                                className="rounded-2xl"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={exerciseForm.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Notes (optional)</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Any additional notes (form cues, tips, etc.)"
+                                className="rounded-2xl"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex gap-3 justify-between">
+                        <FormField
+                          control={exerciseForm.control}
+                          name="mechanic"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Mechanic *</FormLabel>
+                              <FormControl>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a mechanic" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="compound">Compound</SelectItem>
+                                    <SelectItem value="isolation">Isolation</SelectItem>
+                                    <SelectItem value="accessory">Accessory</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={exerciseForm.control}
+                          name="equipment"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Equipment *</FormLabel>
+                              <FormControl>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select equipment" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="barbell">Barbell</SelectItem>
+                                    <SelectItem value="dumbbell">Dumbbell</SelectItem>
+                                    <SelectItem value="cable">Cable</SelectItem>
+                                    <SelectItem value="machine">Machine</SelectItem>
+                                    <SelectItem value="bodyweight">Bodyweight</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <FormField
+                        control={exerciseForm.control}
+                        name="restTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Rest Time (seconds) *</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="e.g., 60"
+                                type="number"
+                                min={0}
+                                step={1}
+                                className="h-12 rounded-2xl text-center font-semibold w-24"
+                                {...field}
+                                value={field.value || ""}
+                                onChange={(e) => {
+                                  field.onChange(Number(e.target.value));
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex gap-3 justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={closeDialogs}
+                          className="rounded-full"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={isCreatePending}
+                          className="rounded-full gap-2"
+                        >
+                          {isCreatePending && (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          )}
+                          Create Exercise
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </TabsContent>
+              </Tabs>
+            )}
           </DialogContent>
         </Dialog>
 
@@ -705,17 +1227,31 @@ export default function WorkoutDetailPage() {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete Exercise</DialogTitle>
+              <DialogTitle>
+                {exerciseToDelete?.userId
+                  ? "Delete Exercise"
+                  : "Remove Exercise"}
+              </DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this exercise? This action
-                cannot be undone.
+                {exerciseToDelete?.userId ? (
+                  <>
+                    Are you sure you want to delete this exercise? This will
+                    permanently remove it from your exercises and all workouts.
+                    This action cannot be undone.
+                  </>
+                ) : (
+                  <>
+                    This will remove the exercise from this workout only. The
+                    exercise will still be available in your exercise library.
+                  </>
+                )}
               </DialogDescription>
             </DialogHeader>
             {exerciseToDelete && (
               <div className="rounded-lg border border-border/50 p-4 space-y-2">
                 <p className="font-semibold">{exerciseToDelete.name}</p>
                 {exerciseToDelete.description && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
                     {exerciseToDelete.description}
                   </p>
                 )}
@@ -725,23 +1261,91 @@ export default function WorkoutDetailPage() {
               <Button
                 variant="outline"
                 onClick={() => setExerciseToDelete(null)}
-                disabled={deleteMutation.isPending}
+                disabled={isDeletePending || isUpdatingWorkout}
               >
                 Cancel
               </Button>
               <Button
                 variant="destructive"
                 onClick={confirmDeleteExercise}
-                disabled={deleteMutation.isPending}
+                disabled={isDeletePending || isUpdatingWorkout}
               >
-                {deleteMutation.isPending ? (
+                {isDeletePending || isUpdatingWorkout ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Deleting...
+                    {exerciseToDelete?.userId ? "Deleting..." : "Removing..."}
                   </>
+                ) : exerciseToDelete?.userId ? (
+                  "Delete Exercise"
                 ) : (
-                  "Delete"
+                  "Remove from Workout"
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Rest Time Dialog */}
+        <Dialog
+          open={!!editingRestTime}
+          onOpenChange={() => setEditingRestTime(null)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Rest Time</DialogTitle>
+              <DialogDescription>
+                Update the rest time for this exercise in seconds.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="restTime"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Rest Time (seconds)
+                </label>
+                <Input
+                  id="restTime"
+                  type="number"
+                  min={0}
+                  step={1}
+                  defaultValue={editingRestTime?.currentRestTime ?? 0}
+                  className="h-12 rounded-2xl text-center font-semibold"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const input = e.currentTarget;
+                      handleUpdateRestTime(Number(input.value));
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditingRestTime(null)}
+                disabled={isUpdatingWorkout}
+                className="rounded-full"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const input = document.getElementById(
+                    "restTime",
+                  ) as HTMLInputElement;
+                  if (input) {
+                    handleUpdateRestTime(Number(input.value));
+                  }
+                }}
+                disabled={isUpdatingWorkout}
+                className="rounded-full gap-2"
+              >
+                {isUpdatingWorkout && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+                Update
               </Button>
             </DialogFooter>
           </DialogContent>

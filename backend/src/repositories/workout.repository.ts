@@ -4,20 +4,28 @@ import { toCamelCase, toSnakeCase } from "../utils/transformer.js";
 
 export async function findAll(where: FilterQuery<IWorkout> = {}) {
   const query = toSnakeCase(where);
-  const workouts = await WorkoutModel.find(query).populate("exercises").lean();
+  const workouts = await WorkoutModel.find(query)
+    .populate("exercises.exercise")
+    .lean();
+  console.log(
+    "🚀 ~ workout.repository.ts:8 ~ findAll ~ workouts:",
+    JSON.stringify(workouts, null, 2),
+  );
   return toCamelCase(workouts) as IWorkout[];
 }
 
 export async function findOne(where: FilterQuery<IWorkout> = {}) {
   const query = toSnakeCase(where);
   const workout = await WorkoutModel.findOne(query)
-    .populate("exercises")
+    .populate("exercises.exercise")
     .lean();
   return workout ? (toCamelCase(workout) as IWorkout) : null;
 }
 
 export async function findById(id: string) {
-  const workout = await WorkoutModel.findById(id).populate("exercises").lean();
+  const workout = await WorkoutModel.findById(id)
+    .populate("exercises.exercise")
+    .lean();
   return workout ? (toCamelCase(workout) as IWorkout) : null;
 }
 
@@ -32,7 +40,9 @@ export async function updateWorkout(id: string, workout: Partial<IWorkout>) {
   const doc = await WorkoutModel.findByIdAndUpdate(id, payload, {
     new: true,
     lean: true,
-  }).lean();
+  })
+    .populate("exercises.exercise")
+    .lean();
   return doc ? (toCamelCase(doc) as IWorkout) : null;
 }
 
