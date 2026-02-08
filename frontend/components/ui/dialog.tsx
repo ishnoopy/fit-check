@@ -60,15 +60,26 @@ function DialogContent({
   showCloseButton = true,
   onCloseClick,
   onOverlayClick,
+  forceShowOverlay = false,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
   onCloseClick?: (e: React.MouseEvent) => void;
   onOverlayClick?: (e: React.MouseEvent) => void;
+  forceShowOverlay?: boolean;
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay onClick={onOverlayClick} />
+      {forceShowOverlay ? (
+        <div
+          data-slot="dialog-overlay"
+          className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+          onClick={onOverlayClick}
+          data-state="open"
+        />
+      ) : (
+        <DialogOverlay onClick={onOverlayClick} />
+      )}
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(

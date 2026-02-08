@@ -205,7 +205,3 @@ body {
     font-size: 16px !important;
   }
 }
-
-[data-scroll-locked][data-scroll-locked] {
-  overflow: scroll !important;
-}

@@ -3,6 +3,7 @@
 // Imports
 import BackButton from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
+import ExerciseImage from "@/components/ExerciseImage";
 import { LoadingState } from "@/components/LoadingState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,13 +69,11 @@ import {
   Clock,
   Dumbbell,
   Edit2,
-  ImageIcon,
   Loader2,
   MoreVertical,
   Plus,
   Trash2,
 } from "lucide-react";
-import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -83,41 +88,6 @@ const container = {
     },
   },
 };
-
-// Exercise Image Component with error handling
-function ExerciseImage({ src, alt }: { src: string; alt: string }) {
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border border-border/40">
-        <div className="text-center space-y-2 p-4">
-          <ImageIcon className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-          <p className="text-xs text-muted-foreground/60">Image unavailable</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative h-48 bg-muted/30 rounded-lg overflow-hidden border border-border/40">
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/40" />
-        </div>
-      )}
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        className="object-contain p-2"
-        onError={() => setError(true)}
-        onLoad={() => setLoading(false)}
-      />
-    </div>
-  );
-}
 
 // Main Component
 export default function WorkoutDetailPage() {
@@ -518,7 +488,7 @@ export default function WorkoutDetailPage() {
             <Button
               size="lg"
               onClick={handleOpenAddExerciseDialog}
-              className="rounded-full gap-2"
+              className=" gap-2"
             >
               <Plus className="h-4 w-4" />
               Add Exercise
@@ -532,10 +502,10 @@ export default function WorkoutDetailPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <Card className="bg-linear-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5  blur-3xl" />
             <CardHeader className="relative">
               <CardTitle className="flex items-center gap-3 text-2xl">
-                <div className="rounded-full bg-primary/10 p-3">
+                <div className=" bg-primary/10 p-3">
                   <Dumbbell className="h-6 w-6 text-primary" />
                 </div>
                 Workout Details
@@ -582,7 +552,7 @@ export default function WorkoutDetailPage() {
                   {/*Active Indicator */}
                   {exercise.isActive && (
                     <div className="absolute top-3 right-3 pointer-events-none z-10">
-                      <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 backdrop-blur-md">
+                      <div className="flex items-center gap-1.5  border border-primary/20 bg-primary/10 px-2 py-0.5 backdrop-blur-md">
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
                           Active
                         </span>
@@ -591,7 +561,7 @@ export default function WorkoutDetailPage() {
                   )}
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary text-sm font-semibold shrink-0">
+                      <div className="flex items-center justify-center w-8 h-8 bg-primary/10 text-primary text-sm font-semibold shrink-0">
                         {index + 1}
                       </div>
                       <div className="flex-1 space-y-1.5 min-w-0">
@@ -611,8 +581,8 @@ export default function WorkoutDetailPage() {
                               className={`text-sm text-muted-foreground/80 leading-relaxed whitespace-pre-wrap ${!expandedDescriptions.has(
                                 exercise.exercise.id,
                               ) && exercise.exercise.description.length > 150
-                                ? "line-clamp-2"
-                                : ""
+                                  ? "line-clamp-2"
+                                  : ""
                                 }`}
                             >
                               {exercise.exercise.description}
@@ -670,7 +640,7 @@ export default function WorkoutDetailPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 rounded-lg shrink-0"
+                            className="h-8 w-8 p-0 shrink-0"
                           >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
@@ -691,7 +661,9 @@ export default function WorkoutDetailPage() {
                           {exercise.exercise.userId ? (
                             <>
                               <DropdownMenuItem
-                                onClick={() => openEditDialog(exercise.exercise)}
+                                onClick={() =>
+                                  openEditDialog(exercise.exercise)
+                                }
                                 className="cursor-pointer"
                               >
                                 <Edit2 className="h-4 w-4 mr-2" />
@@ -765,11 +737,12 @@ export default function WorkoutDetailPage() {
         {/* Add/Edit Exercise Dialog */}
         <Dialog open={isAddDialogOpen || !!editingExercise} modal={false}>
           <DialogContent
-            className="rounded-3xl max-w-2xl max-h-[90vh] overflow-y-auto"
+            className="max-w-2xl max-h-[90vh] overflow-y-auto"
             onCloseClick={closeDialogs}
             onEscapeKeyDown={() => {
               closeDialogs();
             }}
+            forceShowOverlay={true}
           >
             <DialogHeader>
               <DialogTitle className="text-2xl">
@@ -798,7 +771,7 @@ export default function WorkoutDetailPage() {
                         <FormControl>
                           <Input
                             placeholder="e.g., Bench Press"
-                            className="h-12 rounded-2xl"
+                            className="h-12 "
                             {...field}
                           />
                         </FormControl>
@@ -815,7 +788,7 @@ export default function WorkoutDetailPage() {
                         <FormControl>
                           <Textarea
                             placeholder="Any additional notes (form cues, tips, etc.)"
-                            className="rounded-2xl"
+                            className=""
                             {...field}
                           />
                         </FormControl>
@@ -835,7 +808,7 @@ export default function WorkoutDetailPage() {
                             type="number"
                             min={0}
                             step={1}
-                            className="h-12 rounded-2xl text-center font-semibold w-24"
+                            className="h-12  text-center font-semibold w-24"
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => {
@@ -852,14 +825,14 @@ export default function WorkoutDetailPage() {
                       type="button"
                       variant="outline"
                       onClick={closeDialogs}
-                      className="rounded-full"
+                      className=""
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
                       disabled={isUpdatePending}
-                      className="rounded-full gap-2"
+                      className=" gap-2"
                     >
                       {isUpdatePending && (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -879,9 +852,7 @@ export default function WorkoutDetailPage() {
                 className="w-full"
               >
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="existing">
-                    Select Existing
-                  </TabsTrigger>
+                  <TabsTrigger value="existing">Select Existing</TabsTrigger>
                   <TabsTrigger value="new">Create New</TabsTrigger>
                 </TabsList>
 
@@ -889,9 +860,7 @@ export default function WorkoutDetailPage() {
                 <TabsContent value="existing" className="space-y-6 mt-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Exercise *
-                      </label>
+                      <label className="text-sm font-medium">Exercise *</label>
                       <Combobox
                         value={selectedExerciseId}
                         itemToStringLabel={(id) => {
@@ -914,7 +883,7 @@ export default function WorkoutDetailPage() {
                       >
                         <ComboboxInput
                           placeholder="Search for an exercise..."
-                          className="w-full h-12 rounded-2xl"
+                          className="w-full h-12 "
                           showClear
                           onKeyDown={(event) => {
                             if (event.key === "Escape") {
@@ -990,7 +959,7 @@ export default function WorkoutDetailPage() {
                     </div>
 
                     {selectedExerciseId && (
-                      <div className="rounded-xl border border-border/50 bg-muted/30 p-4 space-y-3">
+                      <div className=" border border-border/50 bg-muted/30 p-4 space-y-3">
                         <div className="space-y-1">
                           <h4 className="text-sm font-semibold">
                             {
@@ -1021,7 +990,7 @@ export default function WorkoutDetailPage() {
                         type="number"
                         min={0}
                         step={1}
-                        className="h-12 rounded-2xl text-center font-semibold w-24"
+                        className="h-12  text-center font-semibold w-24"
                         value={selectedExerciseRestTime}
                         onChange={(e) =>
                           setSelectedExerciseRestTime(Number(e.target.value))
@@ -1035,7 +1004,7 @@ export default function WorkoutDetailPage() {
                       type="button"
                       variant="outline"
                       onClick={closeDialogs}
-                      className="rounded-full"
+                      className=""
                     >
                       Cancel
                     </Button>
@@ -1043,7 +1012,7 @@ export default function WorkoutDetailPage() {
                       type="button"
                       onClick={handleAddExistingExercise}
                       disabled={!selectedExerciseId || isAddingExisting}
-                      className="rounded-full gap-2"
+                      className=" gap-2"
                     >
                       {isAddingExisting && (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -1069,7 +1038,7 @@ export default function WorkoutDetailPage() {
                             <FormControl>
                               <Input
                                 placeholder="e.g., Bench Press"
-                                className="h-12 rounded-2xl"
+                                className="h-12 "
                                 {...field}
                               />
                             </FormControl>
@@ -1086,7 +1055,7 @@ export default function WorkoutDetailPage() {
                             <FormControl>
                               <Textarea
                                 placeholder="Describe the exercise..."
-                                className="rounded-2xl"
+                                className=""
                                 {...field}
                               />
                             </FormControl>
@@ -1103,7 +1072,7 @@ export default function WorkoutDetailPage() {
                             <FormControl>
                               <Textarea
                                 placeholder="Any additional notes (form cues, tips, etc.)"
-                                className="rounded-2xl"
+                                className=""
                                 {...field}
                               />
                             </FormControl>
@@ -1128,9 +1097,15 @@ export default function WorkoutDetailPage() {
                                     <SelectValue placeholder="Select a mechanic" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="compound">Compound</SelectItem>
-                                    <SelectItem value="isolation">Isolation</SelectItem>
-                                    <SelectItem value="accessory">Accessory</SelectItem>
+                                    <SelectItem value="compound">
+                                      Compound
+                                    </SelectItem>
+                                    <SelectItem value="isolation">
+                                      Isolation
+                                    </SelectItem>
+                                    <SelectItem value="accessory">
+                                      Accessory
+                                    </SelectItem>
                                     <SelectItem value="other">Other</SelectItem>
                                   </SelectContent>
                                 </Select>
@@ -1154,11 +1129,19 @@ export default function WorkoutDetailPage() {
                                     <SelectValue placeholder="Select equipment" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="barbell">Barbell</SelectItem>
-                                    <SelectItem value="dumbbell">Dumbbell</SelectItem>
+                                    <SelectItem value="barbell">
+                                      Barbell
+                                    </SelectItem>
+                                    <SelectItem value="dumbbell">
+                                      Dumbbell
+                                    </SelectItem>
                                     <SelectItem value="cable">Cable</SelectItem>
-                                    <SelectItem value="machine">Machine</SelectItem>
-                                    <SelectItem value="bodyweight">Bodyweight</SelectItem>
+                                    <SelectItem value="machine">
+                                      Machine
+                                    </SelectItem>
+                                    <SelectItem value="bodyweight">
+                                      Bodyweight
+                                    </SelectItem>
                                     <SelectItem value="other">Other</SelectItem>
                                   </SelectContent>
                                 </Select>
@@ -1180,7 +1163,7 @@ export default function WorkoutDetailPage() {
                                 type="number"
                                 min={0}
                                 step={1}
-                                className="h-12 rounded-2xl text-center font-semibold w-24"
+                                className="h-12  text-center font-semibold w-24"
                                 {...field}
                                 value={field.value || ""}
                                 onChange={(e) => {
@@ -1197,14 +1180,14 @@ export default function WorkoutDetailPage() {
                           type="button"
                           variant="outline"
                           onClick={closeDialogs}
-                          className="rounded-full"
+                          className=""
                         >
                           Cancel
                         </Button>
                         <Button
                           type="submit"
                           disabled={isCreatePending}
-                          className="rounded-full gap-2"
+                          className=" gap-2"
                         >
                           {isCreatePending && (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -1248,7 +1231,7 @@ export default function WorkoutDetailPage() {
               </DialogDescription>
             </DialogHeader>
             {exerciseToDelete && (
-              <div className="rounded-lg border border-border/50 p-4 space-y-2">
+              <div className="border border-border/50 p-4 space-y-2">
                 <p className="font-semibold">{exerciseToDelete.name}</p>
                 {exerciseToDelete.description && (
                   <p className="text-sm text-muted-foreground line-clamp-2">
@@ -1311,7 +1294,7 @@ export default function WorkoutDetailPage() {
                   min={0}
                   step={1}
                   defaultValue={editingRestTime?.currentRestTime ?? 0}
-                  className="h-12 rounded-2xl text-center font-semibold"
+                  className="h-12  text-center font-semibold"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const input = e.currentTarget;
@@ -1326,7 +1309,7 @@ export default function WorkoutDetailPage() {
                 variant="outline"
                 onClick={() => setEditingRestTime(null)}
                 disabled={isUpdatingWorkout}
-                className="rounded-full"
+                className=""
               >
                 Cancel
               </Button>
@@ -1340,7 +1323,7 @@ export default function WorkoutDetailPage() {
                   }
                 }}
                 disabled={isUpdatingWorkout}
-                className="rounded-full gap-2"
+                className=" gap-2"
               >
                 {isUpdatingWorkout && (
                   <Loader2 className="h-4 w-4 animate-spin" />

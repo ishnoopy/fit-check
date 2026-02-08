@@ -4,7 +4,9 @@ import { useGeneral } from "@/app/providers";
 import BackButton from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import ExerciseImage from "@/components/ExerciseImage";
 import { LoadingState } from "@/components/LoadingState";
+import { MultiStepDialog } from "@/components/MultiStepDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -41,11 +43,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useGetExercises } from "@/hooks/query/useExercise";
-import {
-  useDeletePlan,
-  useGetPlan,
-  useUpdatePlan,
-} from "@/hooks/query/usePlan";
+import { useDeletePlan, useGetPlan } from "@/hooks/query/usePlan";
 import {
   addWorkoutFormSchema,
   AddWorkoutFormValues,
@@ -55,7 +53,6 @@ import {
   useDeleteWorkout,
   useUpdateWorkout,
 } from "@/hooks/query/useWorkout";
-import { cn } from "@/lib/utils";
 import { IPlan, IWorkout } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
@@ -70,13 +67,11 @@ import {
   FileText,
   Image as ImageIcon,
   Info,
-  Loader2,
   MoreVertical,
   Plus,
   Trash2,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -98,55 +93,6 @@ const item = {
   show: { opacity: 1, x: 0 },
 };
 
-// Exercise Image Component with error handling
-function ExerciseImage({
-  src,
-  alt,
-  onClick,
-}: {
-  src: string;
-  alt: string;
-  onClick?: () => void;
-}) {
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border border-border/40">
-        <div className="text-center space-y-2 p-4">
-          <ImageIcon className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-          <p className="text-xs text-muted-foreground/60">Image unavailable</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "relative h-48 bg-muted/30 rounded-lg overflow-hidden border border-border/40",
-        onClick && "cursor-pointer hover:border-primary/50 transition-colors",
-      )}
-      onClick={onClick}
-    >
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/40" />
-        </div>
-      )}
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        className="object-contain p-2"
-        onError={() => setError(true)}
-        onLoad={() => setLoading(false)}
-      />
-    </div>
-  );
-}
-
 export default function PlanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { activePlanId, setActivePlanId } = useGeneral();
@@ -154,7 +100,6 @@ export default function PlanDetailPage() {
 
   // Add/Edit Workout Dialog State
   const [isAddWorkoutOpen, setIsAddWorkoutOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
   const [nextStepsDialogOpen, setNextStepsDialogOpen] = useState(false);
   const [isEditWorkoutOpen, setIsEditWorkoutOpen] = useState(false);
   const [workoutToEdit, setWorkoutToEdit] = useState<IWorkout | null>(null);
@@ -166,12 +111,6 @@ export default function PlanDetailPage() {
     null,
   );
 
-  // Edit Plan Dialog State
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isEditingDescription, setIsEditingDescription] = useState(false);
-  const [editedTitle, setEditedTitle] = useState("");
-  const [editedDescription, setEditedDescription] = useState("");
-
   // Exercise Image Dialog State
   const [exerciseImageDialogOpen, setExerciseImageDialogOpen] = useState(false);
   const [selectedExerciseImages, setSelectedExerciseImages] = useState<{
@@ -179,14 +118,10 @@ export default function PlanDetailPage() {
     name: string;
     userId?: string | null;
   } | null>(null);
-  const [expandedImageIndex, setExpandedImageIndex] = useState<number | null>(
-    null,
-  );
-  
-  // Track if we're viewing images from the add workout dialog
-  const [isViewingImagesFromDialog, setIsViewingImagesFromDialog] = useState(false);
 
-  const FINAL_STEP_INDEX = 2;
+  // Track if we're viewing images from the add workout dialog
+  const [isViewingImagesFromDialog, setIsViewingImagesFromDialog] =
+    useState(false);
 
   const addWorkoutForm = useForm<AddWorkoutFormValues>({
     resolver: zodResolver(addWorkoutFormSchema),
@@ -262,12 +197,6 @@ export default function PlanDetailPage() {
     }
   }, [planData]);
 
-  const { mutate: updatePlanMutate } = useUpdatePlan({
-    id: id,
-    enableToast: true,
-    queryKey: ["plan", id],
-  });
-
   const { mutate: createWorkoutMutate, isPending: isCreateWorkoutPending } =
     useCreateWorkout({
       planId: id,
@@ -275,7 +204,6 @@ export default function PlanDetailPage() {
       queryKey: ["plan", id],
       onSuccess: () => {
         // Reset the form and close the add workout dialog
-        setCurrentStep(1);
         setIsAddWorkoutOpen(false);
         addWorkoutForm.reset();
         setNextStepsDialogOpen(true);
@@ -347,34 +275,6 @@ export default function PlanDetailPage() {
     }
   };
 
-  const handleTitleClick = () => {
-    if (planData) {
-      setEditedTitle(planData.title);
-      setIsEditingTitle(true);
-    }
-  };
-
-  const handleTitleBlur = () => {
-    setIsEditingTitle(false);
-    if (planData && editedTitle.trim() && editedTitle !== planData.title) {
-      updatePlanMutate({ title: editedTitle.trim() });
-    }
-  };
-
-  const handleDescriptionClick = () => {
-    if (planData) {
-      setEditedDescription(planData.description || "");
-      setIsEditingDescription(true);
-    }
-  };
-
-  const handleDescriptionBlur = () => {
-    setIsEditingDescription(false);
-    if (planData && editedDescription !== (planData.description || "")) {
-      updatePlanMutate({ description: editedDescription });
-    }
-  };
-
   const openEditWorkoutDialog = (workout: IWorkout) => {
     setWorkoutToEdit(workout);
     editWorkoutForm.setValue("title", workout.title);
@@ -393,7 +293,6 @@ export default function PlanDetailPage() {
 
   const handleDialogClose = (open: boolean) => {
     if (!open && !isViewingImagesFromDialog) {
-      setCurrentStep(1);
       addWorkoutForm.reset();
     }
     setIsAddWorkoutOpen(open);
@@ -429,11 +328,9 @@ export default function PlanDetailPage() {
     }
   };
 
-  const handleNextStep = async () => {
+  const handleNextStep = async (): Promise<boolean> => {
     const isValid = await addWorkoutForm.trigger(["title", "description"]);
-    if (isValid) {
-      setCurrentStep(FINAL_STEP_INDEX);
-    }
+    return isValid;
   };
 
   const handleAddExercise = () => {
@@ -497,58 +394,21 @@ export default function PlanDetailPage() {
           <BackButton href="/plans" />
         </div>
 
-        {/* Editable Plan Header */}
+        {/* Plan Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="space-y-3"
         >
           <div className="space-y-2">
-            {isEditingTitle ? (
-              <Input
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                onBlur={handleTitleBlur}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                  }
-                }}
-                className="text-4xl font-bold border-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                autoFocus
-              />
-            ) : (
-              <h1
-                className="text-4xl font-bold cursor-text hover:text-primary/80 transition-colors"
-                onClick={handleTitleClick}
-              >
-                {planData?.title || "Untitled Plan"}
-              </h1>
-            )}
+            <h1 className="text-4xl font-bold cursor-text hover:text-primary/80 transition-colors">
+              {planData?.title || "Untitled Plan"}
+            </h1>
           </div>
           <div className="space-y-2">
-            {isEditingDescription ? (
-              <Textarea
-                value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
-                onBlur={handleDescriptionBlur}
-                placeholder="Add a description..."
-                className="text-lg text-muted-foreground border-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none"
-                rows={2}
-                autoFocus
-              />
-            ) : (
-              <p
-                className="text-lg text-muted-foreground cursor-text hover:text-muted-foreground/80 transition-colors"
-                onClick={handleDescriptionClick}
-              >
-                {planData?.description || (
-                  <span className="italic opacity-70">
-                    Click to add a description...
-                  </span>
-                )}
-              </p>
-            )}
+            <p className="text-lg text-muted-foreground cursor-text hover:text-muted-foreground/80 transition-colors">
+              {planData?.description || ""}
+            </p>
           </div>
         </motion.div>
 
@@ -595,7 +455,7 @@ export default function PlanDetailPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="h-8 w-8 group-hover:opacity-100 transition-opacity"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -699,73 +559,31 @@ export default function PlanDetailPage() {
         )}
 
         {/* Add Workout Dialog - Multi-Step Form */}
-        <Dialog
-          open={isAddWorkoutOpen}
-          onOpenChange={handleDialogClose}
-          modal={false}
-        >
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {planData?.workouts?.length === 0
-                  ? "Let's Add Your First Workout! 🎯"
-                  : "Add Workout"}
-              </DialogTitle>
-              <DialogDescription>
-                {planData?.workouts?.length === 0 ? (
-                  <>
-                    Step {currentStep} of 2 - Let&apos;s build your workout
-                    routine!{" "}
-                    {currentStep === 1
-                      ? "Start by giving your workout a name"
-                      : "Now add the exercises you want to perform"}
-                  </>
-                ) : (
-                  <>
-                    Step {currentStep} of 2:{" "}
-                    {currentStep === 1 ? "Basic Information" : "Add Exercises"}
-                  </>
-                )}
-              </DialogDescription>
-            </DialogHeader>
-
-            {/* Step Indicator */}
-            <div className="flex items-center gap-2 mb-6">
-              <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${currentStep === 1
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-primary/20 text-primary"
-                  }`}
-              >
-                1
-              </div>
-              <div
-                className={`h-1 flex-1 rounded ${currentStep === 2 ? "bg-primary" : "bg-muted"
-                  }`}
-              />
-              <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${currentStep === 2
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
-                  }`}
-              >
-                2
-              </div>
-            </div>
-
-            <Form {...addWorkoutForm}>
-              <form
-                onSubmit={addWorkoutForm.handleSubmit(handleAddWorkout)}
-                className="space-y-6"
-              >
-                {/* Step 1: Basic Information */}
-                {currentStep === 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-4"
-                  >
+        <Form {...addWorkoutForm}>
+          <MultiStepDialog
+            isOpen={isAddWorkoutOpen}
+            onOpenChange={handleDialogClose}
+            showProgress={true}
+            showStepNumbers={false}
+            className="max-w-2xl max-h-[90vh] overflow-y-auto"
+            nextText="Next: Add Exercises"
+            finishText={
+              isCreateWorkoutPending ? "Loading..." : "Create Workout"
+            }
+            steps={[
+              {
+                id: "basic-info",
+                title:
+                  planData?.workouts?.length === 0
+                    ? "Let's Add Your First Workout! 🎯"
+                    : "Add Workout",
+                description:
+                  planData?.workouts?.length === 0
+                    ? "Step 1 of 2 - Let's build your workout routine! Start by giving your workout a name"
+                    : "Step 1 of 2: Basic Information",
+                validate: handleNextStep,
+                content: (
+                  <div className="space-y-4">
                     <FormField
                       control={addWorkoutForm.control}
                       name="title"
@@ -796,17 +614,21 @@ export default function PlanDetailPage() {
                         </FormItem>
                       )}
                     />
-                  </motion.div>
-                )}
-
-                {/* Step 2: Add Exercises */}
-                {currentStep === 2 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-6"
-                  >
+                  </div>
+                ),
+              },
+              {
+                id: "add-exercises",
+                title:
+                  planData?.workouts?.length === 0
+                    ? "Let's Add Your First Workout! 🎯"
+                    : "Add Workout",
+                description:
+                  planData?.workouts?.length === 0
+                    ? "Step 2 of 2 - Let's build your workout routine! Now add the exercises you want to perform"
+                    : "Step 2 of 2: Add Exercises",
+                content: (
+                  <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-lg font-semibold">Exercises</h3>
@@ -821,8 +643,10 @@ export default function PlanDetailPage() {
                       <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                       <p className="text-xs text-muted-foreground">
                         Can&apos;t find an exercise? You can{" "}
-
-                        <span className="font-medium text-primary"> create it manually </span>
+                        <span className="font-medium text-primary">
+                          {" "}
+                          create it manually{" "}
+                        </span>
                         in the workout details page after creating this workout.
                       </p>
                     </div>
@@ -963,7 +787,9 @@ export default function PlanDetailPage() {
                                                         </div>
                                                         {exercise.description && (
                                                           <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                                                            {exercise.description}
+                                                            {
+                                                              exercise.description
+                                                            }
                                                           </div>
                                                         )}
                                                       </div>
@@ -985,8 +811,12 @@ export default function PlanDetailPage() {
                                                                     exercise.userId,
                                                                 },
                                                               );
-                                                              setIsViewingImagesFromDialog(true);
-                                                              setIsAddWorkoutOpen(false);
+                                                              setIsViewingImagesFromDialog(
+                                                                true,
+                                                              );
+                                                              setIsAddWorkoutOpen(
+                                                                false,
+                                                              );
                                                               setExerciseImageDialogOpen(
                                                                 true,
                                                               );
@@ -1057,74 +887,43 @@ export default function PlanDetailPage() {
                         ))}
                       </div>
                     )}
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={handleAddExercise}
-                      className="gap-2 "
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Exercise
-                    </Button>
-                  </motion.div>
-                )}
+                    <div className="flex justify-center">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleAddExercise}
+                        className="gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Exercise
+                      </Button>
+                    </div>
+                  </div>
+                ),
+              },
+            ]}
+            onComplete={async () => {
+              // Validate exercises array exists and has at least one item
+              const exercises = addWorkoutForm.getValues("exercises");
+              if (!exercises || exercises.length === 0) {
+                toast.error("Please add at least one exercise to your workout");
+                throw new Error("No exercises added");
+              }
 
-                {/* Navigation Buttons */}
-                <div className="flex gap-3 pt-4 border-t">
-                  {currentStep === 1 ? (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleDialogClose(false)}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={(event) => {
-                          handleNextStep();
-                          event.preventDefault();
-                        }}
-                        className="flex-1 gap-2"
-                      >
-                        Next: Add Exercises
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setCurrentStep(1)}
-                        className="flex-1"
-                        disabled={isCreateWorkoutPending}
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        type="submit"
-                        className="flex-1 gap-2"
-                        disabled={isCreateWorkoutPending}
-                      >
-                        {isCreateWorkoutPending ? (
-                          <>Loading...</>
-                        ) : (
-                          <>
-                            <Plus className="h-4 w-4" />
-                            Create Workout
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+              // Trigger validation for all exercise fields
+              const isValid = await addWorkoutForm.trigger("exercises");
+              if (!isValid) {
+                toast.error("Please fill in all required exercise fields");
+                throw new Error("Invalid exercise data");
+              }
+
+              await addWorkoutForm.handleSubmit(handleAddWorkout)();
+            }}
+            onCancel={() => {
+              handleDialogClose(false);
+            }}
+          />
+        </Form>
 
         {/* Edit Workout Dialog */}
         <Dialog open={isEditWorkoutOpen} onOpenChange={setIsEditWorkoutOpen}>
@@ -1326,7 +1125,6 @@ export default function PlanDetailPage() {
                         key={imgIndex}
                         src={`https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${image}`}
                         alt={`${selectedExerciseImages.name} - ${imgIndex + 1}`}
-                        onClick={() => setExpandedImageIndex(imgIndex)}
                       />
                     ))}
                   </div>
@@ -1341,34 +1139,7 @@ export default function PlanDetailPage() {
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* Expanded Image Dialog */}
-        <Dialog
-          open={expandedImageIndex !== null}
-          onOpenChange={(open) => {
-            if (!open) setExpandedImageIndex(null);
-          }}
-        >
-          <DialogContent className="max-w-[95vw] sm:max-w-3xl p-2">
-            <DialogHeader className="sr-only">
-              <DialogTitle>Exercise Image</DialogTitle>
-              <DialogDescription>Full size exercise image</DialogDescription>
-            </DialogHeader>
-            {expandedImageIndex !== null &&
-              selectedExerciseImages?.images &&
-              selectedExerciseImages.images[expandedImageIndex] && (
-                <div className="relative w-full h-[70vh]">
-                  <Image
-                    src={`https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${selectedExerciseImages.images[expandedImageIndex]}`}
-                    alt={`${selectedExerciseImages.name} - ${expandedImageIndex + 1}`}
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-              )}
-          </DialogContent>
-        </Dialog>
       </div>
-    </div >
+    </div>
   );
 }

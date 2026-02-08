@@ -36,19 +36,22 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/lib/api";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  MutationFunction,
-  QueryFunction,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+  CreatePlanFormValues,
+  createPlanSchema,
+  useCreatePlan,
+  useDeletePlan,
+  useUpdatePlan,
+} from "@/hooks/query/usePlan";
+import { api } from "@/lib/api";
+import { IPlan } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { QueryFunction, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
   Dumbbell,
+  Edit,
   Eye,
   MoreVertical,
   Plus,
@@ -60,27 +63,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
 interface Plan {
   id: string;
   title: string;
   description?: string;
 }
-
-const createPlanSchema = z.object({
-  title: z.string().min(1, { message: "Title is required" }),
-  description: z.string().optional(),
-  workouts: z.array(z.string()).min(0).optional(),
-});
-
-type FormValues = z.infer<typeof createPlanSchema>;
-
-const createPlan: MutationFunction<{ data: Plan }, FormValues> = (
-  values: FormValues,
-) => {
-  return api.post("/api/plans", values);
-};
 
 const container = {
   hidden: { opacity: 0 },
@@ -101,9 +89,10 @@ export default function PlansPage() {
   const { activePlanId, setActivePlanId } = useGeneral();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [planToEdit, setPlanToEdit] = useState<Plan | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(
     searchParams.get("create") === "true",
   );
@@ -114,12 +103,19 @@ export default function PlansPage() {
     }
   }, [searchParams, router]);
 
-  const createPlanForm = useForm<FormValues>({
+  const createPlanForm = useForm<CreatePlanFormValues>({
     resolver: zodResolver(createPlanSchema),
     defaultValues: {
       title: "",
       description: "",
-      workouts: [],
+    },
+  });
+
+  const editPlanForm = useForm<CreatePlanFormValues>({
+    resolver: zodResolver(createPlanSchema),
+    defaultValues: {
+      title: "",
+      description: "",
     },
   });
 
@@ -142,48 +138,43 @@ export default function PlansPage() {
     localStorage.setItem("activeExerciseId", "");
   };
 
-  const createPlanMutation = useMutation({
-    mutationFn: createPlan,
-    onSuccess: (response: { data: Plan }) => {
-      queryClient.invalidateQueries({ queryKey: ["plans"] });
-      toast.success(
-        "Plan created successfully! 🎉 Let's add your first workout",
-      );
-      createPlanForm.reset();
-      setCreateDialogOpen(false);
+  const { mutate: createPlanMutation, isPending: isCreatePlanPending } =
+    useCreatePlan({
+      enableToast: false,
+      queryKey: ["plans"],
+      onSuccess: (response: { data: IPlan }) => {
+        toast.success(
+          "Plan created successfully! 🎉 Let's add your first workout",
+        );
+        createPlanForm.reset();
+        setCreateDialogOpen(false);
+        router.push(`/plans/${response.data.id}`);
+      },
+    });
 
-      // Redirect to the plan detail page
-      router.push(`/plans/${response.data.id}`);
-    },
-    onError: (error) => {
-      console.error("Failed to create plan", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create plan",
-      );
-    },
-  });
+  const { mutate: deletePlanMutation, isPending: isDeletePlanPending } =
+    useDeletePlan({
+      id: planToDelete?.id || "",
+      enableToast: true,
+      queryKey: ["plans"],
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setPlanToDelete(null);
 
-  const deletePlanMutation = useMutation({
-    mutationFn: (planId: string) => api.delete(`/api/plans/${planId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["plans"] });
-      toast.success("Plan deleted successfully");
-      setDeleteDialogOpen(false);
-      setPlanToDelete(null);
+        // Clear active plan if it was deleted
+        if (planToDelete && activePlanId === planToDelete.id) {
+          setActivePlanId(null);
+          localStorage.removeItem("activePlanId");
+        }
+      },
+    });
 
-      // Clear active plan if it was deleted
-      if (planToDelete && activePlanId === planToDelete.id) {
-        setActivePlanId(null);
-        localStorage.removeItem("activePlanId");
-      }
-    },
-    onError: (error) => {
-      console.error("Failed to delete plan", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete plan",
-      );
-    },
-  });
+  const { mutate: updatePlanMutation, isPending: isUpdatePlanPending } =
+    useUpdatePlan({
+      id: planToEdit?.id || "",
+      enableToast: true,
+      queryKey: ["plans"],
+    });
 
   const handleDeleteClick = (plan: Plan, e: React.MouseEvent) => {
     e.preventDefault();
@@ -193,12 +184,34 @@ export default function PlansPage() {
 
   const handleConfirmDelete = () => {
     if (planToDelete) {
-      deletePlanMutation.mutate(planToDelete.id);
+      deletePlanMutation(planToDelete.id);
     }
   };
 
-  const onSubmit = (values: FormValues) => {
-    createPlanMutation.mutate(values);
+  const handleEditClick = (plan: Plan, e: React.MouseEvent) => {
+    e.preventDefault();
+    setPlanToEdit(plan);
+    editPlanForm.reset({
+      title: plan.title,
+      description: plan.description || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleConfirmEdit = (values: CreatePlanFormValues) => {
+    if (planToEdit) {
+      updatePlanMutation(values, {
+        onSuccess: () => {
+          setEditDialogOpen(false);
+          setPlanToEdit(null);
+          editPlanForm.reset();
+        },
+      });
+    }
+  };
+
+  const onSubmit = (values: CreatePlanFormValues) => {
+    createPlanMutation(values);
   };
 
   const getPlans: QueryFunction<{ data: Plan[] }> = () => {
@@ -296,17 +309,12 @@ export default function PlansPage() {
                       type="button"
                       variant="outline"
                       onClick={() => setCreateDialogOpen(false)}
-                      disabled={createPlanMutation.isPending}
+                      disabled={isCreatePlanPending}
                     >
                       Cancel
                     </Button>
-                    <Button
-                      type="submit"
-                      disabled={createPlanMutation.isPending}
-                    >
-                      {createPlanMutation.isPending
-                        ? "Creating..."
-                        : "Create Plan"}
+                    <Button type="submit" disabled={isCreatePlanPending}>
+                      {isCreatePlanPending ? "Creating..." : "Create Plan"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -352,11 +360,10 @@ export default function PlansPage() {
             return (
               <motion.div key={plan.id} variants={item}>
                 <Card
-                  className={`group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-xl transition-all duration-300 h-full flex flex-col ${
-                    isActive
+                  className={`group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-xl transition-all duration-300 h-full flex flex-col ${isActive
                       ? "border-primary/50 shadow-lg ring-2 ring-primary/20"
                       : ""
-                  }`}
+                    }`}
                 >
                   {isActive && (
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
@@ -395,6 +402,13 @@ export default function PlansPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={(e) => handleEditClick(plan, e)}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Plan
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive cursor-pointer"
                               onClick={(e) => handleDeleteClick(plan, e)}
@@ -438,11 +452,10 @@ export default function PlansPage() {
                     <Button
                       type="button"
                       variant={isActive ? "secondary" : "outline"}
-                      className={`w-full rounded-2xl ${
-                        isActive
+                      className={`w-full rounded-2xl ${isActive
                           ? "bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
                           : ""
-                      }`}
+                        }`}
                       onClick={() => handleToggleActivePlan(plan.id)}
                     >
                       {isActive ? (
@@ -464,6 +477,77 @@ export default function PlansPage() {
           })}
         </motion.div>
 
+        {/* Edit Plan Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Plan</DialogTitle>
+              <DialogDescription>
+                Update your workout plan details
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...editPlanForm}>
+              <form
+                onSubmit={editPlanForm.handleSubmit(handleConfirmEdit)}
+                className="space-y-6"
+              >
+                <FormField
+                  control={editPlanForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Summer Body Program"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editPlanForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description (optional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="e.g., 6-week plan to build muscle and lose fat"
+                          rows={4}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditDialogOpen(false);
+                      setPlanToEdit(null);
+                      editPlanForm.reset();
+                    }}
+                    disabled={isUpdatePlanPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isUpdatePlanPending}>
+                    {isUpdatePlanPending ? "Updating..." : "Update Plan"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent>
@@ -479,16 +563,16 @@ export default function PlansPage() {
               <Button
                 variant="outline"
                 onClick={() => setDeleteDialogOpen(false)}
-                disabled={deletePlanMutation.isPending}
+                disabled={isDeletePlanPending}
               >
                 Cancel
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleConfirmDelete}
-                disabled={deletePlanMutation.isPending}
+                disabled={isDeletePlanPending}
               >
-                {deletePlanMutation.isPending ? "Deleting..." : "Delete Plan"}
+                {isDeletePlanPending ? "Deleting..." : "Delete Plan"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -556,14 +640,12 @@ export default function PlansPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setCreateDialogOpen(false)}
-                    disabled={createPlanMutation.isPending}
+                    disabled={isCreatePlanPending}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createPlanMutation.isPending}>
-                    {createPlanMutation.isPending
-                      ? "Creating..."
-                      : "Create Plan"}
+                  <Button type="submit" disabled={isCreatePlanPending}>
+                    {isCreatePlanPending ? "Creating..." : "Create Plan"}
                   </Button>
                 </DialogFooter>
               </form>
