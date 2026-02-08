@@ -32,7 +32,7 @@ export function EmptyState({
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-          className="rounded-full bg-muted/50 p-6"
+          className="bg-muted/50 p-6"
         >
           <Icon className="h-12 w-12 text-muted-foreground/50" />
         </motion.div>
@@ -61,7 +61,7 @@ export function EmptyState({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Button onClick={action.onClick} size="lg" className="rounded-full">
+          <Button onClick={action.onClick} size="lg">
             {action.label}
           </Button>
         </motion.div>

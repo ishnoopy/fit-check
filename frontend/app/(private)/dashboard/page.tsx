@@ -124,7 +124,7 @@ export default function DashboardPage() {
                 <Card className="border-blue-500/30 bg-blue-500/5 backdrop-blur-sm">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-blue-500/10 rounded-lg shrink-0">
+                      <div className="p-2 bg-blue-500/10 shrink-0">
                         <Shield className="h-5 w-5 text-blue-500" />
                       </div>
                       <div className="space-y-1 flex-1">
@@ -147,7 +147,7 @@ export default function DashboardPage() {
               <Card className="border-primary/30 bg-primary/5 backdrop-blur-sm">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                    <div className="p-2 bg-primary/10 shrink-0">
                       <CalendarPlus className="h-5 w-5 text-primary" />
                     </div>
                     <div className="space-y-2 flex-1">
@@ -178,13 +178,12 @@ export default function DashboardPage() {
           {stats.map((stat) => (
             <motion.div key={stat.label} variants={item}>
               <Card
-                className={`bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300 group h-full flex flex-col ${
-                  stat.showBuffer && isBufferUsedUp ? "border-blue-500/30" : ""
-                }`}
+                className={`bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300 group h-full flex flex-col ${stat.showBuffer && isBufferUsedUp ? "border-blue-500/30" : ""
+                  }`}
               >
                 <CardContent className="p-6 text-center space-y-3 flex flex-col flex-1">
                   <div
-                    className={`inline-flex items-center justify-center rounded-full p-3 group-hover:scale-110 transition-transform ${stat.color}`}
+                    className={`inline-flex items-center justify-center p-3 group-hover:scale-110 transition-transform ${stat.color}`}
                   >
                     <stat.icon className="h-5 w-5" />
                   </div>
@@ -202,9 +201,8 @@ export default function DashboardPage() {
                       <div className="mt-2 pt-2 border-t border-border/50">
                         <div className="flex items-center justify-center gap-1.5 text-xs">
                           <Shield
-                            className={`h-3.5 w-3.5 ${
-                              isBufferUsedUp ? "text-blue-500" : "text-blue-500"
-                            }`}
+                            className={`h-3.5 w-3.5 ${isBufferUsedUp ? "text-blue-500" : "text-blue-500"
+                              }`}
                           />
                           <span className="text-muted-foreground">
                             {bufferDaysUsed}/{restDaysBuffer} rest days used

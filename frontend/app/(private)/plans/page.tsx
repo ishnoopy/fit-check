@@ -339,7 +339,7 @@ export default function PlansPage() {
             <AppGuide />
             <Button
               size="lg"
-              className="rounded-full gap-2"
+              className="gap-2"
               onClick={() => setCreateDialogOpen(true)}
             >
               <Plus className="h-5 w-5" />
@@ -361,12 +361,12 @@ export default function PlansPage() {
               <motion.div key={plan.id} variants={item}>
                 <Card
                   className={`group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-xl transition-all duration-300 h-full flex flex-col ${isActive
-                      ? "border-primary/50 shadow-lg ring-2 ring-primary/20"
-                      : ""
+                    ? "border-primary/50 shadow-lg ring-2 ring-primary/20"
+                    : ""
                     }`}
                 >
                   {isActive && (
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl" />
                   )}
 
                   <CardHeader className="pb-4 relative">
@@ -387,7 +387,7 @@ export default function PlansPage() {
 
                       {/* Plan Actions */}
                       <div className="flex items-center gap-2">
-                        <div className="rounded-full bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors">
+                        <div className="bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors">
                           <Dumbbell className="h-5 w-5 text-primary" />
                         </div>
                         <DropdownMenu>
@@ -436,7 +436,7 @@ export default function PlansPage() {
                     <Button
                       asChild
                       variant="default"
-                      className="w-full rounded-2xl group/btn"
+                      className="w-full  group/btn"
                       size="lg"
                     >
                       <Link
@@ -452,9 +452,9 @@ export default function PlansPage() {
                     <Button
                       type="button"
                       variant={isActive ? "secondary" : "outline"}
-                      className={`w-full rounded-2xl ${isActive
-                          ? "bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
-                          : ""
+                      className={`w-full  ${isActive
+                        ? "bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
+                        : ""
                         }`}
                       onClick={() => handleToggleActivePlan(plan.id)}
                     >
