@@ -10,11 +10,11 @@ import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  AlertCircle,
-  Calendar as CalendarIcon,
-  Flame,
-  Target,
-  TrendingUp,
+    AlertCircle,
+    Calendar as CalendarIcon,
+    Flame,
+    Target,
+    TrendingUp,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -44,22 +44,22 @@ export default function StatsPage() {
       icon: Flame,
       value: streak,
       label: "Day Streak",
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10",
+      color: "text-accent",
+      bgColor: "bg-accent/10",
     },
     {
       icon: Target,
       value: totalLogs,
       label: "Total Workouts",
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
     },
     {
       icon: TrendingUp,
       value: exercisesThisWeek,
       label: "This Week",
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
+      color: "text-secondary",
+      bgColor: "bg-secondary/10",
     },
   ];
 
@@ -80,7 +80,7 @@ export default function StatsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <PageHeader
             title="Stats"
@@ -94,7 +94,7 @@ export default function StatsPage() {
 
   if (statsData && totalLogs === 0) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <PageHeader
             title="Stats"
@@ -116,7 +116,7 @@ export default function StatsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <PageHeader title="Error" subtitle="Failed to load stats" />
           <Card className="border-destructive/50 bg-destructive/10">
@@ -135,7 +135,7 @@ export default function StatsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <PageHeader
           title="Stats"
@@ -151,10 +151,10 @@ export default function StatsPage() {
         >
           {stats.map((stat) => (
             <motion.div key={stat.label} variants={item}>
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300 group">
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 group">
                 <CardContent className="p-6 text-center space-y-3">
                   <div
-                    className={`inline-flex items-center justify-center rounded-full ${stat.bgColor} p-3 group-hover:scale-110 transition-transform ${stat.color}`}
+                    className={`inline-flex items-center justify-center rounded-(--radius) ${stat.bgColor} p-3 group-hover:scale-110 transition-transform ${stat.color}`}
                   >
                     <stat.icon className="h-5 w-5" />
                   </div>
@@ -181,7 +181,7 @@ export default function StatsPage() {
           <Card className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden">
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="rounded-full bg-primary/10 p-2">
+                <div className="rounded-(--radius) bg-primary/10 p-2">
                   <CalendarIcon className="h-5 w-5 text-primary" />
                 </div>
                 Workout Calendar
@@ -197,7 +197,7 @@ export default function StatsPage() {
                   (dateStr: string) => new Date(dateStr + "T00:00:00"),
                 )}
                 disabled={true}
-                className="rounded-2xl border-0"
+                className="rounded-(--radius) border-0"
               />
             </CardContent>
           </Card>

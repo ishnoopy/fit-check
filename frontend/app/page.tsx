@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import favicon from "@/public/favicon.ico";
+import logo from "@/public/fit-check-logo.png";
 import {
   Activity,
   ArrowRight,
@@ -115,28 +115,21 @@ const supportFeatures = [
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-background relative overflow-hidden">
-      {/* Dot Background Pattern */}
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.06] z-0"
-        style={{
-          backgroundImage: `radial-gradient(circle, currentColor 1.5px, transparent 1.5px)`,
-          backgroundSize: "32px 32px",
-        }}
-      />
-
+    <main className="min-h-screen relative overflow-hidden">
       {/* Header */}
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
             <Image
-              src={favicon}
+              src={logo}
               alt="FitCheck"
               width={64}
               height={64}
               className="h-16 w-16"
             />
-            <span className="text-xl font-bold tracking-tight">FitCheck</span>
+            <span className="text-xl font-bold tracking-tight font-serif">
+              FitCheck
+            </span>
           </Link>
 
           <nav className="flex items-center gap-3">
@@ -154,11 +147,11 @@ export default function LandingPage() {
       <section className="relative max-w-7xl mx-auto px-6 pt-24 pb-16 md:pt-40 md:pb-24">
         <div className="text-center space-y-8 max-w-4xl mx-auto">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-foreground/5 border text-sm font-medium">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-(--radius) bg-foreground/5 border text-sm font-medium">
               <Zap className="h-4 w-4" />
               <span>Built for lifters, by lifters</span>
             </div>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.1]">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.1] font-serif">
               Stop Guessing.
               <br />
               <span className="text-muted-foreground">Start Progressing.</span>
@@ -202,7 +195,7 @@ export default function LandingPage() {
       {/* Main Features Section */}
       <section className="relative max-w-7xl mx-auto px-6 py-20 border-t">
         <div className="text-center space-y-4 mb-16">
-          <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
+          <h2 className="text-4xl md:text-5xl font-black tracking-tighter font-serif">
             Everything You Need.
             <br />
             <span className="text-muted-foreground">
@@ -220,7 +213,7 @@ export default function LandingPage() {
             return (
               <Card
                 key={feature.title}
-                className="h-full hover:shadow-lg transition-shadow duration-300"
+                className="h-full hover:shadow-sm transition-shadow duration-200"
               >
                 <CardContent className="p-8 space-y-4">
                   <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-foreground/5 border-2">
@@ -245,7 +238,7 @@ export default function LandingPage() {
       {/* Supporting Features Grid */}
       <section className="relative max-w-7xl mx-auto px-6 py-20 border-t">
         <div className="text-center space-y-4 mb-16">
-          <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
+          <h2 className="text-4xl md:text-5xl font-black tracking-tighter font-serif">
             All The Tools.
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -260,7 +253,7 @@ export default function LandingPage() {
             return (
               <Card
                 key={feature.title}
-                className="h-full hover:shadow-md transition-shadow duration-300"
+                className="h-full hover:shadow-sm transition-shadow duration-200"
               >
                 <CardContent className="p-6 space-y-3">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-foreground/5 border">
@@ -281,10 +274,10 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="relative max-w-7xl mx-auto px-6 py-24 border-t">
-        <Card className="bg-gradient-to-br from-foreground/5 to-foreground/10 border-2">
+        <Card className="bg-linear-to-br from-foreground/5 to-foreground/10 border-2">
           <CardContent className="p-12 md:p-16 text-center space-y-8">
             <div className="space-y-4">
-              <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
+              <h2 className="text-4xl md:text-6xl font-black tracking-tighter font-serif">
                 Time to Get Serious.
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -319,7 +312,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <Image
-                src={favicon}
+                src={logo}
                 alt="FitCheck"
                 width={64}
                 height={64}

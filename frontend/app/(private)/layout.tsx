@@ -1,19 +1,27 @@
 import BottomNav from "@/components/BottomNav";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cinzel, Roboto, Roboto_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import "../globals.css";
 import Providers from "../providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const roboto = Roboto({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "700", "900"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const robotoMono = Roboto_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
+
+const cinzel = Cinzel({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -35,9 +43,9 @@ export default async function RootLayout({
   return (
     <Providers>
       <div
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen flex-col`}
+        className={`${roboto.variable} ${robotoMono.variable} ${cinzel.variable} antialiased font-sans text-foreground flex min-h-screen flex-col relative`}
       >
-        <div className="flex-1">{children}</div>
+        <div className="flex-1 relative z-10">{children}</div>
         <BottomNav className="" />
       </div>
     </Providers>

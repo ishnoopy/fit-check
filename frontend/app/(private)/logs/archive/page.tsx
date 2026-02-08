@@ -5,34 +5,34 @@ import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
 import { PageHeader } from "@/components/PageHeader";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
 import { ILog } from "@/types";
@@ -40,13 +40,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import {
-  CalendarIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ClockIcon,
-  DumbbellIcon,
-  EditIcon,
-  Trash2Icon,
+    CalendarIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    ClockIcon,
+    DumbbellIcon,
+    EditIcon,
+    Trash2Icon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -154,7 +154,7 @@ export default function LogsArchivePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen bg-background pb-24">
         <div className="p-6 max-w-6xl mx-auto">
           <PageHeader
             title="Logs Archive"
@@ -171,7 +171,7 @@ export default function LogsArchivePage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <BackButton href="/log" />
 

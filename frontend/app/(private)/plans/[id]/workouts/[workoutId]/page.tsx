@@ -420,7 +420,7 @@ export default function WorkoutDetailPage() {
   // Loading State
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <BackButton href={`/plans/${id}`} />
           <PageHeader title="Loading..." subtitle="Loading workout details" />
@@ -433,7 +433,7 @@ export default function WorkoutDetailPage() {
   // Error State
   if (error) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <BackButton href={`/plans/${id}`} />
           <PageHeader title="Error" subtitle="Failed to load workout" />
@@ -460,7 +460,7 @@ export default function WorkoutDetailPage() {
   // No Workout Found
   if (!workoutData) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen pb-24">
         <div className="p-6 max-w-2xl mx-auto">
           <BackButton href={`/plans/${id}`} />
           <EmptyState
@@ -477,7 +477,7 @@ export default function WorkoutDetailPage() {
     );
   }
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <BackButton href={`/plans/${id}`} />
 
@@ -578,12 +578,13 @@ export default function WorkoutDetailPage() {
                         {exercise.exercise.description && (
                           <div className="space-y-2">
                             <p
-                              className={`text-sm text-muted-foreground/80 leading-relaxed whitespace-pre-wrap ${!expandedDescriptions.has(
-                                exercise.exercise.id,
-                              ) && exercise.exercise.description.length > 150
+                              className={`text-sm text-muted-foreground/80 leading-relaxed whitespace-pre-wrap ${
+                                !expandedDescriptions.has(
+                                  exercise.exercise.id,
+                                ) && exercise.exercise.description.length > 150
                                   ? "line-clamp-2"
                                   : ""
-                                }`}
+                              }`}
                             >
                               {exercise.exercise.description}
                             </p>
@@ -901,8 +902,8 @@ export default function WorkoutDetailPage() {
                               const threshold = 24;
                               const reachedBottom =
                                 target.scrollHeight -
-                                target.scrollTop -
-                                target.clientHeight <=
+                                  target.scrollTop -
+                                  target.clientHeight <=
                                 threshold;
                               if (reachedBottom) {
                                 fetchNextPage();
@@ -969,14 +970,14 @@ export default function WorkoutDetailPage() {
                           </h4>
                           {exercises.find((e) => e.id === selectedExerciseId)
                             ?.description && (
-                              <p className="text-xs text-muted-foreground">
-                                {
-                                  exercises.find(
-                                    (e) => e.id === selectedExerciseId,
-                                  )?.description
-                                }
-                              </p>
-                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {
+                                exercises.find(
+                                  (e) => e.id === selectedExerciseId,
+                                )?.description
+                              }
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}

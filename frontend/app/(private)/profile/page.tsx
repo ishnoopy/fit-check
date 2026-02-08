@@ -2,28 +2,28 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
@@ -326,26 +326,26 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen pb-24">
       <div className="p-6 max-w-2xl mx-auto">
         {/* Instagram-style Header */}
         <div className="p-6 border-b">
           <div className="flex items-start gap-8 md:gap-16">
             {/* Profile Picture */}
             <div className="relative">
-              <div className="h-20 w-20 md:h-32 md:w-32 rounded-full bg-primary p-0.5">
-                <div className="h-full w-full rounded-full bg-background p-1">
+              <div className="h-20 w-20 md:h-32 md:w-32 rounded-(--radius) bg-primary p-0.5">
+                <div className="h-full w-full rounded-(--radius) bg-background p-1">
                   {user?.avatar ? (
                     <Image
                       src={user.avatar}
                       alt="Profile"
                       width={128}
                       height={128}
-                      className="rounded-full object-cover w-full h-full"
+                      className="rounded-(--radius) object-cover w-full h-full"
                     />
                   ) : (
-                    <div className="h-full w-full rounded-full bg-linear-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center">
-                      <UserIcon className="h-8 w-8 md:h-12 md:w-12 text-white" />
+                    <div className="h-full w-full rounded-(--radius) bg-muted/40 border border-border flex items-center justify-center">
+                      <UserIcon className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -354,7 +354,7 @@ export default function ProfilePage() {
               {/* Pioneer Easter Egg */}
               {user?.isPioneer && (
                 <div className="absolute -bottom-1 -left-1 md:-bottom-2 md:-left-2">
-                  <div className="relative rounded-full p-0.5 bg-primary">
+                  <div className="relative rounded-(--radius) p-0.5 bg-primary">
                     <Image
                       src="/psyduck.gif"
                       alt="Pioneer Badge"
@@ -377,7 +377,7 @@ export default function ProfilePage() {
                     {user?.lastName?.toLowerCase()}
                   </h1>
                   {user?.isPioneer && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-linear-to-r from-blue-500 to-purple-500 text-white shadow-sm font-mono tracking-tight">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-(--radius) text-xs font-medium bg-primary/10 text-primary border border-primary/20 shadow-xs font-mono tracking-tight">
                       &lt;/&gt;
                     </span>
                   )}
@@ -386,7 +386,6 @@ export default function ProfilePage() {
                   variant="secondary"
                   size="sm"
                   onClick={() => setIsEditDialogOpen(true)}
-                  className="rounded-lg"
                 >
                   Edit profile
                 </Button>
@@ -394,7 +393,6 @@ export default function ProfilePage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsSettingsDialogOpen(true)}
-                  className="rounded-lg"
                 >
                   <Settings2 className="h-5 w-5" />
                 </Button>
@@ -448,7 +446,7 @@ export default function ProfilePage() {
             <div className="p-1">
               {galleryImages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4">
-                  <div className="rounded-full border-4 border-foreground p-6 mb-4">
+                  <div className="rounded-(--radius) border-2 border-border p-6 mb-4">
                     <Camera className="h-12 w-12" />
                   </div>
                   <h2 className="text-2xl font-light mb-2">Share Photos</h2>
@@ -458,7 +456,7 @@ export default function ProfilePage() {
                   <Button
                     onClick={() => fileInputRef.current?.click()}
                     variant="link"
-                    className="text-blue-500 hover:text-blue-600"
+                    className="text-primary hover:text-primary/80"
                   >
                     Share your first photo
                   </Button>

@@ -1,14 +1,13 @@
 "use client";
 
-import { DotBackground } from "@/components/DotBackground";
 import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
@@ -98,13 +97,12 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
-      <DotBackground />
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="mx-auto w-full max-w-md space-y-6 sm:space-y-8"
+        className="mx-auto w-full max-w-md space-y-6 sm:space-y-8 relative z-10"
       >
         {/* Header */}
         <div className="text-center space-y-2">
@@ -112,9 +110,9 @@ export default function Login() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1, duration: 0.3 }}
-            className="text-3xl sm:text-4xl font-bold tracking-tight bg-linear-to-r from-foreground to-foreground/70 bg-clip-text"
+            className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground font-serif"
           >
-            Welcome back 💪
+            Welcome back
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -136,7 +134,7 @@ export default function Login() {
             type="button"
             variant="outline"
             onClick={loginWithGoogle}
-            className="w-full h-12 rounded-2xl text-base font-semibold border-2 hover:bg-accent/50 transition-all duration-200"
+            className="w-full h-12 text-base font-semibold"
             disabled={loginMutation.isPending}
           >
             <svg
@@ -182,7 +180,7 @@ export default function Login() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.3 }}
-          className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-3xl shadow-xl p-6 sm:p-8 space-y-6"
+          className="bg-card/60 backdrop-blur-sm border border-border p-6 sm:p-8 space-y-6 shadow-sm"
         >
           <Form {...form}>
             <form
@@ -195,7 +193,7 @@ export default function Login() {
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="rounded-2xl border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3"
+                  className="border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3"
                   role="alert"
                 >
                   <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
@@ -220,7 +218,7 @@ export default function Login() {
                         type="email"
                         autoComplete="email"
                         placeholder="you@example.com"
-                        className="h-12 rounded-2xl bg-background/50 border-border/50 focus:border-primary transition-all duration-200"
+                        className="h-12 bg-background/60"
                         disabled={loginMutation.isPending}
                         aria-label="Email address"
                       />
@@ -246,14 +244,14 @@ export default function Login() {
                           type={showPassword ? "text" : "password"}
                           autoComplete="current-password"
                           placeholder="••••••••"
-                          className="h-12 rounded-2xl bg-background/50 border-border/50 focus:border-primary transition-all duration-200 pr-12"
+                          className="h-12 bg-background/60 pr-12"
                           disabled={loginMutation.isPending}
                           aria-label="Password"
                         />
                         <button
                           type="button"
                           onClick={togglePasswordVisibility}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-md p-1"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-(--radius) p-1"
                           aria-label={
                             showPassword ? "Hide password" : "Show password"
                           }
@@ -276,7 +274,7 @@ export default function Login() {
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="w-full h-12 rounded-2xl text-base font-semibold group shadow-lg hover:shadow-xl transition-all duration-200"
+                className="w-full h-12 text-base font-semibold group"
                 size="lg"
               >
                 {loginMutation.isPending ? (

@@ -45,7 +45,7 @@ export function SkeletonCard() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className="rounded-2xl bg-muted/50 p-6 space-y-3"
+          className="rounded-(--radius) border border-border/60 bg-muted/30 p-6 space-y-3"
         >
           <div className="h-4 w-3/4 bg-muted-foreground/20 rounded animate-pulse" />
           <div className="h-3 w-1/2 bg-muted-foreground/10 rounded animate-pulse" />

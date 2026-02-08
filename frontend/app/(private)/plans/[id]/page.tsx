@@ -10,67 +10,67 @@ import { MultiStepDialog } from "@/components/MultiStepDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
 } from "@/components/ui/combobox";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useGetExercises } from "@/hooks/query/useExercise";
 import { useDeletePlan, useGetPlan } from "@/hooks/query/usePlan";
 import {
-  addWorkoutFormSchema,
-  AddWorkoutFormValues,
-  editWorkoutFormSchema,
-  EditWorkoutFormValues,
-  useCreateWorkout,
-  useDeleteWorkout,
-  useUpdateWorkout,
+    addWorkoutFormSchema,
+    AddWorkoutFormValues,
+    editWorkoutFormSchema,
+    EditWorkoutFormValues,
+    useCreateWorkout,
+    useDeleteWorkout,
+    useUpdateWorkout,
 } from "@/hooks/query/useWorkout";
 import { IPlan, IWorkout } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlertCircle,
-  ArrowRight,
-  Calendar,
-  CheckCircle2,
-  ChevronRight,
-  Dumbbell,
-  Edit,
-  FileText,
-  Image as ImageIcon,
-  Info,
-  MoreVertical,
-  Plus,
-  Trash2,
-  X,
+    AlertCircle,
+    ArrowRight,
+    Calendar,
+    CheckCircle2,
+    ChevronRight,
+    Dumbbell,
+    Edit,
+    FileText,
+    Image as ImageIcon,
+    Info,
+    MoreVertical,
+    Plus,
+    Trash2,
+    X,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -347,7 +347,7 @@ export default function PlanDetailPage() {
 
   if (planError) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen pb-24">
         <div className="p-6 max-w-2xl mx-auto space-y-8">
           <BackButton href="/plans" />
           <ErrorState
@@ -370,7 +370,7 @@ export default function PlanDetailPage() {
 
   if (!planData) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+      <div className="min-h-screen pb-24">
         <div className="p-6 max-w-2xl mx-auto space-y-8">
           <BackButton href="/plans" />
           <EmptyState
@@ -388,7 +388,7 @@ export default function PlanDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <BackButton href="/plans" />
@@ -447,7 +447,7 @@ export default function PlanDetailPage() {
                   layout
                   exit={{ opacity: 0, x: -20 }}
                 >
-                  <Card className="group relative bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-xl hover:border-primary/30 transition-all duration-300 overflow-hidden">
+                  <Card className="group relative bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm hover:border-primary/30 transition-colors duration-200 overflow-hidden">
                     {/* Dropdown Menu in Top-Right Corner */}
                     <div className="absolute top-4 right-4 z-10">
                       <DropdownMenu>
@@ -493,7 +493,7 @@ export default function PlanDetailPage() {
                     <Link href={`/plans/${id}/workouts/${workout.id}`}>
                       <CardContent className="p-6 pr-12">
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary font-bold group-hover:bg-primary/20 transition-colors shrink-0">
+                          <div className="flex items-center justify-center w-12 h-12 rounded-(--radius) bg-primary/10 text-primary font-bold group-hover:bg-primary/20 transition-colors shrink-0">
                             {index + 1}
                           </div>
                           <div className="flex-1 space-y-2 min-w-0">
@@ -757,8 +757,8 @@ export default function PlanDetailPage() {
                                                 const threshold = 24;
                                                 const reachedBottom =
                                                   target.scrollHeight -
-                                                  target.scrollTop -
-                                                  target.clientHeight <=
+                                                    target.scrollTop -
+                                                    target.clientHeight <=
                                                   threshold;
                                                 if (reachedBottom) {
                                                   fetchNextPage();
@@ -795,7 +795,7 @@ export default function PlanDetailPage() {
                                                       </div>
                                                       {exercise.images &&
                                                         exercise.images.length >
-                                                        0 && (
+                                                          0 && (
                                                           <button
                                                             type="button"
                                                             onClick={(e) => {
@@ -863,7 +863,7 @@ export default function PlanDetailPage() {
                                           min={0}
                                           max={1000}
                                           step={1}
-                                          className="h-12 rounded-2xl text-center font-semibold"
+                                          className="h-12 text-center font-semibold"
                                           {...field}
                                           value={field.value || ""}
                                           onChange={(e) => {
@@ -1037,8 +1037,8 @@ export default function PlanDetailPage() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="text-2xl flex items-center gap-2">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
-                Workout Created! 🎉
+                <CheckCircle2 className="h-6 w-6 text-accent" />
+                Workout Created
               </DialogTitle>
               <DialogDescription>
                 What would you like to do next?
@@ -1051,7 +1051,7 @@ export default function PlanDetailPage() {
                 className="w-full h-auto py-4 px-6 flex items-start gap-4 justify-start"
                 size="lg"
               >
-                <div className="p-2 bg-primary-foreground/20 rounded-lg shrink-0">
+                <div className="p-2 bg-primary-foreground/20 rounded-(--radius) shrink-0">
                   <Dumbbell className="h-6 w-6" />
                 </div>
                 <div className="text-left flex-1">
@@ -1132,10 +1132,10 @@ export default function PlanDetailPage() {
               {(!selectedExerciseImages?.images ||
                 selectedExerciseImages.images.length === 0 ||
                 selectedExerciseImages.userId) && (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    No images available for this exercise
-                  </div>
-                )}
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No images available for this exercise
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>

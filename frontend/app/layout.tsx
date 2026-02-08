@@ -1,26 +1,28 @@
 // app/layout.tsx
+import { DeerMark } from "@/components/DeerMark";
+import { DotBackground } from "@/components/DotBackground";
 import type { Metadata } from "next";
-import { Balsamiq_Sans, DM_Mono, Lora } from "next/font/google";
+import { Cinzel, Roboto, Roboto_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import Providers from "./providers";
 
-const balsamiqSans = Balsamiq_Sans({
-  variable: "--font-balsamiq-sans",
+const roboto = Roboto({
+  variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "700"], // Bebas Neue only has 400 weight
+  weight: ["400", "500", "700", "900"],
 });
 
-const lora = Lora({
-  variable: "--font-lora",
+const robotoMono = Roboto_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"], // Add weights you need
+  weight: ["400", "500", "700"],
 });
 
-const dmMono = DM_Mono({
-  variable: "--font-dm-mono",
+const cinzel = Cinzel({
+  variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400"], // Add weights you need
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -36,10 +38,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${balsamiqSans.variable} ${lora.variable} ${dmMono.variable} antialiased`}
+        className={`${roboto.variable} ${robotoMono.variable} ${cinzel.variable} antialiased font-sans bg-background text-foreground overflow-x-hidden`}
       >
+        <DotBackground />
+        <DeerMark className="pointer-events-none fixed -right-16 -bottom-20 h-[560px] w-[560px] opacity-10 z-0" />
         <Toaster position="top-right" richColors />
-        <Providers>{children}</Providers>
+        <Providers>
+          <div className="relative z-10 min-h-screen">{children}</div>
+        </Providers>
       </body>
     </html>
   );

@@ -63,25 +63,25 @@ export default function DashboardPage() {
       icon: Flame,
       value: streak.toString(),
       label: "Day Streak",
-      color: "text-orange-500",
+      color: "text-accent",
       showBuffer: true,
     },
     {
       icon: Target,
       value: exercisesToday.toString(),
       label: "Exercises Today",
-      color: "text-blue-500",
+      color: "text-primary",
     },
     {
       icon: TrendingUp,
       value: exercisesThisWeek.toString(),
       label: "Exercises This Week",
-      color: "text-green-500",
+      color: "text-secondary",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 pb-24">
+    <div className="min-h-screen pb-24">
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <div className="flex items-start justify-between gap-4">
           <PageHeader
@@ -121,14 +121,14 @@ export default function DashboardPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
               >
-                <Card className="border-blue-500/30 bg-blue-500/5 backdrop-blur-sm">
+                <Card className="border-accent/30 bg-accent/5 backdrop-blur-sm">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-blue-500/10 shrink-0">
-                        <Shield className="h-5 w-5 text-blue-500" />
+                      <div className="p-2 bg-accent/10 shrink-0">
+                        <Shield className="h-5 w-5 text-accent" />
                       </div>
                       <div className="space-y-1 flex-1">
-                        <h3 className="font-semibold text-sm text-blue-600 dark:text-blue-400">
+                        <h3 className="font-semibold text-sm text-accent">
                           Reminder 💪
                         </h3>
                         <p className="text-xs text-muted-foreground">
@@ -178,8 +178,9 @@ export default function DashboardPage() {
           {stats.map((stat) => (
             <motion.div key={stat.label} variants={item}>
               <Card
-                className={`bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300 group h-full flex flex-col ${stat.showBuffer && isBufferUsedUp ? "border-blue-500/30" : ""
-                  }`}
+                className={`bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 group h-full flex flex-col ${
+                  stat.showBuffer && isBufferUsedUp ? "border-accent/30" : ""
+                }`}
               >
                 <CardContent className="p-6 text-center space-y-3 flex flex-col flex-1">
                   <div
@@ -201,8 +202,7 @@ export default function DashboardPage() {
                       <div className="mt-2 pt-2 border-t border-border/50">
                         <div className="flex items-center justify-center gap-1.5 text-xs">
                           <Shield
-                            className={`h-3.5 w-3.5 ${isBufferUsedUp ? "text-blue-500" : "text-blue-500"
-                              }`}
+                            className={`h-3.5 w-3.5 ${isBufferUsedUp ? "text-accent" : "text-accent"}`}
                           />
                           <span className="text-muted-foreground">
                             {bufferDaysUsed}/{restDaysBuffer} rest days used
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                         </div>
                         {isBufferUsedUp && (
                           <div className="flex items-center justify-center gap-1 mt-1">
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                            <span className="text-xs text-accent font-medium">
                               <Link href="/log" className="underline">
                                 Log workout today
                               </Link>

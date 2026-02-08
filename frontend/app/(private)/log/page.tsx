@@ -3,28 +3,28 @@
 import { AppGuide } from "@/components/AppGuide";
 import { PageHeader } from "@/components/PageHeader";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, getItemFromLocalStorage } from "@/lib/utils";
@@ -32,25 +32,25 @@ import { ILog } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import {
-  AlertCircleIcon,
-  CheckCircle2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  HistoryIcon,
-  ImageIcon,
-  InfoIcon,
-  Loader2,
-  Pause,
-  Play,
-  PlusIcon,
-  Square,
-  Timer,
-  TrendingDown,
-  TrendingUp,
-  Trophy,
-  X,
-  XIcon,
+    AlertCircleIcon,
+    CheckCircle2,
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    HistoryIcon,
+    ImageIcon,
+    InfoIcon,
+    Loader2,
+    Pause,
+    Play,
+    PlusIcon,
+    Square,
+    Timer,
+    TrendingDown,
+    TrendingUp,
+    Trophy,
+    X,
+    XIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -60,19 +60,19 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  getExerciseHistory,
-  useCreateLog,
-  useGetLatestLogs,
-  useGetSettings,
-  useGetTodayLogs,
+    getExerciseHistory,
+    useCreateLog,
+    useGetLatestLogs,
+    useGetSettings,
+    useGetTodayLogs,
 } from "@/hooks/query/useLog";
 import { useGetAllWorkouts } from "@/hooks/query/useWorkout";
 
@@ -336,25 +336,30 @@ function ExerciseHistoryDialog({
           </button>
           {exerciseInfoExpanded && (
             <div className="pt-3 space-y-3">
-              {exerciseDescription || (exerciseImages && exerciseImages.length > 0 && !exerciseUserId) ? (
+              {exerciseDescription ||
+              (exerciseImages &&
+                exerciseImages.length > 0 &&
+                !exerciseUserId) ? (
                 <>
                   {exerciseDescription && (
                     <p className="text-xs text-muted-foreground/90 leading-relaxed">
                       {exerciseDescription}
                     </p>
                   )}
-                  {exerciseImages && exerciseImages.length > 0 && !exerciseUserId && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {exerciseImages.map((image, imgIndex) => (
-                        <ExerciseImage
-                          key={imgIndex}
-                          src={`https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${image}`}
-                          alt={`${exerciseName} - ${imgIndex + 1}`}
-                          onClick={() => setExpandedImageIndex(imgIndex)}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  {exerciseImages &&
+                    exerciseImages.length > 0 &&
+                    !exerciseUserId && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {exerciseImages.map((image, imgIndex) => (
+                          <ExerciseImage
+                            key={imgIndex}
+                            src={`https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${image}`}
+                            alt={`${exerciseName} - ${imgIndex + 1}`}
+                            onClick={() => setExpandedImageIndex(imgIndex)}
+                          />
+                        ))}
+                      </div>
+                    )}
                 </>
               ) : (
                 <p className="text-xs text-muted-foreground/60 italic">
@@ -421,7 +426,7 @@ function ExerciseHistoryDialog({
                 <div className="space-y-2.5">
                   {/* Latest Session Stats */}
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="p-2 bg-muted/30 rounded border border-border/50">
+                    <div className="p-2 bg-muted/30 rounded-(--radius) border border-border/50">
                       <div className="text-[10px] text-muted-foreground mb-1">
                         Volume
                       </div>
@@ -430,16 +435,16 @@ function ExerciseHistoryDialog({
                           {Math.round(progressionData.latest.volume)} kg
                         </span>
                         {progressionData.isVolumePR && (
-                          <Trophy className="h-3 w-3 text-yellow-500" />
+                          <Trophy className="h-3 w-3 text-accent" />
                         )}
                         {progressionData.volumeChange !== null && (
                           <span
                             className={cn(
                               "text-[10px] font-medium flex items-center gap-0.5",
                               progressionData.volumeChange > 0
-                                ? "text-green-600"
+                                ? "text-accent"
                                 : progressionData.volumeChange < 0
-                                  ? "text-red-600"
+                                  ? "text-destructive"
                                   : "text-muted-foreground",
                             )}
                           >
@@ -454,7 +459,7 @@ function ExerciseHistoryDialog({
                         )}
                       </div>
                     </div>
-                    <div className="p-2 bg-muted/30 rounded border border-border/50">
+                    <div className="p-2 bg-muted/30 rounded-(--radius) border border-border/50">
                       <div className="text-[10px] text-muted-foreground mb-1">
                         Max Weight
                       </div>
@@ -463,16 +468,16 @@ function ExerciseHistoryDialog({
                           {progressionData.latest.maxWeight} kg
                         </span>
                         {progressionData.isWeightPR && (
-                          <Trophy className="h-3 w-3 text-yellow-500" />
+                          <Trophy className="h-3 w-3 text-accent" />
                         )}
                         {progressionData.weightChange !== null && (
                           <span
                             className={cn(
                               "text-[10px] font-medium flex items-center gap-0.5",
                               progressionData.weightChange > 0
-                                ? "text-green-600"
+                                ? "text-accent"
                                 : progressionData.weightChange < 0
-                                  ? "text-red-600"
+                                  ? "text-destructive"
                                   : "text-muted-foreground",
                             )}
                           >
@@ -490,7 +495,7 @@ function ExerciseHistoryDialog({
                   </div>
 
                   {/* Personal Records */}
-                  <div className="p-2 bg-muted/20 rounded border border-border/50">
+                  <div className="p-2 bg-muted/20 rounded-(--radius) border border-border/50">
                     <div className="text-[10px] text-muted-foreground mb-2">
                       Personal Records
                     </div>
@@ -547,7 +552,7 @@ function ExerciseHistoryDialog({
           >
             <button
               onClick={() => setExpandedImageIndex(null)}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-background border-2 border-border hover:bg-muted transition-colors shadow-lg"
+              className="absolute top-4 right-4 z-10 p-2 rounded-(--radius) bg-background border border-border hover:bg-muted transition-colors shadow-sm"
             >
               <X className="h-5 w-5" />
             </button>
@@ -563,7 +568,7 @@ function ExerciseHistoryDialog({
                         : expandedImageIndex - 1,
                     );
                   }}
-                  className="absolute left-4 z-10 p-2 rounded-full bg-background/30 border-2 border-border hover:bg-muted transition-colors shadow-lg"
+                  className="absolute left-4 z-10 p-2 rounded-(--radius) bg-background/70 border border-border hover:bg-muted transition-colors shadow-sm"
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </button>
@@ -575,7 +580,7 @@ function ExerciseHistoryDialog({
                       (expandedImageIndex + 1) % exerciseImages.length,
                     );
                   }}
-                  className="absolute right-4 z-10 p-2 rounded-full bg-background/30 border-2 border-border hover:bg-muted transition-colors shadow-lg"
+                  className="absolute right-4 z-10 p-2 rounded-(--radius) bg-background/70 border border-border hover:bg-muted transition-colors shadow-sm"
                 >
                   <ChevronRight className="h-6 w-6" />
                 </button>
@@ -595,7 +600,7 @@ function ExerciseHistoryDialog({
             </div>
 
             {exerciseImages.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground bg-background border border-border px-3 py-1.5 rounded-full shadow-lg">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground bg-background border border-border px-3 py-1.5 rounded-(--radius) shadow-sm">
                 {expandedImageIndex + 1} / {exerciseImages.length}
               </div>
             )}
@@ -653,9 +658,8 @@ export default function LogPage() {
     (workout) => workout.id === activeWorkoutId,
   );
 
-  const activeExercisesList = workoutData?.exercises?.filter(
-    (exercise) => exercise.isActive,
-  ) || [];
+  const activeExercisesList =
+    workoutData?.exercises?.filter((exercise) => exercise.isActive) || [];
   const activeExerciseDetails = activeExercisesList.find(
     (exercise) => exercise.exercise.id === activeExerciseId,
   );
@@ -767,7 +771,6 @@ export default function LogPage() {
     startOfDay,
     endOfDay,
   });
-
 
   const { data: latestLogs } = useGetLatestLogs({
     exerciseIds: activeExercisesList.map((exercise) => exercise.exercise.id),
@@ -942,7 +945,7 @@ export default function LogPage() {
 
   if (activePlanId === "") {
     return (
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen pb-24">
         <div className="p-4 max-w-xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <PageHeader title="Log" subtitle="Log your workouts" />
@@ -978,7 +981,7 @@ export default function LogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen pb-24">
       {/* Hidden audio element */}
       <audio ref={audioRef} src="/notif-sound.mp3" />
 
@@ -1061,16 +1064,18 @@ export default function LogPage() {
                 className="border-b"
               >
                 <AccordionTrigger
-                  className={`cursor-pointer py-2.5 px-3 hover:no-underline ${isLogged ? "bg-muted/30" : ""
-                    }`}
+                  className={`cursor-pointer py-2.5 px-3 hover:no-underline ${
+                    isLogged ? "bg-muted/30" : ""
+                  }`}
                 >
                   <div className="flex items-center gap-2 w-full">
                     {isLogged && (
                       <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                     )}
                     <span
-                      className={`flex-1 text-left text-sm ${isLogged ? "font-medium" : ""
-                        } ${isActiveExercise ? "font-bold text-primary" : ""}`}
+                      className={`flex-1 text-left text-sm ${
+                        isLogged ? "font-medium" : ""
+                      } ${isActiveExercise ? "font-bold text-primary" : ""}`}
                     >
                       {exercise.name}
                     </span>
@@ -1080,73 +1085,75 @@ export default function LogPage() {
                       </span>
                     )}
                     {/* Rest Timer */}
-                    {exerciseItem.restTime !== undefined && isActiveExercise && !isLogged && (
-                      <div
-                        className="flex items-center gap-1.5 shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                    {exerciseItem.restTime !== undefined &&
+                      isActiveExercise &&
+                      !isLogged && (
                         <div
-                          className={cn(
-                            "flex items-center gap-1.5 px-2 py-1 rounded-md border transition-colors",
-                            isTimerRunning
-                              ? "bg-primary/10 border-primary/20 text-primary"
-                              : "bg-muted/30 border-border/50 text-muted-foreground",
-                          )}
+                          className="flex items-center gap-1.5 shrink-0"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Timer className="h-3.5 w-3.5 shrink-0" />
-                          <span className="text-xs font-mono font-semibold tabular-nums min-w-8 text-center">
-                            {displayCountdown}s
-                          </span>
-                          {isTimerRunning ? (
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              className="h-5 w-5 shrink-0 hover:bg-primary/20 rounded-md flex items-center justify-center cursor-pointer transition-colors"
-                              onClick={pauseRestTime}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  pauseRestTime();
-                                }
-                              }}
-                            >
-                              <Pause className="h-3 w-3" />
-                            </div>
-                          ) : (
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              className="h-5 w-5 shrink-0 hover:bg-primary/20 rounded-md flex items-center justify-center cursor-pointer transition-colors"
-                              onClick={startRestTime}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  startRestTime();
-                                }
-                              }}
-                            >
-                              <Play className="h-3 w-3" />
-                            </div>
-                          )}
-                          {countdown < (exerciseItem.restTime || 0) && (
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              className="h-5 w-5 shrink-0 hover:bg-destructive/20 text-destructive rounded-md flex items-center justify-center cursor-pointer transition-colors"
-                              onClick={stopRestTime}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  stopRestTime();
-                                }
-                              }}
-                            >
-                              <Square className="h-2.5 w-2.5 fill-current" />
-                            </div>
-                          )}
+                          <div
+                            className={cn(
+                              "flex items-center gap-1.5 px-2 py-1 rounded-md border transition-colors",
+                              isTimerRunning
+                                ? "bg-primary/10 border-primary/20 text-primary"
+                                : "bg-muted/30 border-border/50 text-muted-foreground",
+                            )}
+                          >
+                            <Timer className="h-3.5 w-3.5 shrink-0" />
+                            <span className="text-xs font-mono font-semibold tabular-nums min-w-8 text-center">
+                              {displayCountdown}s
+                            </span>
+                            {isTimerRunning ? (
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                className="h-5 w-5 shrink-0 hover:bg-primary/20 rounded-md flex items-center justify-center cursor-pointer transition-colors"
+                                onClick={pauseRestTime}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    pauseRestTime();
+                                  }
+                                }}
+                              >
+                                <Pause className="h-3 w-3" />
+                              </div>
+                            ) : (
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                className="h-5 w-5 shrink-0 hover:bg-primary/20 rounded-md flex items-center justify-center cursor-pointer transition-colors"
+                                onClick={startRestTime}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    startRestTime();
+                                  }
+                                }}
+                              >
+                                <Play className="h-3 w-3" />
+                              </div>
+                            )}
+                            {countdown < (exerciseItem.restTime || 0) && (
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                className="h-5 w-5 shrink-0 hover:bg-destructive/20 text-destructive rounded-md flex items-center justify-center cursor-pointer transition-colors"
+                                onClick={stopRestTime}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    stopRestTime();
+                                  }
+                                }}
+                              >
+                                <Square className="h-2.5 w-2.5 fill-current" />
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                     <Dialog
                       onOpenChange={(open) => {
                         if (
@@ -1544,10 +1551,10 @@ export default function LogPage() {
                                                 "logFormDrafts",
                                               )
                                                 ? JSON.parse(
-                                                  getItemFromLocalStorage(
-                                                    "logFormDrafts",
-                                                  ) || "",
-                                                )
+                                                    getItemFromLocalStorage(
+                                                      "logFormDrafts",
+                                                    ) || "",
+                                                  )
                                                 : {};
                                             delete draftDocumentCollection[
                                               activeExerciseId

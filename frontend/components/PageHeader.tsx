@@ -22,7 +22,7 @@ export function PageHeader({ title, subtitle, action }: PageHeaderProps) {
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.1, delay: 0.1 }}
-          className="text-3xl font-bold tracking-tight text-foreground"
+          className="text-3xl font-bold tracking-tight text-foreground font-serif"
         >
           {title}
         </motion.h1>
