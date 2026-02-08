@@ -37,17 +37,19 @@ import { z } from "zod";
 export const addWorkoutFormSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   description: z.string().optional(),
-  exercises: z.array(
-    z.object({
-      exercise: z.string().min(1, { message: "Exercise ID is required" }),
-      restTime: z
-        .number()
-        .int()
-        .positive()
-        .max(600, { message: "Rest time must be less than 600 seconds" }),
-      isActive: z.boolean().default(true),
-    }),
-  ),
+  exercises: z
+    .array(
+      z.object({
+        exercise: z.string().min(1, { message: "Exercise ID is required" }),
+        restTime: z
+          .number()
+          .int()
+          .positive()
+          .max(600, { message: "Rest time must be less than 600 seconds" }),
+        isActive: z.boolean().default(true),
+      }),
+    )
+    .min(1, { message: "At least one exercise is required" }),
 });
 
 export const editWorkoutFormSchema = z.object({
