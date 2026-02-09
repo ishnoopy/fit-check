@@ -99,3 +99,61 @@ export interface ILogStats {
   bufferDaysUsed?: number;
   restDaysBuffer?: number;
 }
+
+// Coach types
+
+export const COACH_INTENT = {
+  NEXT_WORKOUT: "NEXT_WORKOUT",
+  SESSION_FEEDBACK: "SESSION_FEEDBACK",
+  PROGRESS_CHECK: "PROGRESS_CHECK",
+  DIFFICULTY_ANALYSIS: "DIFFICULTY_ANALYSIS",
+  TIPS: "TIPS",
+  GENERAL_COACHING: "GENERAL_COACHING",
+} as const;
+
+export type CoachIntent = (typeof COACH_INTENT)[keyof typeof COACH_INTENT];
+
+export type ChatRole = "user" | "coach";
+
+export interface ChatMessage {
+  id: string;
+  role: ChatRole;
+  content: string;
+  intent?: CoachIntent;
+  isStreaming?: boolean;
+  createdAt?: string;
+}
+
+export interface ChatHistoryMessage {
+  role: ChatRole;
+  content: string;
+}
+
+export interface QuickPrompt {
+  text: string;
+  intent: CoachIntent;
+}
+
+export interface IConversation {
+  id: string;
+  userId: string;
+  title: string;
+  summary?: string;
+  messages: IConversationMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IConversationMessage {
+  role: ChatRole;
+  content: string;
+  intent?: CoachIntent;
+  createdAt?: string;
+}
+
+export interface IConversationListItem {
+  id: string;
+  title: string;
+  summary?: string;
+  updatedAt: string;
+}

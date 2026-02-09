@@ -1,4 +1,5 @@
 import AuthRoutes from "./auth.routes.js";
+import CoachRoutes from "./coach.routes.js";
 import ExerciseRoutes from "./exercise.routes.js";
 import GalleryRoutes from "./gallery.routes.js";
 import LogRoutes from "./log.routes.js";
@@ -18,6 +19,7 @@ const groupRoutes = [
   SettingRoutes,
   UploadRoutes,
   GalleryRoutes,
+  CoachRoutes,
 ] as const;
 
 export default groupRoutes;

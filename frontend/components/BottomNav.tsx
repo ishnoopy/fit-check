@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 interface Plan {
   id: string;
   title: string;
@@ -95,6 +96,7 @@ export default function BottomNav({ className }: { className?: string }) {
       icon: MessageCircleIcon,
       label: "Coach",
       isCenter: true,
+      requiresPioneer: true,
     },
     { href: "/log", icon: CalendarIcon, label: "Log" },
   ];
@@ -149,6 +151,85 @@ export default function BottomNav({ className }: { className?: string }) {
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const showPulse = item.showPulse && !isActive;
+            const isDisabled = item.requiresPioneer && !user?.isPioneer;
+
+            const navContent = (
+              <motion.div
+                whileHover={{ scale: isDisabled ? 1 : 1.05 }}
+                whileTap={{ scale: isDisabled ? 1 : 0.95 }}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 rounded-full py-1.5 px-2 transition-colors relative",
+                  isDisabled
+                    ? "opacity-50 cursor-not-allowed"
+                    : isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {/* Icon with relative positioning to show badge */}
+                <div className="relative">
+                  {item.isCenter ? (
+                    <div
+                      className={cn(
+                        "relative z-10 size-8 rounded-full flex items-center justify-center border",
+                        isActive
+                          ? "bg-primary/10 border-primary/30"
+                          : "bg-background/70 border-border",
+                      )}
+                    >
+                      <Image
+                        src={logo}
+                        alt="FitCheck Coach"
+                        width={26}
+                        height={26}
+                        className="size-6 object-contain"
+                        priority
+                      />
+                    </div>
+                  ) : (
+                    <item.icon className="h-4 w-4 relative z-10" />
+                  )}
+                  {showPulse && (
+                    <span className="absolute -top-0.5 -right-0.5 z-20 size-2 bg-primary" />
+                  )}
+                </div>
+
+                <span className="text-xs font-medium relative z-10 hidden sm:inline">
+                  {item.label}
+                </span>
+
+                {isActive && !isDisabled && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full mx-auto w-1/2"
+                    initial={false}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      layout: {
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 30,
+                      },
+                    }}
+                  />
+                )}
+              </motion.div>
+            );
+
+            if (isDisabled) {
+              return (
+                <div key={item.href} className="flex-1 relative">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>{navContent}</div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={8}>
+                      <p>Coming soon</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              );
+            }
 
             return (
               <Link
@@ -156,64 +237,7 @@ export default function BottomNav({ className }: { className?: string }) {
                 href={item.href}
                 className="flex-1 relative"
               >
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-1 rounded-full py-1.5 px-2 transition-colors relative",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {/* Icon with relative positioning to show badge */}
-                  <div className="relative">
-                    {item.isCenter ? (
-                      <div
-                        className={cn(
-                          "relative z-10 size-8 rounded-full flex items-center justify-center border",
-                          isActive
-                            ? "bg-primary/10 border-primary/30"
-                            : "bg-background/70 border-border",
-                        )}
-                      >
-                        <Image
-                          src={logo}
-                          alt="FitCheck Coach"
-                          width={26}
-                          height={26}
-                          className="size-6 object-contain"
-                          priority
-                        />
-                      </div>
-                    ) : (
-                      <item.icon className="h-4 w-4 relative z-10" />
-                    )}
-                    {showPulse && (
-                      <span className="absolute -top-0.5 -right-0.5 z-20 size-2 bg-primary" />
-                    )}
-                  </div>
-
-                  <span className="text-xs font-medium relative z-10 hidden sm:inline">
-                    {item.label}
-                  </span>
-
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full mx-auto w-1/2"
-                      initial={false}
-                      animate={{ opacity: 1 }}
-                      transition={{
-                        layout: {
-                          type: "spring",
-                          stiffness: 500,
-                          damping: 30,
-                        },
-                      }}
-                    />
-                  )}
-                </motion.div>
+                {navContent}
               </Link>
             );
           })}
