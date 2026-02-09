@@ -8,6 +8,8 @@ import { useCoach } from "@/hooks/useCoach";
 import { cn } from "@/lib/utils";
 import type { IConversationListItem, QuickPrompt } from "@/types";
 import {
+  ChevronDown,
+  ChevronUp,
   History,
   Loader2,
   Lock,
@@ -69,6 +71,7 @@ export default function CoachPage() {
 
   const [draft, setDraft] = useState("");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [showQuickPrompts, setShowQuickPrompts] = useState(true);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const canSend = useMemo(
@@ -213,23 +216,44 @@ export default function CoachPage() {
 
       {/* Input Area */}
       <div className="border-t border-border bg-background/80 backdrop-blur">
-        <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {quickPrompts.map((prompt) => (
-              <Button
-                key={prompt.text}
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isLoading}
-                onClick={() => handleQuickPrompt(prompt)}
-              >
-                {prompt.text}
-              </Button>
-            ))}
-          </div>
+        <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
+          {/* Quick Prompts Section */}
+          {showQuickPrompts && (
+            <div className="flex flex-wrap gap-1.5">
+              {quickPrompts.map((prompt) => (
+                <Button
+                  key={prompt.text}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isLoading}
+                  onClick={() => handleQuickPrompt(prompt)}
+                  className="h-7 text-xs px-2.5 py-0"
+                >
+                  {prompt.text}
+                </Button>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowQuickPrompts((prev) => !prev)}
+              aria-label="Toggle quick prompts"
+              title={
+                showQuickPrompts ? "Hide quick prompts" : "Show quick prompts"
+              }
+              className="mb-0.5"
+            >
+              {showQuickPrompts ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronUp className="size-4" />
+              )}
+            </Button>
             <div className="flex-1 relative">
               <Textarea
                 value={draft}
