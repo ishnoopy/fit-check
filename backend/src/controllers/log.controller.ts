@@ -18,7 +18,12 @@ const createLogSchema = z.object({
   workoutId: z.string().length(24, "Invalid workout ID"),
   exerciseId: z.string().length(24, "Invalid exercise ID"),
   sets: z.array(setDataSchema).min(1, "At least one set is required"),
-  durationMinutes: z.number().int().positive().optional(),
+  rateOfPerceivedExertion: z
+    .number()
+    .int()
+    .min(6, "RPE must be between 6 and 10")
+    .max(10, "RPE must be between 6 and 10")
+    .optional(),
   notes: z.string().optional(),
 });
 
@@ -27,7 +32,12 @@ const updateLogSchema = z.object({
   workoutId: z.string().length(24).optional(),
   exerciseId: z.string().length(24).optional(),
   sets: z.array(setDataSchema).min(1).optional(),
-  durationMinutes: z.number().int().positive().optional(),
+  rateOfPerceivedExertion: z
+    .number()
+    .int()
+    .min(6, "RPE must be between 6 and 10")
+    .max(10, "RPE must be between 6 and 10")
+    .optional(),
   notes: z.string().optional(),
 });
 

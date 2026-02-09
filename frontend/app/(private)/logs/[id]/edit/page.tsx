@@ -42,7 +42,12 @@ const formSchema = z.object({
       notes: z.string().optional(),
     }),
   ),
-  durationMinutes: z.number().min(0).optional(),
+  rateOfPerceivedExertion: z
+    .number()
+    .int()
+    .min(6)
+    .max(10)
+    .optional(),
   notes: z.string().optional(),
 });
 
@@ -72,7 +77,7 @@ export default function EditLogPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       sets: [],
-      durationMinutes: 0,
+      rateOfPerceivedExertion: undefined,
       notes: "",
     },
   });
@@ -92,7 +97,7 @@ export default function EditLogPage() {
     if (log) {
       form.reset({
         sets: log.sets || [],
-        durationMinutes: log.durationMinutes || 0,
+        rateOfPerceivedExertion: log.rateOfPerceivedExertion,
         notes: log.notes || "",
       });
     }
@@ -290,21 +295,35 @@ export default function EditLogPage() {
 
                   <FormField
                     control={form.control}
-                    name="durationMinutes"
+                    name="rateOfPerceivedExertion"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Duration (minutes)</FormLabel>
+                        <FormLabel>
+                          Rate of Perceived Exertion (RPE) - Optional
+                        </FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            placeholder="30"
-                            {...field}
-                            value={field.value ? field.value.toString() : ""}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value))
-                            }
-                          />
+                          <div className="grid grid-cols-5 gap-2">
+                            {[6, 7, 8, 9, 10].map((rpe) => (
+                              <Button
+                                key={rpe}
+                                type="button"
+                                variant={
+                                  field.value === rpe ? "default" : "outline"
+                                }
+                                onClick={() => field.onChange(rpe)}
+                                className="flex flex-col h-auto py-2"
+                              >
+                                <span className="text-lg font-bold">{rpe}</span>
+                                <span className="text-[10px]">
+                                  {rpe === 6 && "Easy"}
+                                  {rpe === 7 && "Moderate"}
+                                  {rpe === 8 && "Hard"}
+                                  {rpe === 9 && "Very Hard"}
+                                  {rpe === 10 && "Max"}
+                                </span>
+                              </Button>
+                            ))}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>

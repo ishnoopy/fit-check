@@ -151,11 +151,6 @@ export async function getLogsByQueryService(
       (sum: number, log: any) => sum + (log.sets?.length || 0),
       0,
     );
-    const avgDuration =
-      logs.reduce(
-        (sum: number, log: any) => sum + (log.durationMinutes || 0),
-        0,
-      ) / totalSessions || 0;
 
     // Build optimized message
     const message = `You are a professional fitness coach analyzing workout logs. Provide:
@@ -167,7 +162,7 @@ export async function getLogsByQueryService(
 Use emojis to make it engaging. Keep it concise but actionable.
 
 **Period:** ${dateRangeStr || "All time"}
-**Sessions:** ${totalSessions} | **Exercises:** ${uniqueExercises} | **Total Sets:** ${totalSets} | **Avg Duration:** ${Math.round(avgDuration)}min
+**Sessions:** ${totalSessions} | **Exercises:** ${uniqueExercises} | **Total Sets:** ${totalSets}
 
 **Workout Logs:**
 ${logsData

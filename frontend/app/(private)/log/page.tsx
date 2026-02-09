@@ -3,54 +3,59 @@
 import { AppGuide } from "@/components/AppGuide";
 import { PageHeader } from "@/components/PageHeader";
 import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn, getItemFromLocalStorage } from "@/lib/utils";
+import {
+  cn,
+  getItemFromLocalStorage,
+  getRpeEmoji,
+  getRpeLabel,
+} from "@/lib/utils";
 import { ILog } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import {
-    AlertCircleIcon,
-    CheckCircle2,
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight,
-    HistoryIcon,
-    ImageIcon,
-    InfoIcon,
-    Loader2,
-    Pause,
-    Play,
-    PlusIcon,
-    Square,
-    Timer,
-    TrendingDown,
-    TrendingUp,
-    Trophy,
-    X,
-    XIcon,
+  AlertCircleIcon,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  HistoryIcon,
+  ImageIcon,
+  InfoIcon,
+  Loader2,
+  Pause,
+  Play,
+  PlusIcon,
+  Square,
+  Timer,
+  TrendingDown,
+  TrendingUp,
+  Trophy,
+  X,
+  XIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -60,19 +65,19 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-    getExerciseHistory,
-    useCreateLog,
-    useGetLatestLogs,
-    useGetSettings,
-    useGetTodayLogs,
+  getExerciseHistory,
+  useCreateLog,
+  useGetLatestLogs,
+  useGetSettings,
+  useGetTodayLogs,
 } from "@/hooks/query/useLog";
 import { useGetAllWorkouts } from "@/hooks/query/useWorkout";
 
@@ -93,7 +98,7 @@ const formSchema = z.object({
     .refine((sets) => sets.every((set) => set.reps > 0 && set.weight > -1), {
       message: "Please fill in reps and weight for all sets",
     }),
-  durationMinutes: z.number().min(1, { message: "" }).optional(),
+  rateOfPerceivedExertion: z.number().min(6).max(10).optional(),
   notes: z.string().optional(),
 });
 
@@ -391,12 +396,12 @@ function ExerciseHistoryDialog({
                     return (
                       <div
                         key={log.id || idx}
-                        className="flex items-center gap-2 text-[10px] py-1 border-b border-border/30 last:border-0"
+                        className="flex items-start gap-2.5 py-2 px-2 border-b border-border/30 last:border-0 hover:bg-muted/20 rounded-md transition-colors"
                       >
-                        <span className="text-muted-foreground min-w-12">
+                        <span className="text-muted-foreground font-medium text-[11px] min-w-14 pt-0.5">
                           {logDate}
                         </span>
-                        <div className="flex flex-wrap gap-1 flex-1">
+                        <div className="flex flex-wrap gap-1.5 flex-1 items-center">
                           {log.sets?.map(
                             (
                               set: { reps: number; weight: number },
@@ -404,13 +409,23 @@ function ExerciseHistoryDialog({
                             ) => (
                               <span
                                 key={setIdx}
-                                className="text-foreground font-medium"
+                                className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted/50 border border-border/40 text-foreground font-semibold text-[10px]"
                               >
                                 {set.reps}×{set.weight}kg
                               </span>
                             ),
                           )}
                         </div>
+                        {log.rateOfPerceivedExertion && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className="text-base leading-none">
+                              {getRpeEmoji(log.rateOfPerceivedExertion)}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-medium">
+                              {getRpeLabel(log.rateOfPerceivedExertion)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -630,6 +645,10 @@ export default function LogPage() {
   const [loadingHistory, setLoadingHistory] = useState<Record<string, boolean>>(
     {},
   );
+  const [showRpeDialog, setShowRpeDialog] = useState<boolean>(false);
+  const [pendingFormValues, setPendingFormValues] = useState<FormValues | null>(
+    null,
+  );
 
   const { data: settings } = useGetSettings();
 
@@ -644,7 +663,7 @@ export default function LogPage() {
       workoutId: activeWorkoutId || "",
       exerciseId: activeExerciseId || "",
       sets: DEFAULT_SETS,
-      durationMinutes: 0,
+      rateOfPerceivedExertion: undefined,
       notes: "",
     },
   });
@@ -888,8 +907,8 @@ export default function LogPage() {
       form.setValue("workoutId", activeWorkoutId || "");
       form.setValue("sets", todayLogForExercise.sets || DEFAULT_SETS);
       form.setValue(
-        "durationMinutes",
-        todayLogForExercise.durationMinutes || 0,
+        "rateOfPerceivedExertion",
+        todayLogForExercise.rateOfPerceivedExertion,
       );
       form.setValue("notes", todayLogForExercise.notes || "");
     } else if (draftFormData) {
@@ -898,7 +917,10 @@ export default function LogPage() {
       form.setValue("planId", draftFormData.planId);
       form.setValue("workoutId", draftFormData.workoutId);
       form.setValue("sets", draftFormData.sets || DEFAULT_SETS);
-      form.setValue("durationMinutes", draftFormData.durationMinutes || 0);
+      form.setValue(
+        "rateOfPerceivedExertion",
+        draftFormData.rateOfPerceivedExertion,
+      );
       form.setValue("notes", draftFormData.notes || "");
     } else {
       const DEFAULT_NUMBER_OF_SETS = 3;
@@ -921,7 +943,7 @@ export default function LogPage() {
       form.setValue("planId", activePlanId || "");
       form.setValue("workoutId", activeWorkoutId || "");
       form.setValue("sets", createEmptySets(numberOfSetsToResetTo));
-      form.setValue("durationMinutes", 0);
+      form.setValue("rateOfPerceivedExertion", undefined);
       form.setValue("notes", "");
     }
   }, [
@@ -934,13 +956,23 @@ export default function LogPage() {
   ]);
 
   const onSubmit = (values: FormValues) => {
+    setPendingFormValues(values);
+    setShowRpeDialog(true);
+  };
+
+  const handleRpeSelection = (rpe: number) => {
+    if (!pendingFormValues) return;
+
     const payload = {
-      ...values,
+      ...pendingFormValues,
       planId: activePlanId,
       workoutId: activeWorkoutId,
       exerciseId: activeExerciseId,
+      rateOfPerceivedExertion: rpe,
     };
     createLogMutation.mutate(payload);
+    setShowRpeDialog(false);
+    setPendingFormValues(null);
   };
 
   if (activePlanId === "") {
@@ -1285,22 +1317,12 @@ export default function LogPage() {
                         </div>
                       </div>
 
-                      {/* Duration & Notes Display */}
-                      {(logData.durationMinutes || logData.notes) && (
+                      {/* Notes Display */}
+                      {logData.notes && (
                         <div className="flex gap-2 pt-1 border-t">
-                          {logData.durationMinutes && (
-                            <div className="text-[11px] text-muted-foreground">
-                              <span className="font-medium">
-                                {logData.durationMinutes}
-                              </span>{" "}
-                              min
-                            </div>
-                          )}
-                          {logData.notes && (
-                            <div className="text-[11px] text-muted-foreground flex-1 truncate">
-                              {logData.notes}
-                            </div>
-                          )}
+                          <div className="text-[11px] text-muted-foreground flex-1 truncate">
+                            {logData.notes}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1421,33 +1443,8 @@ export default function LogPage() {
                                         </div>
                                       ))}
 
-                                    {/* Compact Duration & Notes */}
-                                    <div className="space-y-2 pt-1">
-                                      <FormField
-                                        control={form.control}
-                                        name="durationMinutes"
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormControl>
-                                              <Input
-                                                type="number"
-                                                min={0}
-                                                placeholder="Duration (min)"
-                                                {...field}
-                                                value={field.value || ""}
-                                                onChange={(e) =>
-                                                  field.onChange(
-                                                    Number(e.target.value),
-                                                  )
-                                                }
-                                                className="h-8 text-xs"
-                                              />
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-
+                                    {/* Notes */}
+                                    <div className="pt-1">
                                       <FormField
                                         control={form.control}
                                         name="notes"
@@ -1542,7 +1539,10 @@ export default function LogPage() {
                                                 numberOfSetsToResetTo,
                                               ),
                                             );
-                                            form.setValue("durationMinutes", 0);
+                                            form.setValue(
+                                              "rateOfPerceivedExertion",
+                                              undefined,
+                                            );
                                             form.setValue("notes", "");
 
                                             // Remove draft from local storage
@@ -1589,6 +1589,84 @@ export default function LogPage() {
           })}
         </Accordion>
       </div>
+
+      {/* RPE Selection Dialog */}
+      <Dialog open={showRpeDialog} onOpenChange={setShowRpeDialog}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[640px] p-4 sm:p-5 space-y-4">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-center">
+              How did that feel?
+            </DialogTitle>
+            <DialogDescription className="text-xs text-center text-muted-foreground">
+              Select your effort level
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-2">
+            {[
+              {
+                rpe: 10,
+                emoji: "🔥",
+                label: "Max Effort",
+                description: "0 reps left",
+              },
+              {
+                rpe: 9,
+                emoji: "😤",
+                label: "Very Hard",
+                description: "≈1 rep left",
+              },
+              {
+                rpe: 8,
+                emoji: "😮‍💨",
+                label: "Hard",
+                description: "≈2 reps left",
+              },
+              {
+                rpe: 7,
+                emoji: "🙂",
+                label: "Challenging",
+                description: "≈3 reps left",
+              },
+              {
+                rpe: 6,
+                emoji: "😌",
+                label: "Easy",
+                description: "4+ reps left",
+              },
+            ].map(({ rpe, emoji, label, description }) => (
+              <button
+                key={rpe}
+                onClick={() => handleRpeSelection(rpe)}
+                className="cursor-pointer group w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border/60 bg-background hover:bg-muted/30 hover:border-primary/40 transition-colors"
+                aria-label={`RPE ${rpe}: ${label}`}
+              >
+                <span className="text-2xl leading-none shrink-0">{emoji}</span>
+                <div className="min-w-0 flex-1 text-left">
+                  <div className="font-semibold text-sm leading-tight truncate">
+                    {label}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-tight truncate">
+                    {description}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full"
+            onClick={() => {
+              setShowRpeDialog(false);
+              setPendingFormValues(null);
+            }}
+          >
+            Cancel
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

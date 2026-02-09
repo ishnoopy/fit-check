@@ -80,7 +80,7 @@ export interface ILog {
   id: string;
   userId: string;
   sets: ISetData[];
-  durationMinutes?: number;
+  rateOfPerceivedExertion?: number; // RPE: 6-10 (6=Easy, 7=Moderate, 8=Hard, 9=Very Hard, 10=Max)
   notes?: string;
   createdAt: string;
   updatedAt: string;

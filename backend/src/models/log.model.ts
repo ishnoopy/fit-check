@@ -13,7 +13,7 @@ export interface ILog {
   workoutId: mongoose.Schema.Types.ObjectId | string;
   exerciseId: mongoose.Schema.Types.ObjectId | string;
   sets: Array<ISetData>; // Array of set data
-  durationMinutes?: number; // Optional: how long the exercise took
+  rateOfPerceivedExertion?: number; // RPE: 6-10 (6=Easy, 7=Moderate, 8=Hard, 9=Very Hard, 10=Max)
   notes?: string; // General notes about the exercise performance
   createdAt?: Date;
   updatedAt?: Date;
@@ -34,7 +34,7 @@ export interface ILogModel {
   workout_id: mongoose.Schema.Types.ObjectId | string;
   exercise_id: mongoose.Schema.Types.ObjectId | string;
   sets: Array<ISetDataModel>; // Array of set data
-  duration_minutes?: number; // Optional: how long the exercise took
+  rate_of_perceived_exertion?: number; // RPE: 6-10 (6=Easy, 7=Moderate, 8=Hard, 9=Very Hard, 10=Max)
   notes?: string; // General notes about the exercise performance
   created_at?: Date;
   updated_at?: Date;
@@ -73,7 +73,12 @@ const LogSchema = new mongoose.Schema(
       required: true,
     },
     sets: { type: [SetDataSchema], required: true },
-    duration_minutes: { type: Number, required: false },
+    rate_of_perceived_exertion: {
+      type: Number,
+      required: false,
+      min: 6,
+      max: 10,
+    },
     notes: { type: String, required: false },
   },
   {

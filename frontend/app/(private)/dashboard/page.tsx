@@ -105,7 +105,11 @@ export default function DashboardPage() {
           >
             <div className="space-y-1">
               <p className="text-lg text-foreground">
-                Welcome back{user.firstName ? `, ${user.firstName}` : ""} 👋
+                Welcome back
+                <strong>
+                  {user.firstName ? `, ${user.firstName}` : ""}
+                </strong>{" "}
+                👋
               </p>
               <p className="text-sm text-muted-foreground">
                 {streak > 0

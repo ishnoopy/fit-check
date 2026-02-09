@@ -275,10 +275,9 @@ export default function LogsArchivePage() {
                                     {log.exerciseId?.name || "Unknown Exercise"}
                                   </CardTitle>
                                   <CardDescription className="flex flex-wrap items-center gap-3 text-sm">
-                                    {log.durationMinutes && (
+                                    {log.rateOfPerceivedExertion && (
                                       <span className="flex items-center gap-1">
-                                        <ClockIcon className="h-3.5 w-3.5" />
-                                        {log.durationMinutes} min
+                                        RPE {log.rateOfPerceivedExertion}
                                       </span>
                                     )}
                                   </CardDescription>

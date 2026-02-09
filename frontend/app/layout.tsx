@@ -41,7 +41,7 @@ export default function RootLayout({
         className={`${roboto.variable} ${robotoMono.variable} ${cinzel.variable} antialiased font-sans bg-background text-foreground overflow-x-hidden`}
       >
         <DotBackground />
-        <DeerMark className="pointer-events-none fixed -right-16 -bottom-20 h-[560px] w-[560px] opacity-10 z-0" />
+        <DeerMark className="pointer-events-none fixed -right-16 -bottom-20 h-[560px] w-[560px] opacity-2.5 z-0" />
         <Toaster position="top-right" richColors />
         <Providers>
           <div className="relative z-10 min-h-screen">{children}</div>
