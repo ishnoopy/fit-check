@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
@@ -70,7 +69,6 @@ export default function CoachPage() {
     startNewChat,
     loadConversation,
     deleteConversation,
-    fetchConversations,
   } = useCoach();
 
   const [draft, setDraft] = useState("");
@@ -85,11 +83,6 @@ export default function CoachPage() {
 
   const charactersRemaining = MAX_MESSAGE_LENGTH - draft.length;
   const isOverLimit = charactersRemaining < 0;
-
-  // Fetch conversations on mount
-  useEffect(() => {
-    fetchConversations();
-  }, []);
 
   // Scroll to bottom on new messages
   useEffect(() => {

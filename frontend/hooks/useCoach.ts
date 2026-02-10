@@ -5,12 +5,13 @@ import type {
   IConversation,
   IConversationListItem,
 } from "@/types";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const BASE_URL =
   process.env.NODE_ENV === "development"
     ? process.env.NEXT_PUBLIC_API_URL || "http://backend:4000"
     : "";
+const ACTIVE_CONVERSATION_STORAGE_KEY = "coachActiveConversationId";
 
 interface UseCoachReturn {
   messages: ChatMessage[];
@@ -101,6 +102,9 @@ export function useCoach(): UseCoachReturn {
       }));
       setMessages([createInitialMessage(), ...loaded]);
       setConversationId(id);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(ACTIVE_CONVERSATION_STORAGE_KEY, id);
+      }
     } catch {
       setMessages([
         createInitialMessage(),
@@ -126,6 +130,9 @@ export function useCoach(): UseCoachReturn {
         if (conversationId === id) {
           setMessages([createInitialMessage()]);
           setConversationId(null);
+          if (typeof window !== "undefined") {
+            window.localStorage.removeItem(ACTIVE_CONVERSATION_STORAGE_KEY);
+          }
         }
       } catch {
         // Silently fail
@@ -140,6 +147,9 @@ export function useCoach(): UseCoachReturn {
     setMessages([createInitialMessage()]);
     setConversationId(null);
     setIsLoading(false);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(ACTIVE_CONVERSATION_STORAGE_KEY);
+    }
   }, []);
 
   /** Send a message and stream the coach response */
@@ -260,6 +270,12 @@ export function useCoach(): UseCoachReturn {
                 };
                 if (payload.conversationId) {
                   setConversationId(payload.conversationId);
+                  if (typeof window !== "undefined") {
+                    window.localStorage.setItem(
+                      ACTIVE_CONVERSATION_STORAGE_KEY,
+                      payload.conversationId,
+                    );
+                  }
                 }
               } catch {
                 // Skip malformed JSON chunks
@@ -325,6 +341,18 @@ export function useCoach(): UseCoachReturn {
     },
     [isLoading, conversationId, fetchConversations],
   );
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const storedConversationId: string | null =
+      window.localStorage.getItem(ACTIVE_CONVERSATION_STORAGE_KEY);
+    if (storedConversationId) {
+      void loadConversation(storedConversationId);
+    }
+    void fetchConversations();
+  }, [loadConversation, fetchConversations]);
 
   return {
     messages,
