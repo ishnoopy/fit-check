@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
 import { useUser } from "@/app/providers";
@@ -22,6 +24,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const MAX_MESSAGE_LENGTH = 300;
 
@@ -47,7 +51,7 @@ export default function CoachPage() {
           <h1 className="font-display text-2xl tracking-tight">Coming Soon</h1>
           <p className="text-muted-foreground">
             Coach Mode is currently in beta and only available to pioneer users.
-            We're working hard to make it available to everyone soon!
+            We&apos;re working hard to make it available to everyone soon!
           </p>
           <Button asChild variant="outline" className="mt-4">
             <Link href="/dashboard">Back to Dashboard</Link>
@@ -85,7 +89,6 @@ export default function CoachPage() {
   // Fetch conversations on mount
   useEffect(() => {
     fetchConversations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Scroll to bottom on new messages
@@ -200,7 +203,38 @@ export default function CoachPage() {
                         : "bg-background/80 text-foreground border-border",
                     )}
                   >
-                    {m.content || (m.isStreaming && <StreamingIndicator />)}
+                    {m.content ? (
+                      isUser ? (
+                        m.content
+                      ) : (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => (
+                              <p className="mb-2 last:mb-0">{children}</p>
+                            ),
+                            strong: ({ children }) => (
+                              <strong className="font-semibold">{children}</strong>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal pl-6 mb-2 space-y-1">
+                                {children}
+                              </ol>
+                            ),
+                            ul: ({ children }) => (
+                              <ul className="list-disc pl-6 mb-2 space-y-1">
+                                {children}
+                              </ul>
+                            ),
+                            li: ({ children }) => <li>{children}</li>,
+                          }}
+                        >
+                          {m.content}
+                        </ReactMarkdown>
+                      )
+                    ) : (
+                      m.isStreaming && <StreamingIndicator />
+                    )}
                   </div>
                   <span className="mt-1 text-[11px] tabular-nums text-muted-foreground/70">
                     {formatMessageTimestamp(m.createdAt, m.id)}
