@@ -63,7 +63,7 @@ export default function DashboardPage() {
       icon: Flame,
       value: streak.toString(),
       label: "Day Streak",
-      color: "text-accent",
+      color: "text-red-500",
       showBuffer: true,
     },
     {
@@ -76,7 +76,7 @@ export default function DashboardPage() {
       icon: TrendingUp,
       value: exercisesThisWeek.toString(),
       label: "Exercises This Week",
-      color: "text-secondary",
+      color: "text-green-500",
     },
   ];
 

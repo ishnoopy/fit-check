@@ -10,11 +10,11 @@ import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-    AlertCircle,
-    Calendar as CalendarIcon,
-    Flame,
-    Target,
-    TrendingUp,
+  AlertCircle,
+  Calendar as CalendarIcon,
+  Flame,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -44,7 +44,7 @@ export default function StatsPage() {
       icon: Flame,
       value: streak,
       label: "Day Streak",
-      color: "text-accent",
+      color: "text-red-500",
       bgColor: "bg-accent/10",
     },
     {
@@ -58,7 +58,7 @@ export default function StatsPage() {
       icon: TrendingUp,
       value: exercisesThisWeek,
       label: "This Week",
-      color: "text-secondary",
+      color: "text-green-500",
       bgColor: "bg-secondary/10",
     },
   ];

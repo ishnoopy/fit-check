@@ -3,7 +3,6 @@
 /* --font-sans: "Balsamiq Sans", cursive;
   --font-serif: "Lora", serif;
   --font-mono: "DM Mono", monospace; */
-@custom-variant dark (&:is(.dark *));
 :root {
   --background: oklch(0.9779 0.0042 56.3756);
   --foreground: oklch(0.2178 0 0);
@@ -13,12 +12,12 @@
   --popover-foreground: oklch(0.2178 0 0);
   --primary: oklch(0.465 0.147 24.9381);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.9625 0.0385 89.0943);
-  --secondary-foreground: oklch(0.4847 0.1022 75.1153);
+  --secondary: oklch(0.465 0.147 24.9381);
+  --secondary-foreground: oklch(1 0 0);
   --muted: oklch(0.9431 0.0068 53.4442);
   --muted-foreground: oklch(0.4444 0.0096 73.639);
-  --accent: oklch(0.9619 0.058 95.6174);
-  --accent-foreground: oklch(0.3958 0.1331 25.723);
+  --accent: oklch(0.6829 0.1567 22.0928);
+  --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.4437 0.1613 26.8994);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.9355 0.0324 80.9937);
