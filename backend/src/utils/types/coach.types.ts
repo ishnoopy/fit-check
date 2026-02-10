@@ -2,6 +2,7 @@
 export const COACH_INTENT = {
   NEXT_WORKOUT: "NEXT_WORKOUT",
   SESSION_FEEDBACK: "SESSION_FEEDBACK",
+  PAST_SESSION_FEEDBACK: "PAST_SESSION_FEEDBACK",
   PROGRESS_CHECK: "PROGRESS_CHECK",
   DIFFICULTY_ANALYSIS: "DIFFICULTY_ANALYSIS",
   TIPS: "TIPS",
@@ -19,11 +20,21 @@ export type ExerciseTrend = "up" | "down" | "flat";
 /** Fatigue status derived from recent workout frequency */
 export type FatigueStatus = "fresh" | "normal" | "fatigued" | "overtrained";
 
+/** Session data with best set and date */
+export interface SessionData {
+  date: Date;
+  bestSet: string;
+  volume: number;
+  notes?: string;
+}
+
 /** Summary of a single exercise's recent performance */
 export interface ExerciseSummary {
   lastBestSet: string;
   rpe: number | null;
   trend: ExerciseTrend;
+  volumeChangePercent: number | null;
+  sessions: SessionData[];
 }
 
 /** Aggregated workout summary keyed by exercise name */
@@ -34,7 +45,7 @@ export interface CoachProfile {
   goal: string;
   experienceLevel: string;
   preferredIntensityRPE: number;
-  fatigueStatus: FatigueStatus;
+  // fatigueStatus: FatigueStatus;
   activePlateaus: string[];
 }
 
@@ -58,6 +69,7 @@ export interface CoachContext {
   intent: CoachIntent;
   workoutSummary?: WorkoutSummary;
   chatSummary?: string;
+  focusedExercise?: string;
 }
 
 /** Configuration for which data each intent needs */
@@ -82,6 +94,13 @@ export const INTENT_CONTEXT_CONFIG: Record<CoachIntent, IntentContextConfig> = {
     needsFullProfile: false,
     needsWorkoutSummary: true,
     workoutSummaryDepthDays: 1,
+    needsChatHistory: true,
+    maxChatHistoryPairs: 2,
+  },
+  PAST_SESSION_FEEDBACK: {
+    needsFullProfile: false,
+    needsWorkoutSummary: true,
+    workoutSummaryDepthDays: 14,
     needsChatHistory: true,
     maxChatHistoryPairs: 2,
   },
@@ -117,3 +136,10 @@ export const INTENT_CONTEXT_CONFIG: Record<CoachIntent, IntentContextConfig> = {
 
 /** Maximum character length for free-text user messages */
 export const MAX_MESSAGE_LENGTH = 300;
+
+/** Result of exercise matching attempt */
+export interface ExerciseMatchResult {
+  matchedExercise: string | null;
+  confidence: number;
+  method: "deterministic" | "llm" | "none";
+}

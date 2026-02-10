@@ -1,19 +1,24 @@
+import _ from "lodash";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions.js";
 import type { ILog } from "../models/log.model.js";
-import type { IUser } from "../models/user.model.js";
 import * as conversationRepository from "../repositories/conversation.repository.js";
 import * as logRepository from "../repositories/log.repository.js";
 import * as userRepository from "../repositories/user.repository.js";
+import {
+  getExerciseNamesFromLogs,
+  matchExerciseDeterministic,
+} from "../utils/exercise-matcher.js";
 import {
   INTENT_CONTEXT_CONFIG,
   type ChatHistoryMessage,
   type CoachContext,
   type CoachIntent,
   type CoachProfile,
+  type ExerciseMatchResult,
   type ExerciseSummary,
   type ExerciseTrend,
-  type FatigueStatus,
-  type WorkoutSummary,
+  type SessionData,
+  type WorkoutSummary
 } from "../utils/types/coach.types.js";
 import * as openaiService from "./openai.service.js";
 
@@ -33,13 +38,14 @@ const EXPERIENCE_MAP: Record<string, string> = {
   extremely_active: "advanced",
 };
 
-const DAYS_IN_WEEK = 7;
+const DAYS_TO_FETCH_RECENT_LOGS = 14;
 const FATIGUE_THRESHOLD_HIGH = 6;
 const FATIGUE_THRESHOLD_MEDIUM = 4;
 const TREND_SESSIONS_COUNT = 3;
 const TREND_THRESHOLD_PERCENT = 5;
 const MILLISECONDS_IN_DAY = 86_400_000;
 const MAX_PERSISTED_HISTORY_MESSAGES = 10;
+const EXERCISE_MATCH_CONFIDENCE_THRESHOLD = 0.6;
 
 /**
  * Build a coach profile from the user's stored data and recent workout history.
@@ -48,15 +54,15 @@ export async function buildCoachProfile(
   userId: string,
 ): Promise<CoachProfile> {
   const user = await userRepository.findOne({ id: userId });
-  const recentLogs = await fetchRecentLogs(userId, DAYS_IN_WEEK);
+  const recentLogs = await fetchRecentLogs(userId, DAYS_TO_FETCH_RECENT_LOGS);
   const averageRPE = calculateAverageRPE(recentLogs);
-  const fatigueStatus = deriveFatigueStatus(recentLogs);
+  // const fatigueStatus = deriveFatigueStatus(recentLogs);
   const activePlateaus = identifyPlateaus(recentLogs);
   return {
     goal: mapGoal(user?.fitnessGoal),
     experienceLevel: mapExperienceLevel(user?.activityLevel),
     preferredIntensityRPE: averageRPE,
-    fatigueStatus,
+    // fatigueStatus,
     activePlateaus,
   };
 }
@@ -76,13 +82,64 @@ export async function buildMinimalCoachProfile(
 
 /**
  * Build a workout summary for the given intent's time window.
+ * Optionally filters to a specific exercise if provided.
  */
 export async function buildWorkoutSummary(
   userId: string,
   depthDays: number,
+  exerciseFilter?: string,
 ): Promise<WorkoutSummary> {
   const logs = await fetchRecentLogs(userId, depthDays);
-  return aggregateExerciseSummaries(logs);
+  return buildWorkoutSummaryFromLogs(logs, exerciseFilter);
+}
+
+/**
+ * Build a workout summary from pre-fetched logs.
+ * Optionally filters to a specific exercise if provided.
+ */
+function buildWorkoutSummaryFromLogs(
+  logs: ILog[],
+  exerciseFilter?: string,
+): WorkoutSummary {
+  const filteredLogs = exerciseFilter
+    ? filterLogsByExercise(logs, exerciseFilter)
+    : logs;
+  return aggregateExerciseSummaries(filteredLogs);
+}
+
+/**
+ * Match an exercise from user message using deterministic parsing + LLM fallback.
+ * Returns the matched exercise name or null if no confident match.
+ */
+export async function matchExerciseFromMessage(
+  userMessage: string,
+  knownExercises: string[],
+): Promise<ExerciseMatchResult> {
+  // Step 1: Try deterministic matching (synonyms + fuzzy)
+  const deterministicResult = matchExerciseDeterministic(userMessage, knownExercises);
+  if (
+    deterministicResult.matchedExercise &&
+    deterministicResult.confidence >= EXERCISE_MATCH_CONFIDENCE_THRESHOLD
+  ) {
+    return deterministicResult;
+  }
+  // Step 2: Fall back to LLM if deterministic matching is not confident
+  const llmMatch = await openaiService.extractExerciseFromMessage(
+    userMessage,
+    knownExercises,
+  );
+  if (llmMatch) {
+    return {
+      matchedExercise: llmMatch,
+      confidence: 0.85,
+      method: "llm",
+    };
+  }
+  return {
+    matchedExercise: null,
+    confidence: 0,
+    method: "none",
+  };
 }
 
 /**
@@ -108,15 +165,13 @@ export async function buildChatHistoryFromConversation(
     return [];
   }
   const messages = conversation.messages ?? [];
-  if (messages.length === 0) return [];
-  // Take only the last few message pairs to keep tokens low
+  if (_.isEmpty(messages)) return [];
   const maxMessages = MAX_PERSISTED_HISTORY_MESSAGES;
-  const recentMessages = messages.slice(-maxMessages);
-  const history: ChatHistoryMessage[] = recentMessages.map((m) => ({
+  const recentMessages = _.takeRight(messages, maxMessages);
+  const history: ChatHistoryMessage[] = _.map(recentMessages, (m) => ({
     role: m.role,
     content: m.content,
   }));
-  // Prepend the conversation summary if it exists (older context condensed)
   if (conversation.summary && messages.length > maxMessages) {
     history.unshift({
       role: "coach",
@@ -128,6 +183,7 @@ export async function buildChatHistoryFromConversation(
 
 /**
  * Assemble full context and return OpenAI-ready messages for streaming.
+ * Automatically detects if user is asking about a specific exercise and filters context.
  */
 export async function buildChatMessages(
   userId: string,
@@ -136,12 +192,26 @@ export async function buildChatMessages(
   chatHistory?: ChatHistoryMessage[],
 ): Promise<ChatCompletionMessageParam[]> {
   const config = INTENT_CONTEXT_CONFIG[intent];
+  // Fetch logs first to get known exercise names for matching
+  const allLogs = config.needsWorkoutSummary
+    ? await fetchRecentLogs(userId, config.workoutSummaryDepthDays)
+    : [];
+  // Try to detect if user is asking about a specific exercise
+  let exerciseFilter: string | undefined;
+  let matchResult: ExerciseMatchResult | undefined;
+  if (config.needsWorkoutSummary && allLogs.length > 0) {
+    const knownExercises = getExerciseNamesFromLogs(allLogs);
+    matchResult = await matchExerciseFromMessage(userMessage, knownExercises);
+    if (matchResult.matchedExercise) {
+      exerciseFilter = matchResult.matchedExercise;
+    }
+  }
   const [profile, workoutSummary] = await Promise.all([
     config.needsFullProfile
       ? buildCoachProfile(userId)
       : buildMinimalCoachProfile(userId),
     config.needsWorkoutSummary
-      ? buildWorkoutSummary(userId, config.workoutSummaryDepthDays)
+      ? buildWorkoutSummaryFromLogs(allLogs, exerciseFilter)
       : Promise.resolve(undefined),
   ]);
   const chatSummary = config.needsChatHistory
@@ -152,6 +222,7 @@ export async function buildChatMessages(
     intent,
     workoutSummary,
     chatSummary,
+    focusedExercise: exerciseFilter,
   };
   return formatMessagesForLLM(coachContext, userMessage);
 }
@@ -192,50 +263,36 @@ async function fetchRecentLogs(
 }
 
 function calculateAverageRPE(logs: ILog[]): number {
-  const rpeValues = logs
-    .map((log) => log.rateOfPerceivedExertion)
-    .filter((rpe): rpe is number => rpe !== undefined && rpe !== null);
-  if (rpeValues.length === 0) return 7;
-  const sum = rpeValues.reduce((acc, val) => acc + val, 0);
-  return Math.round((sum / rpeValues.length) * 10) / 10;
+  const rpeValues = _.compact(_.map(logs, "rateOfPerceivedExertion"));
+  if (_.isEmpty(rpeValues)) return 7;
+  return _.round(_.mean(rpeValues), 1);
 }
 
-function deriveFatigueStatus(recentLogs: ILog[]): FatigueStatus {
-  const uniqueDays = new Set(
-    recentLogs.map((log) => {
-      const date = new Date(log.createdAt ?? Date.now());
-      return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-    }),
-  );
-  const workoutDays = uniqueDays.size;
-  if (workoutDays >= FATIGUE_THRESHOLD_HIGH) return "overtrained";
-  if (workoutDays >= FATIGUE_THRESHOLD_MEDIUM) return "fatigued";
-  if (workoutDays >= 2) return "normal";
-  return "fresh";
-}
+//todo: implement this
+// function deriveFatigueStatus(recentLogs: ILog[]): FatigueStatus {
+
+//   /*
+//   1.
+//   */
+// }
 
 function identifyPlateaus(logs: ILog[]): string[] {
   const exerciseGroups = groupLogsByExercise(logs);
-  const plateaus: string[] = [];
-  for (const [exerciseName, exerciseLogs] of Object.entries(exerciseGroups)) {
-    const trend = calculateTrend(exerciseLogs);
-    if (trend === "flat") {
-      plateaus.push(exerciseName);
-    }
-  }
-  return plateaus;
+  return _.keys(
+    _.pickBy(exerciseGroups, (exerciseLogs) => calculateTrend(exerciseLogs) === "flat")
+  );
 }
 
 function groupLogsByExercise(logs: ILog[]): Record<string, ILog[]> {
-  const groups: Record<string, ILog[]> = {};
-  for (const log of logs) {
-    const name = getExerciseName(log);
-    if (!groups[name]) {
-      groups[name] = [];
-    }
-    groups[name].push(log);
-  }
-  return groups;
+  return _.groupBy(logs, getExerciseName);
+}
+
+function filterLogsByExercise(logs: ILog[], exerciseName: string): ILog[] {
+  const normalizedFilter = _.toLower(exerciseName);
+  return _.filter(logs, (log) => {
+    const logExerciseName = getExerciseName(log);
+    return _.toLower(logExerciseName) === normalizedFilter;
+  });
 }
 
 function getExerciseName(log: ILog): string {
@@ -247,37 +304,31 @@ function getExerciseName(log: ILog): string {
 }
 
 function calculateBestSetVolume(log: ILog): number {
-  if (!log.sets || log.sets.length === 0) return 0;
-  return Math.max(...log.sets.map((set) => set.reps * set.weight));
+  if (_.isEmpty(log.sets)) return 0;
+  return _.max(_.map(log.sets, (set) => set.reps * set.weight)) ?? 0;
 }
 
 function formatBestSet(log: ILog): string {
-  if (!log.sets || log.sets.length === 0) return "N/A";
-  let bestVolume = 0;
-  let bestSet = log.sets[0];
-  for (const set of log.sets) {
-    const volume = set.reps * set.weight;
-    if (volume > bestVolume) {
-      bestVolume = volume;
-      bestSet = set;
-    }
-  }
+  if (_.isEmpty(log.sets)) return "N/A";
+  const bestSet = _.maxBy(log.sets, (set) => set.reps * set.weight);
+  if (!bestSet) return "N/A";
   return `${bestSet.reps}x${bestSet.weight}kg`;
 }
 
+function calculateVolumeChangePercent(exerciseLogs: ILog[]): number | null {
+  if (exerciseLogs.length < TREND_SESSIONS_COUNT) return null;
+  const sorted = _.sortBy(exerciseLogs, (log) => new Date(log.createdAt ?? 0).getTime());
+  const recent = _.takeRight(sorted, TREND_SESSIONS_COUNT);
+  const volumes = _.map(recent, calculateBestSetVolume);
+  const firstVolume = _.first(volumes) ?? 0;
+  const lastVolume = _.last(volumes) ?? 0;
+  if (firstVolume === 0) return null;
+  return _.round(((lastVolume - firstVolume) / firstVolume) * 100, 1);
+}
+
 function calculateTrend(exerciseLogs: ILog[]): ExerciseTrend {
-  if (exerciseLogs.length < TREND_SESSIONS_COUNT) return "flat";
-  const sorted = [...exerciseLogs].sort((a, b) => {
-    const dateA = new Date(a.createdAt ?? 0).getTime();
-    const dateB = new Date(b.createdAt ?? 0).getTime();
-    return dateA - dateB;
-  });
-  const recent = sorted.slice(-TREND_SESSIONS_COUNT);
-  const volumes = recent.map(calculateBestSetVolume);
-  const firstVolume = volumes[0];
-  const lastVolume = volumes[volumes.length - 1];
-  if (firstVolume === 0) return "flat";
-  const changePercent = ((lastVolume - firstVolume) / firstVolume) * 100;
+  const changePercent = calculateVolumeChangePercent(exerciseLogs);
+  if (changePercent === null) return "flat";
   if (changePercent > TREND_THRESHOLD_PERCENT) return "up";
   if (changePercent < -TREND_THRESHOLD_PERCENT) return "down";
   return "flat";
@@ -285,51 +336,73 @@ function calculateTrend(exerciseLogs: ILog[]): ExerciseTrend {
 
 function aggregateExerciseSummaries(logs: ILog[]): WorkoutSummary {
   const groups = groupLogsByExercise(logs);
-  const summary: WorkoutSummary = {};
-  for (const [exerciseName, exerciseLogs] of Object.entries(groups)) {
-    const sorted = [...exerciseLogs].sort((a, b) => {
-      const dateA = new Date(a.createdAt ?? 0).getTime();
-      const dateB = new Date(b.createdAt ?? 0).getTime();
-      return dateB - dateA;
-    });
-    const latest = sorted[0];
-    const rpeValues = sorted
-      .map((l) => l.rateOfPerceivedExertion)
-      .filter((r): r is number => r !== undefined && r !== null);
-    const avgRPE =
-      rpeValues.length > 0
-        ? Math.round((rpeValues.reduce((a, b) => a + b, 0) / rpeValues.length) * 10) / 10
-        : null;
+  return _.mapValues(groups, (exerciseLogs) => {
+    const sortedDesc = _.orderBy(
+      exerciseLogs,
+      [(log) => new Date(log.createdAt ?? 0).getTime()],
+      ["desc"]
+    );
+    const latest = _.first(sortedDesc);
+    const rpeValues = _.compact(_.map(sortedDesc, "rateOfPerceivedExertion"));
+    const avgRPE = _.isEmpty(rpeValues) ? null : _.round(_.mean(rpeValues), 1);
+    const sessions: SessionData[] = _.map(sortedDesc, (log) => ({
+      date: new Date(log.createdAt ?? 0),
+      bestSet: formatBestSet(log),
+      volume: calculateBestSetVolume(log),
+      notes: log?.notes,
+    }));
     const exerciseSummary: ExerciseSummary = {
-      lastBestSet: formatBestSet(latest),
+      lastBestSet: formatBestSet(latest!),
       rpe: avgRPE,
       trend: calculateTrend(exerciseLogs),
+      volumeChangePercent: calculateVolumeChangePercent(exerciseLogs),
+      sessions,
     };
-    summary[exerciseName] = exerciseSummary;
-  }
-  return summary;
+
+    return exerciseSummary;
+  });
 }
 
 function summarizeChatHistory(
   chatHistory?: ChatHistoryMessage[],
   maxPairs?: number,
 ): string | undefined {
-  if (!chatHistory || chatHistory.length === 0) return undefined;
+  if (_.isEmpty(chatHistory)) return undefined;
   const limit = (maxPairs ?? 3) * 2;
-  const trimmed = chatHistory.slice(-limit);
-  return trimmed
-    .map((msg) => `${msg.role === "user" ? "User" : "Coach"}: ${msg.content}`)
-    .join("\n");
+  const trimmed = _.takeRight(chatHistory, limit);
+  return _.map(
+    trimmed,
+    (msg) => `${msg.role === "user" ? "User" : "Coach"}: ${msg.content}`
+  ).join("\n");
 }
 
-const SYSTEM_PROMPT = `You are a professional, empathetic fitness coach. Your responses should be:
-- Objective and evidence-based
-- Warm and supportive, never dismissive
-- Concise and actionable (aim for 3-5 sentences)
-- Use simple language, avoid jargon unless the user is advanced
+const SYSTEM_PROMPT = `
+You are a professional strength and fitness coach with a science-based approach.
 
-Never prescribe medical advice. If asked about injuries or pain, recommend seeing a professional.
-Respond ONLY about fitness, nutrition, and recovery topics. Politely decline unrelated questions.`;
+Your role is to interpret training data and give practical, evidence-informed guidance that helps the user train consistently and recover well.
+
+Communication style:
+- Calm, confident, and supportive — never dramatic or judgmental
+- Evidence-based and objective, avoiding fitness myths or hype
+- Clear and concise (3–5 sentences when possible)
+- Practical and actionable, focused on what to do next
+- Use simple, plain language; explain concepts briefly if needed
+
+Coaching principles:
+- Training effort near failure is normal and productive when managed well
+- Progress is non-linear; short-term plateaus and fatigue are expected
+- Emphasize sustainability, recovery, and long-term consistency
+- Avoid absolutes (e.g., never say “always” or “never”)
+
+Safety and scope:
+- Do NOT provide medical advice or diagnose injuries
+- If pain, injury, or medical concerns are mentioned, recommend consulting a qualified professional
+- Respond ONLY to fitness, training, recovery, and general nutrition topics
+- Politely decline unrelated or out-of-scope questions
+
+Your goal is to sound like a knowledgeable, trustworthy coach who explains the “why” briefly and guides the user toward smarter training decisions.
+Do not repeat prior coaching responses verbatim. Each response should be a fresh interpretation of the data.
+`;
 
 function formatMessagesForLLM(
   context: CoachContext,
