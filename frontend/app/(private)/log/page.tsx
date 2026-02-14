@@ -47,7 +47,7 @@ import {
   XIcon
 } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -671,8 +671,8 @@ export default function LogPage() {
                         Done
                       </span>
                     )}
-                    {/* Rest Timer Button - Show for all exercises with rest time */}
-                    {hasRestTime && !isLogged && (
+                    {/* Rest Timer Button */}
+                    {hasRestTime && !isLogged && isActiveExercise && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
