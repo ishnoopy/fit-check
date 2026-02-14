@@ -42,7 +42,7 @@ export default function RootLayout({
       >
         <DotBackground />
         <DeerMark className="pointer-events-none fixed -right-16 -bottom-20 h-[560px] w-[560px] opacity-2.5 z-0" />
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-right" />
         <Providers>
           <div className="relative z-10 min-h-screen">{children}</div>
         </Providers>
