@@ -2,28 +2,28 @@
 
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
@@ -470,20 +470,24 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-1">
-                  {/* Upload Button */}
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors group"
-                  >
-                    <Upload className="h-8 w-8 text-muted-foreground group-hover:text-foreground transition-colors" />
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
+                  {galleryImages.length < 0 && (
+                    <>
+                      {/* Upload Button */}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="aspect-square bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors group"
+                      >
+                        <Upload className="h-8 w-8 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileSelect}
+                      />
+                    </>
+                  )}
 
                   {/* Gallery Images */}
                   {galleryImages.map((image) => (
