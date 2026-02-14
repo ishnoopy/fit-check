@@ -6,42 +6,42 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-    CreatePlanFormValues,
-    createPlanSchema,
-    useCreatePlan,
-    useDeletePlan,
-    useUpdatePlan,
+  CreatePlanFormValues,
+  createPlanSchema,
+  useCreatePlan,
+  useDeletePlan,
+  useUpdatePlan,
 } from "@/hooks/query/usePlan";
 import { api } from "@/lib/api";
 import { IPlan } from "@/types";
@@ -49,14 +49,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { QueryFunction, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-    CheckCircle2,
-    Dumbbell,
-    Edit,
-    Eye,
-    MoreVertical,
-    Plus,
-    Star,
-    Trash2,
+  CheckCircle2,
+  Dumbbell,
+  Edit,
+  Eye,
+  MoreVertical,
+  Plus,
+  Star,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -360,11 +360,10 @@ export default function PlansPage() {
             return (
               <motion.div key={plan.id} variants={item}>
                 <Card
-                  className={`group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 h-full flex flex-col ${
-                    isActive
+                  className={`group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 h-full flex flex-col ${isActive
                       ? "border-primary/50 shadow-sm ring-1 ring-primary/20"
                       : ""
-                  }`}
+                    }`}
                 >
                   {isActive && (
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl" />
@@ -453,11 +452,10 @@ export default function PlansPage() {
                     <Button
                       type="button"
                       variant={isActive ? "secondary" : "outline"}
-                      className={`w-full  ${
-                        isActive
+                      className={`w-full  ${isActive
                           ? "bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
                           : ""
-                      }`}
+                        }`}
                       onClick={() => handleToggleActivePlan(plan.id)}
                     >
                       {isActive ? (

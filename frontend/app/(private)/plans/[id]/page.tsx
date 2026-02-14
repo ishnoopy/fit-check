@@ -1,76 +1,78 @@
 "use client";
 
 import { useGeneral } from "@/app/providers";
+import { AppGuide } from "@/components/AppGuide";
 import BackButton from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import ExerciseImage from "@/components/ExerciseImage";
 import { LoadingState } from "@/components/LoadingState";
 import { MultiStepDialog } from "@/components/MultiStepDialog";
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-    Combobox,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxInput,
-    ComboboxItem,
-    ComboboxList,
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
 } from "@/components/ui/combobox";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useGetExercises } from "@/hooks/query/useExercise";
 import { useDeletePlan, useGetPlan } from "@/hooks/query/usePlan";
 import {
-    addWorkoutFormSchema,
-    AddWorkoutFormValues,
-    editWorkoutFormSchema,
-    EditWorkoutFormValues,
-    useCreateWorkout,
-    useDeleteWorkout,
-    useUpdateWorkout,
+  addWorkoutFormSchema,
+  AddWorkoutFormValues,
+  editWorkoutFormSchema,
+  EditWorkoutFormValues,
+  useCreateWorkout,
+  useDeleteWorkout,
+  useUpdateWorkout,
 } from "@/hooks/query/useWorkout";
 import { IPlan, IWorkout } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    AlertCircle,
-    ArrowRight,
-    Calendar,
-    CheckCircle2,
-    ChevronRight,
-    Dumbbell,
-    Edit,
-    FileText,
-    Image as ImageIcon,
-    Info,
-    MoreVertical,
-    Plus,
-    Trash2,
-    X,
+  AlertCircle,
+  ArrowRight,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Dumbbell,
+  Edit,
+  FileText,
+  Image as ImageIcon,
+  Info,
+  MoreVertical,
+  Plus,
+  Trash2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -400,15 +402,14 @@ export default function PlanDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-3"
         >
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold cursor-text hover:text-primary/80 transition-colors">
-              {planData?.title || "Untitled Plan"}
-            </h1>
-          </div>
-          <div className="space-y-2">
-            <p className="text-lg text-muted-foreground cursor-text hover:text-muted-foreground/80 transition-colors">
-              {planData?.description || ""}
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <PageHeader
+              title={planData?.title || "Untitled Plan"}
+              subtitle={planData?.description || ""}
+            />
+            <div className="flex items-center gap-2 shrink-0 mt-1">
+              <AppGuide />
+            </div>
           </div>
         </motion.div>
 
@@ -757,8 +758,8 @@ export default function PlanDetailPage() {
                                                 const threshold = 24;
                                                 const reachedBottom =
                                                   target.scrollHeight -
-                                                    target.scrollTop -
-                                                    target.clientHeight <=
+                                                  target.scrollTop -
+                                                  target.clientHeight <=
                                                   threshold;
                                                 if (reachedBottom) {
                                                   fetchNextPage();
@@ -795,7 +796,7 @@ export default function PlanDetailPage() {
                                                       </div>
                                                       {exercise.images &&
                                                         exercise.images.length >
-                                                          0 && (
+                                                        0 && (
                                                           <button
                                                             type="button"
                                                             onClick={(e) => {
@@ -1132,10 +1133,10 @@ export default function PlanDetailPage() {
               {(!selectedExerciseImages?.images ||
                 selectedExerciseImages.images.length === 0 ||
                 selectedExerciseImages.userId) && (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  No images available for this exercise
-                </div>
-              )}
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    No images available for this exercise
+                  </div>
+                )}
             </div>
           </DialogContent>
         </Dialog>
