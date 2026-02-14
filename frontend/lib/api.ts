@@ -1,4 +1,6 @@
+import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
+
 
 /**
  * Determines the backend URL:
@@ -30,6 +32,7 @@ async function refreshAuthToken(): Promise<boolean> {
     });
 
     if (refreshRes.ok) {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
       return true;
     }
     return false;

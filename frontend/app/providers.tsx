@@ -1,10 +1,10 @@
 "use client";
 
 import { api } from "@/lib/api";
+import { queryClient } from "@/lib/query-client";
 import {
-  QueryClient,
   QueryClientProvider,
-  useQuery,
+  useQuery
 } from "@tanstack/react-query";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { usePathname } from "next/navigation";
@@ -21,17 +21,17 @@ interface User {
   weight?: number;
   height?: number;
   fitnessGoal?:
-    | "lose_weight"
-    | "gain_muscle"
-    | "maintain"
-    | "improve_endurance"
-    | "general_fitness";
+  | "lose_weight"
+  | "gain_muscle"
+  | "maintain"
+  | "improve_endurance"
+  | "general_fitness";
   activityLevel?:
-    | "sedentary"
-    | "lightly_active"
-    | "moderately_active"
-    | "very_active"
-    | "extremely_active";
+  | "sedentary"
+  | "lightly_active"
+  | "moderately_active"
+  | "very_active"
+  | "extremely_active";
   createdAt: string;
   updatedAt: string;
   avatar?: string;
@@ -112,40 +112,6 @@ export function useGeneral() {
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            retry: (failureCount, error) => {
-              // Don't retry on 429 (rate limit) errors
-              if (
-                error instanceof Error &&
-                error.message.includes("Too many requests")
-              ) {
-                return false;
-              }
-              // Default retry logic for other errors (max 3 retries)
-              return failureCount < 3;
-            },
-          },
-          mutations: {
-            retry: (failureCount, error) => {
-              // Don't retry mutations on rate limit errors
-              if (
-                error instanceof Error &&
-                error.message.includes("Too many requests")
-              ) {
-                return false;
-              }
-              // Don't retry mutations by default (they're usually user actions)
-              return false;
-            },
-          },
-        },
-      }),
-  );
-
   return (
     <QueryClientProvider client={queryClient}>
       <NextThemesProvider
