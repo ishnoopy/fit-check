@@ -1,3 +1,4 @@
+import { useUser } from "@/app/providers";
 import { api } from "@/lib/api";
 import type {
   ChatMessage,
@@ -26,12 +27,12 @@ interface UseCoachReturn {
   fetchConversations: () => Promise<void>;
 }
 
-function createInitialMessage(): ChatMessage {
+function createInitialMessage({ clientName }: { clientName?: string | null } = {}): ChatMessage {
   return {
     id: "welcome",
     role: "coach",
     content:
-      "Hey 👋! Ask me about today's workout, your progress, or what to focus on next.",
+      `Hey ${clientName ?? "there"} 👋, ask me about today's workout, your progress, or what to focus on next.`,
     createdAt: new Date().toISOString(),
   };
 }
@@ -57,8 +58,10 @@ function parseSSELine(line: string): { event?: string; data?: string } | null {
  * Handles SSE streaming, conversation management, and loading state.
  */
 export function useCoach(): UseCoachReturn {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    createInitialMessage(),
+  const { user } = useUser();
+  const clientName = user?.firstName ?? null;
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    createInitialMessage({ clientName }),
   ]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<IConversationListItem[]>(
@@ -100,14 +103,14 @@ export function useCoach(): UseCoachReturn {
         intent: m.intent as CoachIntent | undefined,
         createdAt: m.createdAt ?? result.data.updatedAt,
       }));
-      setMessages([createInitialMessage(), ...loaded]);
+      setMessages([createInitialMessage({ clientName }), ...loaded]);
       setConversationId(id);
       if (typeof window !== "undefined") {
         window.localStorage.setItem(ACTIVE_CONVERSATION_STORAGE_KEY, id);
       }
     } catch {
       setMessages([
-        createInitialMessage(),
+        createInitialMessage({ clientName }),
         {
           id: createMessageId("coach"),
           role: "coach",
@@ -118,7 +121,7 @@ export function useCoach(): UseCoachReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [clientName]);
 
   /** Delete a conversation */
   const deleteConversation = useCallback(
@@ -128,7 +131,7 @@ export function useCoach(): UseCoachReturn {
         setConversations((prev) => prev.filter((c) => c.id !== id));
         // If we deleted the active conversation, reset to new chat
         if (conversationId === id) {
-          setMessages([createInitialMessage()]);
+          setMessages([createInitialMessage({ clientName })]);
           setConversationId(null);
           if (typeof window !== "undefined") {
             window.localStorage.removeItem(ACTIVE_CONVERSATION_STORAGE_KEY);
@@ -138,19 +141,19 @@ export function useCoach(): UseCoachReturn {
         // Silently fail
       }
     },
-    [conversationId],
+    [conversationId, clientName],
   );
 
   /** Start a fresh conversation */
   const startNewChat = useCallback(() => {
     abortControllerRef.current?.abort();
-    setMessages([createInitialMessage()]);
+    setMessages([createInitialMessage({ clientName })]);
     setConversationId(null);
     setIsLoading(false);
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(ACTIVE_CONVERSATION_STORAGE_KEY);
     }
-  }, []);
+  }, [clientName]);
 
   /** Send a message and stream the coach response */
   const sendMessage = useCallback(
@@ -188,7 +191,7 @@ export function useCoach(): UseCoachReturn {
           body: JSON.stringify({
             message: trimmed,
             intent,
-            conversationId,
+            ...(conversationId ? { conversationId } : {}),
           }),
           signal: abortControllerRef.current.signal,
         });
@@ -296,10 +299,10 @@ export function useCoach(): UseCoachReturn {
                   prev.map((m) =>
                     m.id === coachMessageId
                       ? {
-                          ...m,
-                          content: `Sorry, something went wrong: ${payload.error}`,
-                          isStreaming: false,
-                        }
+                        ...m,
+                        content: `Sorry, something went wrong: ${payload.error}`,
+                        isStreaming: false,
+                      }
                       : m,
                   ),
                 );
@@ -341,6 +344,16 @@ export function useCoach(): UseCoachReturn {
     },
     [isLoading, conversationId, fetchConversations],
   );
+
+  /** Update welcome message when user loads (user may be null on initial render) */
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length !== 1 || prev[0]?.id !== "welcome") return prev;
+      const updated = createInitialMessage({ clientName });
+      if (prev[0]?.content === updated.content) return prev;
+      return [updated];
+    });
+  }, [clientName]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

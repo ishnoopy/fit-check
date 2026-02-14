@@ -2,7 +2,6 @@
 "use client";
 
 import { useUser } from "@/app/providers";
-import { DeerMark } from "@/components/DeerMark";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCoach } from "@/hooks/useCoach";
@@ -337,7 +336,7 @@ function ChatHead({
   return (
     <div className="mt-0.5 size-9 shrink-0 overflow-hidden rounded-full border border-border bg-muted/40 flex items-center justify-center">
       {role === "coach" ? (
-        <DeerMark className="size-7" />
+        <Image src="/fitcheck-coach-icon.png" alt="FitCheck Coach" width={36} height={36} className="h-full w-full object-cover" />
       ) : avatarUrl ? (
         <Image
           src={avatarUrl}

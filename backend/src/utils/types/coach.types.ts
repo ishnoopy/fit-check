@@ -20,19 +20,18 @@ export type ExerciseTrend = "up" | "down" | "flat";
 /** Fatigue status derived from recent workout frequency */
 export type FatigueStatus = "fresh" | "normal" | "fatigued" | "overtrained";
 
-/** Session data with best set and date */
+/** Session data with full sets and total volume */
 export interface SessionData {
   date: Date;
-  bestSet: string;
+  sets: string;
   volume: number;
   notes?: string;
 }
 
 /** Summary of a single exercise's recent performance */
 export interface ExerciseSummary {
-  lastBestSet: string;
   rpe: number | null;
-  trend: ExerciseTrend;
+  trend: ExerciseTrend | null;
   volumeChangePercent: number | null;
   sessions: SessionData[];
 }
@@ -70,6 +69,8 @@ export interface CoachContext {
   workoutSummary?: WorkoutSummary;
   chatSummary?: string;
   focusedExercise?: string;
+  isNewConversation?: boolean;
+  recentAdvice?: CoachAdviceItem[];
 }
 
 /** Configuration for which data each intent needs */
@@ -93,7 +94,7 @@ export const INTENT_CONTEXT_CONFIG: Record<CoachIntent, IntentContextConfig> = {
   SESSION_FEEDBACK: {
     needsFullProfile: false,
     needsWorkoutSummary: true,
-    workoutSummaryDepthDays: 1,
+    workoutSummaryDepthDays: 7,
     needsChatHistory: true,
     maxChatHistoryPairs: 2,
   },
@@ -142,4 +143,12 @@ export interface ExerciseMatchResult {
   matchedExercise: string | null;
   confidence: number;
   method: "deterministic" | "llm" | "none";
+}
+
+/** Coach advice item for LLM context */
+export interface CoachAdviceItem {
+  exercise: string;
+  date: string;
+  advice: string;
+  context?: string;
 }

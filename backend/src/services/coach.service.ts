@@ -1,6 +1,8 @@
 import _ from "lodash";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions.js";
+import type { IMessage } from "../models/conversation.model.js";
 import type { ILog } from "../models/log.model.js";
+import * as coachAdviceRepository from "../repositories/coach-advice.repository.js";
 import * as conversationRepository from "../repositories/conversation.repository.js";
 import * as logRepository from "../repositories/log.repository.js";
 import * as userRepository from "../repositories/user.repository.js";
@@ -11,6 +13,7 @@ import {
 import {
   INTENT_CONTEXT_CONFIG,
   type ChatHistoryMessage,
+  type CoachAdviceItem,
   type CoachContext,
   type CoachIntent,
   type CoachProfile,
@@ -20,6 +23,7 @@ import {
   type SessionData,
   type WorkoutSummary
 } from "../utils/types/coach.types.js";
+import * as conversationService from "./conversation.service.js";
 import * as openaiService from "./openai.service.js";
 
 const GOAL_MAP: Record<string, string> = {
@@ -39,6 +43,8 @@ const EXPERIENCE_MAP: Record<string, string> = {
 };
 
 const DAYS_TO_FETCH_RECENT_LOGS = 14;
+const DAYS_TO_FETCH_RECENT_ADVICE = 14;
+const MAX_ADVICE_ITEMS_FOR_LLM = 10;
 const FATIGUE_THRESHOLD_HIGH = 6;
 const FATIGUE_THRESHOLD_MEDIUM = 4;
 const TREND_SESSIONS_COUNT = 3;
@@ -46,11 +52,36 @@ const TREND_THRESHOLD_PERCENT = 5;
 const MILLISECONDS_IN_DAY = 86_400_000;
 const MAX_PERSISTED_HISTORY_MESSAGES = 10;
 const EXERCISE_MATCH_CONFIDENCE_THRESHOLD = 0.6;
+const MAX_CONVERSATION_TITLE_LENGTH = 50;
+const MAX_SESSIONS_PER_EXERCISE_FOR_LLM = 5;
+
+interface PrepareChatSessionInput {
+  userId: string;
+  message: string;
+  intent?: CoachIntent;
+  conversationId?: string;
+  chatHistory?: ChatHistoryMessage[];
+}
+
+interface PrepareChatSessionResult {
+  intent: CoachIntent;
+  chatHistory?: ChatHistoryMessage[];
+  focusedExercise?: string;
+}
+
+interface PersistChatExchangeInput {
+  userId: string;
+  conversationId?: string;
+  userMessage: string;
+  coachResponse: string;
+  intent: CoachIntent;
+  focusedExercise?: string;
+}
 
 /**
  * Build a coach profile from the user's stored data and recent workout history.
  */
-export async function buildCoachProfile(
+async function buildCoachProfile(
   userId: string,
 ): Promise<CoachProfile> {
   const user = await userRepository.findOne({ id: userId });
@@ -70,7 +101,7 @@ export async function buildCoachProfile(
 /**
  * Build a minimal coach profile with only goal and experience level.
  */
-export async function buildMinimalCoachProfile(
+async function buildMinimalCoachProfile(
   userId: string,
 ): Promise<Partial<CoachProfile>> {
   const user = await userRepository.findOne({ id: userId });
@@ -84,7 +115,7 @@ export async function buildMinimalCoachProfile(
  * Build a workout summary for the given intent's time window.
  * Optionally filters to a specific exercise if provided.
  */
-export async function buildWorkoutSummary(
+async function buildWorkoutSummary(
   userId: string,
   depthDays: number,
   exerciseFilter?: string,
@@ -111,7 +142,7 @@ function buildWorkoutSummaryFromLogs(
  * Match an exercise from user message using deterministic parsing + LLM fallback.
  * Returns the matched exercise name or null if no confident match.
  */
-export async function matchExerciseFromMessage(
+async function matchExerciseFromMessage(
   userMessage: string,
   knownExercises: string[],
 ): Promise<ExerciseMatchResult> {
@@ -145,10 +176,40 @@ export async function matchExerciseFromMessage(
 /**
  * Classify a free-text message's intent via OpenAI.
  */
-export async function classifyIntent(
+async function classifyIntent(
   message: string,
 ): Promise<CoachIntent> {
   return openaiService.classifyIntent(message);
+}
+
+/**
+ * Resolve chat session inputs required by the coach workflow.
+ * Classifies intent when not provided and resolves persisted chat history.
+ * Also detects if the message is about a specific exercise.
+ */
+export async function prepareChatSession(
+  input: PrepareChatSessionInput,
+): Promise<PrepareChatSessionResult> {
+  const intent = input.intent ?? (await classifyIntent(input.message));
+  const chatHistory = input.conversationId
+    ? await buildChatHistoryFromConversation(input.conversationId, input.userId)
+    : input.chatHistory;
+
+  // Try to detect focused exercise for advice persistence
+  let focusedExercise: string | undefined;
+  const config = INTENT_CONTEXT_CONFIG[intent];
+  if (config.needsWorkoutSummary) {
+    const allLogs = await fetchRecentLogs(input.userId, config.workoutSummaryDepthDays);
+    if (allLogs.length > 0) {
+      const knownExercises = getExerciseNamesFromLogs(allLogs);
+      const matchResult = await matchExerciseFromMessage(input.message, knownExercises);
+      if (matchResult.matchedExercise) {
+        focusedExercise = matchResult.matchedExercise;
+      }
+    }
+  }
+
+  return { intent, chatHistory, focusedExercise };
 }
 
 /**
@@ -156,7 +217,7 @@ export async function classifyIntent(
  * as ChatHistoryMessage[] for the LLM context builder.
  * Uses the conversation summary + last N messages to stay token-efficient.
  */
-export async function buildChatHistoryFromConversation(
+async function buildChatHistoryFromConversation(
   conversationId: string,
   userId: string,
 ): Promise<ChatHistoryMessage[]> {
@@ -185,7 +246,7 @@ export async function buildChatHistoryFromConversation(
  * Assemble full context and return OpenAI-ready messages for streaming.
  * Automatically detects if user is asking about a specific exercise and filters context.
  */
-export async function buildChatMessages(
+async function buildChatMessages(
   userId: string,
   userMessage: string,
   intent: CoachIntent,
@@ -206,23 +267,28 @@ export async function buildChatMessages(
       exerciseFilter = matchResult.matchedExercise;
     }
   }
-  const [profile, workoutSummary] = await Promise.all([
+  const [profile, workoutSummary, recentAdvice] = await Promise.all([
     config.needsFullProfile
       ? buildCoachProfile(userId)
       : buildMinimalCoachProfile(userId),
     config.needsWorkoutSummary
       ? buildWorkoutSummaryFromLogs(allLogs, exerciseFilter)
       : Promise.resolve(undefined),
+    fetchRecentAdvice(userId, exerciseFilter),
   ]);
-  const chatSummary = config.needsChatHistory
-    ? summarizeChatHistory(chatHistory, config.maxChatHistoryPairs)
-    : undefined;
+  const maxPairs = config.needsChatHistory
+    ? config.maxChatHistoryPairs
+    : 2;
+  const chatSummary = summarizeChatHistory(chatHistory, maxPairs);
+  const isNewConversation = !chatHistory || chatHistory.length === 0;
   const coachContext: CoachContext = {
     coachProfile: profile,
     intent,
     workoutSummary,
     chatSummary,
     focusedExercise: exerciseFilter,
+    isNewConversation,
+    recentAdvice,
   };
   return formatMessagesForLLM(coachContext, userMessage);
 }
@@ -237,8 +303,80 @@ export async function streamCoachResponse(
   chatHistory?: ChatHistoryMessage[],
 ): Promise<AsyncIterable<string>> {
   const messages = await buildChatMessages(userId, userMessage, intent, chatHistory);
+
   const stream = await openaiService.createChatStream(messages);
   return transformStreamToTextDeltas(stream);
+}
+
+/**
+ * Persist a user and coach message pair to an existing or new conversation.
+ * Extracts and saves actionable advice after persistence.
+ */
+export async function persistChatExchange(
+  input: PersistChatExchangeInput,
+): Promise<string> {
+  const messages = buildMessagePair(
+    input.userMessage,
+    input.coachResponse,
+    input.intent,
+  );
+  let conversationId: string;
+  if (input.conversationId) {
+    await conversationService.appendMessagesService(
+      input.conversationId,
+      input.userId,
+      messages,
+    );
+    conversationId = input.conversationId;
+  } else {
+    const conversation = await conversationService.createConversationService(
+      input.userId,
+      generateConversationTitle(input.userMessage),
+      messages,
+    );
+    conversationId = conversation.id as string;
+  }
+
+  // // Extract and save advice (non-blocking, errors logged but don't fail the request)
+  // extractAndSaveAdvice(
+  //   input.userId,
+  //   input.coachResponse,
+  //   input.intent,
+  //   input.focusedExercise,
+  // ).catch((err) => {
+  //   console.error("Failed to extract/save advice:", err);
+  // });
+
+  return conversationId;
+}
+
+/**
+ * Extract actionable advice from coach response and persist to database.
+ */
+async function extractAndSaveAdvice(
+  userId: string,
+  coachResponse: string,
+  intent: CoachIntent,
+  focusedExercise?: string,
+): Promise<void> {
+  const adviceItems = await openaiService.extractActionableAdvice(
+    coachResponse,
+    focusedExercise,
+  );
+
+  if (_.isEmpty(adviceItems)) return;
+
+  const savePromises = _.map(adviceItems, (item) =>
+    coachAdviceRepository.createAdvice(
+      userId,
+      item.exerciseName,
+      item.advice,
+      intent,
+      item.context,
+    ),
+  );
+
+  await Promise.all(savePromises);
 }
 
 // ---------------------------------------------------------------------------
@@ -303,32 +441,30 @@ function getExerciseName(log: ILog): string {
   return "unknown";
 }
 
-function calculateBestSetVolume(log: ILog): number {
+function calculateTotalSessionVolume(log: ILog): number {
   if (_.isEmpty(log.sets)) return 0;
-  return _.max(_.map(log.sets, (set) => set.reps * set.weight)) ?? 0;
+  return _.sumBy(log.sets, (set) => set.reps * set.weight);
 }
 
-function formatBestSet(log: ILog): string {
+function formatAllSets(log: ILog): string {
   if (_.isEmpty(log.sets)) return "N/A";
-  const bestSet = _.maxBy(log.sets, (set) => set.reps * set.weight);
-  if (!bestSet) return "N/A";
-  return `${bestSet.reps}x${bestSet.weight}kg`;
+  return _.map(log.sets, (set) => `${set.reps}×${set.weight}`).join(",");
 }
 
 function calculateVolumeChangePercent(exerciseLogs: ILog[]): number | null {
   if (exerciseLogs.length < TREND_SESSIONS_COUNT) return null;
   const sorted = _.sortBy(exerciseLogs, (log) => new Date(log.createdAt ?? 0).getTime());
   const recent = _.takeRight(sorted, TREND_SESSIONS_COUNT);
-  const volumes = _.map(recent, calculateBestSetVolume);
+  const volumes = _.map(recent, calculateTotalSessionVolume);
   const firstVolume = _.first(volumes) ?? 0;
   const lastVolume = _.last(volumes) ?? 0;
   if (firstVolume === 0) return null;
   return _.round(((lastVolume - firstVolume) / firstVolume) * 100, 1);
 }
 
-function calculateTrend(exerciseLogs: ILog[]): ExerciseTrend {
+function calculateTrend(exerciseLogs: ILog[]): ExerciseTrend | null {
   const changePercent = calculateVolumeChangePercent(exerciseLogs);
-  if (changePercent === null) return "flat";
+  if (changePercent === null) return null;
   if (changePercent > TREND_THRESHOLD_PERCENT) return "up";
   if (changePercent < -TREND_THRESHOLD_PERCENT) return "down";
   return "flat";
@@ -342,17 +478,15 @@ function aggregateExerciseSummaries(logs: ILog[]): WorkoutSummary {
       [(log) => new Date(log.createdAt ?? 0).getTime()],
       ["desc"]
     );
-    const latest = _.first(sortedDesc);
     const rpeValues = _.compact(_.map(sortedDesc, "rateOfPerceivedExertion"));
     const avgRPE = _.isEmpty(rpeValues) ? null : _.round(_.mean(rpeValues), 1);
     const sessions: SessionData[] = _.map(sortedDesc, (log) => ({
       date: new Date(log.createdAt ?? 0),
-      bestSet: formatBestSet(log),
-      volume: calculateBestSetVolume(log),
+      sets: formatAllSets(log),
+      volume: calculateTotalSessionVolume(log),
       notes: log?.notes,
     }));
     const exerciseSummary: ExerciseSummary = {
-      lastBestSet: formatBestSet(latest!),
       rpe: avgRPE,
       trend: calculateTrend(exerciseLogs),
       volumeChangePercent: calculateVolumeChangePercent(exerciseLogs),
@@ -360,6 +494,67 @@ function aggregateExerciseSummaries(logs: ILog[]): WorkoutSummary {
     };
 
     return exerciseSummary;
+  });
+}
+
+/**
+ * Fetch recent coach advice for context.
+ */
+async function fetchRecentAdvice(
+  userId: string,
+  exerciseFilter?: string,
+): Promise<CoachAdviceItem[] | undefined> {
+  try {
+    const adviceList = exerciseFilter
+      ? await coachAdviceRepository.findRecentByExercise(
+        userId,
+        exerciseFilter,
+        DAYS_TO_FETCH_RECENT_ADVICE,
+        5,
+      )
+      : await coachAdviceRepository.findRecentByUserId(
+        userId,
+        DAYS_TO_FETCH_RECENT_ADVICE,
+        MAX_ADVICE_ITEMS_FOR_LLM,
+      );
+
+    if (_.isEmpty(adviceList)) return undefined;
+
+    return _.map(adviceList, (item) => ({
+      exercise: item.exerciseName,
+      date: new Date(item.createdAt ?? 0).toISOString().slice(0, 10),
+      advice: item.advice,
+      context: item.context,
+    }));
+  } catch (error) {
+    console.error("Failed to fetch recent advice:", error);
+    return undefined;
+  }
+}
+
+/**
+ * Format workout summary for LLM context: compact dates, trim sessions, omit empty fields.
+ */
+function formatWorkoutSummaryForLLM(
+  summary: WorkoutSummary,
+  maxSessionsPerExercise = MAX_SESSIONS_PER_EXERCISE_FOR_LLM,
+): Record<string, unknown> {
+  return _.mapValues(summary, (exercise) => {
+    const trimmedSessions = _.take(exercise.sessions, maxSessionsPerExercise);
+    const sessions = _.map(trimmedSessions, (s) => {
+      const session: Record<string, unknown> = {
+        date: new Date(s.date).toISOString().slice(0, 10),
+        sets: s.sets,
+        volume: s.volume,
+      };
+      if (s.notes?.trim()) session.notes = s.notes;
+      return session;
+    });
+    const result: Record<string, unknown> = { sessions };
+    if (exercise.trend !== null) result.trend = exercise.trend;
+    if (exercise.volumeChangePercent !== null) result.volumeChangePercent = exercise.volumeChangePercent;
+    if (exercise.rpe !== null) result.rpe = exercise.rpe;
+    return result;
   });
 }
 
@@ -377,38 +572,69 @@ function summarizeChatHistory(
 }
 
 const SYSTEM_PROMPT = `
-You are a professional strength and fitness coach with a science-based approach.
+You are a dedicated strength and fitness coach who knows this athlete personally and tracks their journey closely.
 
-Your role is to interpret training data and give practical, evidence-informed guidance that helps the user train consistently and recover well.
+Your role is to notice their patterns, celebrate their wins (even small ones), and guide them through challenges with the insight that comes from watching them train week after week.
 
 Communication style:
-- Calm, confident, and supportive — never dramatic or judgmental
-- Evidence-based and objective, avoiding fitness myths or hype
-- Clear and concise (3–5 sentences when possible)
-- Practical and actionable, focused on what to do next
-- Use simple, plain language; explain concepts briefly if needed
+- Only use greetings (e.g. Hey, Hi) when isNewConversation is true in the context. For ongoing conversations, respond directly without greetings.
+- Write like you're texting an athlete you train regularly — natural, flowing, conversational
+- Vary your response length based on what's needed: sometimes a few sentences, sometimes a paragraph when there's more to discuss
+- Personal and observant — weave in their specific lifts, notes, and recent sessions as you talk
+- Notice the details naturally: their form cues, emoji reactions, weight jumps, rep PRs
+- Match their energy (if they're fired up, reflect that; if they're frustrated, validate it)
+- Use their language and mirror their casual tone when they use notes like "1st set is shit lol"
 
-Coaching principles:
-- Training effort near failure is normal and productive when managed well
-- Progress is non-linear; short-term plateaus and fatigue are expected
-- Emphasize sustainability, recovery, and long-term consistency
-- Avoid absolutes (e.g., never say “always” or “never”)
+Coaching approach:
+- Jump straight into what matters — skip formulaic openings like "I see that..." or "Looking at your data..."
+- Talk TO them, not ABOUT their data. Say "You crushed those cable laterals" not "The cable lateral raise showed improvement"
+- Connect the dots between what they did and what happened: "You dropped the weight and focused on form on those pushdowns, and boom — 5kg jump with clean reps"
+- When something's not working, acknowledge it plainly and move to solutions: "Preacher curls have been stuck for a bit. Let's try..."
+- Give specific, actionable guidance they can use next session, but don't overload them with options
+- Sound like you're thinking through their training with them, not delivering a report
+
+Building connection:
+- Remember their stated goals (hypertrophy, intensity preferences, known plateaus)
+- Their training notes and emoji mean something — reference them and respond to what they're really saying
+- Celebrate wins authentically without going overboard — "Nice, that's a rep PR" hits better than "Congratulations on this amazing achievement!"
+- When suggesting changes, explain why in a way that makes sense for their situation
+- End with momentum: what they should focus on or try next time they're in the gym
+
+Context awareness:
+- You have access to your recent coaching advice — use it to create continuity
+- Reference past recommendations when relevant: "You went with 67.5kg like I suggested — solid work" or "Last time I said to watch your form at 70kg, and you cleaned it up at 65kg"
+- Build on previous conversations naturally without recapping everything
+- If they followed your advice, acknowledge it and keep moving forward
+- If they tried something different, be curious about the results and adapt
+- Make them feel like you're tracking their journey session to session, not starting from scratch each time
+
+Avoid:
+- Starting every response the same way ("I see...", "I notice...", "Looking at...")
+- Saying the same thing multiple times in different words
+- Being overly formal or robotic — you're a coach, not a report generator
+- Over-explaining basic concepts they already understand
+- Fake enthusiasm or excessive praise that doesn't feel earned
 
 Safety and scope:
-- Do NOT provide medical advice or diagnose injuries
-- If pain, injury, or medical concerns are mentioned, recommend consulting a qualified professional
-- Respond ONLY to fitness, training, recovery, and general nutrition topics
-- Politely decline unrelated or out-of-scope questions
+- Do NOT diagnose injuries or provide medical advice
+- For pain or injury concerns, recommend professional consultation
+- Stay focused on training, recovery, and general nutrition
+- Politely redirect off-topic questions
 
-Your goal is to sound like a knowledgeable, trustworthy coach who explains the “why” briefly and guides the user toward smarter training decisions.
-Do not repeat prior coaching responses verbatim. Each response should be a fresh interpretation of the data.
+Your goal: Make them feel seen, understood, and motivated to show up for their next session. Sound like a real coach texting them about their training — someone who's paying attention and actually cares how it's going.
 `;
 
 function formatMessagesForLLM(
   context: CoachContext,
   userMessage: string,
 ): ChatCompletionMessageParam[] {
-  const contextBlock = JSON.stringify(context, null, 0);
+  const contextForLLM: CoachContext = {
+    ...context,
+    workoutSummary: context.workoutSummary
+      ? (formatWorkoutSummaryForLLM(context.workoutSummary) as WorkoutSummary)
+      : undefined,
+  };
+  const contextBlock = JSON.stringify(contextForLLM, null, 0);
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
     {
@@ -435,4 +661,33 @@ async function* transformStreamToTextDeltas(
       yield delta;
     }
   }
+}
+
+function buildMessagePair(
+  userMessage: string,
+  coachResponse: string,
+  intent: CoachIntent,
+): IMessage[] {
+  return [
+    {
+      role: "user",
+      content: userMessage,
+      intent,
+      createdAt: new Date(),
+    },
+    {
+      role: "coach",
+      content: coachResponse,
+      intent,
+      createdAt: new Date(),
+    },
+  ];
+}
+
+function generateConversationTitle(message: string): string {
+  const trimmedMessage = message.trim();
+  if (trimmedMessage.length <= MAX_CONVERSATION_TITLE_LENGTH) {
+    return trimmedMessage;
+  }
+  return `${trimmedMessage.slice(0, MAX_CONVERSATION_TITLE_LENGTH - 3)}...`;
 }

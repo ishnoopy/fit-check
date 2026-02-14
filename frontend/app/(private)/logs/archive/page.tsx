@@ -43,7 +43,6 @@ import {
     CalendarIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
-    ClockIcon,
     DumbbellIcon,
     EditIcon,
     Trash2Icon,
@@ -71,7 +70,7 @@ interface LogsResponse {
 
 const fetchLogs = async (page: number = 1, limit: number = 10) => {
   return api.get<LogsResponse>(
-    `/api/logs?page=${page}&limit=${limit}&sort_by=workout_date&sort_order=desc`,
+    `/api/logs?page=${page}&limit=${limit}&sort_by=created_at&sort_order=desc`,
   );
 };
 
@@ -120,7 +119,13 @@ export default function LogsArchivePage() {
 
     return Array.from(grouped.entries())
       .sort((a, b) => b[0].localeCompare(a[0]))
-      .map(([date, logs]) => ({ date, logs }));
+      .map(([date, logs]) => ({
+        date,
+        logs: [...logs].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
+      }));
   }, [logs]);
 
   const deleteLogMutation = useMutation({

@@ -6,10 +6,11 @@ import {
   type CoachIntent,
 } from "../utils/types/coach.types.js";
 
-const CLASSIFICATION_MODEL = "gpt-4o-mini";
-const CHAT_MODEL = "gpt-4o-mini";
+const CLASSIFICATION_MODEL = "gpt-4.1-mini";
+const CHAT_MODEL = "gpt-4.1-mini";
 const CLASSIFICATION_MAX_TOKENS = 20;
 const EXERCISE_EXTRACTION_MAX_TOKENS = 50;
+const ADVICE_EXTRACTION_MAX_TOKENS = 500;
 const CHAT_MAX_TOKENS = 500;
 
 let openaiClient: OpenAI | null = null;
@@ -117,3 +118,77 @@ export async function extractExerciseFromMessage(
   );
   return matched ?? null;
 }
+
+const ADVICE_EXTRACTION_PROMPT = `Extract actionable training recommendations from this coach response, PRESERVING the coach's tone and observations.
+
+For each exercise mentioned, return a JSON array with:
+{
+  "exerciseName": "exact exercise name",
+  "advice": "1-2 sentences with coach's observation + specific recommendation",
+  "context": "brief user performance note (optional)"
+}
+
+Examples:
+- "You crushed 65kg — try jumping to 67.5kg next time, you've got it"
+- "Form looked shaky at 70kg. Drop to 65kg and nail the depth for 3 sets"
+- "Volume's looking good but RPE is high. Keep 60kg, just aim for cleaner reps"
+
+Include: observations, weight/rep targets, form cues, coach's tone
+Omit: lengthy greetings, excessive encouragement, off-topic content
+Keep it conversational and personal, as if the coach is reminding you next session.
+
+If no actionable advice is present, return an empty array [].
+Respond with ONLY valid JSON, nothing else.`;
+
+export interface ExtractedAdvice {
+  exerciseName: string;
+  advice: string;
+  context?: string;
+}
+
+/**
+ * Extract actionable advice from coach response using LLM.
+ * Preserves coach's tone and observations.
+ */
+export async function extractActionableAdvice(
+  coachResponse: string,
+  focusedExercise?: string,
+): Promise<ExtractedAdvice[]> {
+  const client = getClient();
+  const contextHint = focusedExercise
+    ? `\n\nNote: The conversation was focused on "${focusedExercise}".`
+    : "";
+  
+  try {
+    const response = await client.chat.completions.create({
+      model: CLASSIFICATION_MODEL,
+      max_tokens: ADVICE_EXTRACTION_MAX_TOKENS,
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: ADVICE_EXTRACTION_PROMPT },
+        {
+          role: "user",
+          content: `Coach response: "${coachResponse}"${contextHint}`,
+        },
+      ],
+    });
+    
+    const result = response.choices[0]?.message?.content?.trim() ?? "{}";
+    const parsed = JSON.parse(result);
+    
+    // Handle both array and object with "advice" key
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    if (parsed.advice && Array.isArray(parsed.advice)) {
+      return parsed.advice;
+    }
+    
+    return [];
+  } catch (error) {
+    console.error("Failed to extract advice:", error);
+    return [];
+  }
+}
+

@@ -49,6 +49,12 @@ export async function getLogsByQueryService(
   query: Record<string, unknown>,
   userId: string,
 ) {
+  const SORT_FIELD_MAP: Record<string, string> = {
+    createdAt: "createdAt",
+    updatedAt: "updatedAt",
+    workoutDate: "createdAt",
+  };
+
   let options: {
     limit?: number;
     skip?: number;
@@ -80,9 +86,13 @@ export async function getLogsByQueryService(
   }
 
   if (query.sortBy && query.sortOrder) {
+    const sortBy = query.sortBy as string;
+    const sortOrder = query.sortOrder as SortOrder;
+    const sortField = SORT_FIELD_MAP[sortBy] || "createdAt";
+
     options = {
       ...options,
-      sort: { [query.sortBy as string]: query.sortOrder as SortOrder },
+      sort: { [sortField]: sortOrder },
     };
     delete query.sortBy;
     delete query.sortOrder;
