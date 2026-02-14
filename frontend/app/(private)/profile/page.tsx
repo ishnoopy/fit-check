@@ -470,7 +470,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-1">
-                  {galleryImages.length < 0 && (
+                  {galleryImages.length < 5 && (
                     <>
                       {/* Upload Button */}
                       <button
