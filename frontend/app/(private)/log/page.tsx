@@ -39,10 +39,7 @@ import {
   CheckCircle2,
   HistoryIcon,
   InfoIcon,
-  Pause,
-  Play,
   PlusIcon,
-  Square,
   Timer,
   XIcon
 } from "lucide-react";
@@ -60,6 +57,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useTimer } from "@/contexts/TimerContext";
 import {
   getExerciseHistory,
   useCreateLog,
@@ -116,7 +114,7 @@ const DEFAULT_SETS = [
 ];
 
 export default function LogPage() {
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { isTimerRunning, startRestTime } = useTimer();
   const [activePlanId] = useState<string>(
     getItemFromLocalStorage("activePlanId") || "",
   );
@@ -126,11 +124,6 @@ export default function LogPage() {
   const [activeExerciseId, setActiveExerciseId] = useState<string>(
     getItemFromLocalStorage("activeExerciseId") || "",
   );
-  const [countdown, setCountdown] = useState<number>(0);
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
-  const [timerExerciseId, setTimerExerciseId] = useState<string | null>(null);
-  const [showTimerPill, setShowTimerPill] = useState<boolean>(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [exerciseHistoryCache, setExerciseHistoryCache] = useState<
     Record<string, ILog[]>
   >({});
@@ -171,117 +164,6 @@ export default function LogPage() {
 
   const activeExercisesList =
     workoutData?.exercises?.filter((exercise) => exercise.isActive) || [];
-
-  // Get exercise name for the timer pill
-  const timerExerciseName = activeExercisesList.find(
-    (exercise) => exercise.exercise.id === timerExerciseId,
-  )?.exercise.name;
-
-  const startRestTime = (exerciseId: string, restTime: number) => {
-    // Prevent starting a new timer if one is already running
-    if (isTimerRunning) {
-      toast.error("A timer is already running");
-      return;
-    }
-
-    if (restTime <= 0) {
-      toast.error("No rest time set for this exercise");
-      return;
-    }
-
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    setTimerExerciseId(exerciseId);
-    setCountdown(restTime);
-    setIsTimerRunning(true);
-    setShowTimerPill(true);
-
-    let countdownInSeconds = restTime;
-
-    intervalRef.current = setInterval(() => {
-      countdownInSeconds -= 1;
-      setCountdown(countdownInSeconds);
-
-      if (countdownInSeconds <= 0) {
-        setIsTimerRunning(false);
-        setCountdown(0);
-        setTimerExerciseId(null);
-        setShowTimerPill(false);
-
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        if (audioRef.current) {
-          audioRef.current.play();
-        }
-        toast.success("Rest time complete! 💪");
-      }
-    }, 1000);
-  };
-
-  const pauseRestTime = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    setIsTimerRunning(false);
-  };
-
-  // clean up
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
-
-  const stopRestTime = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    setIsTimerRunning(false);
-    setCountdown(0);
-    setTimerExerciseId(null);
-    setShowTimerPill(false);
-  };
-
-  const resumeRestTime = () => {
-    if (isTimerRunning || countdown <= 0) {
-      return;
-    }
-
-    setIsTimerRunning(true);
-    let countdownInSeconds = countdown;
-
-    intervalRef.current = setInterval(() => {
-      countdownInSeconds -= 1;
-      setCountdown(countdownInSeconds);
-
-      if (countdownInSeconds <= 0) {
-        setIsTimerRunning(false);
-        setCountdown(0);
-        setTimerExerciseId(null);
-        setShowTimerPill(false);
-
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        if (audioRef.current) {
-          audioRef.current.play();
-        }
-        toast.success("Rest time complete! 💪");
-      }
-    }, 1000);
-  };
 
   const getTodayDateRange = () => {
     const nowInUserTz = toZonedTime(new Date(), userTimezone);
@@ -524,61 +406,6 @@ export default function LogPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      {/* Hidden audio element */}
-      <audio ref={audioRef} src="/notif-sound.mp3" />
-
-      {/* Timer Pill - Fixed Position */}
-      {showTimerPill && (
-        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
-          <div
-            className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-full border shadow-lg backdrop-blur-sm",
-              isTimerRunning
-                ? "bg-primary/10 border-primary/30 text-primary"
-                : "bg-muted/90 border-border text-muted-foreground",
-            )}
-          >
-            <Timer className="h-4 w-4 shrink-0" />
-            <div className="flex flex-col items-start min-w-[80px]">
-              <span className="text-xs font-mono font-bold tabular-nums">
-                {countdown}s
-              </span>
-              {timerExerciseName && (
-                <span className="text-[10px] leading-tight opacity-70 truncate max-w-[120px]">
-                  {timerExerciseName}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              {isTimerRunning ? (
-                <button
-                  onClick={pauseRestTime}
-                  className="h-7 w-7 shrink-0 hover:bg-primary/20 rounded-full flex items-center justify-center cursor-pointer transition-colors"
-                  aria-label="Pause timer"
-                >
-                  <Pause className="h-3.5 w-3.5" />
-                </button>
-              ) : (
-                <button
-                  onClick={resumeRestTime}
-                  className="h-7 w-7 shrink-0 hover:bg-primary/20 rounded-full flex items-center justify-center cursor-pointer transition-colors"
-                  aria-label="Resume timer"
-                >
-                  <Play className="h-3.5 w-3.5" />
-                </button>
-              )}
-              <button
-                onClick={stopRestTime}
-                className="h-7 w-7 shrink-0 hover:bg-destructive/20 text-destructive rounded-full flex items-center justify-center cursor-pointer transition-colors"
-                aria-label="Stop timer"
-              >
-                <Square className="h-3 w-3 fill-current" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="p-4 max-w-xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <PageHeader title="Log" subtitle="Log your workouts" />
@@ -676,11 +503,7 @@ export default function LogPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (isTimerRunning) {
-                            toast.error("A timer is already running");
-                            return;
-                          }
-                          startRestTime(exercise.id, exerciseItem.restTime || 0);
+                          startRestTime(exercise.id, exercise.name, exerciseItem.restTime || 0);
                         }}
                         disabled={isTimerRunning}
                         className={cn(
