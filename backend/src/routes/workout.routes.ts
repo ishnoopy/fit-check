@@ -5,6 +5,7 @@ import {
   deleteWorkout,
   getWorkout,
   getWorkouts,
+  reorderWorkoutExercises,
   updateWorkout,
 } from "../controllers/workout.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
@@ -21,6 +22,12 @@ const router = new Hono()
     createWorkoutWithExercises,
   )
   .patch("/workouts/:id", authMiddleware, generalRateLimiter, updateWorkout)
+  .patch(
+    "/workouts/:id/exercises/order",
+    authMiddleware,
+    generalRateLimiter,
+    reorderWorkoutExercises,
+  )
   .delete("/workouts/:id", authMiddleware, generalRateLimiter, deleteWorkout);
 
 export default router;

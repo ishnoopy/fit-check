@@ -11,6 +11,7 @@ export interface IWorkout {
     exercise: mongoose.Schema.Types.ObjectId | string;
     restTime: number;
     isActive: boolean;
+    order?: number | null;
   }>;
   updatedAt?: Date;
 }
@@ -26,6 +27,7 @@ export interface IWorkoutModel {
     exercise: mongoose.Schema.Types.ObjectId | string;
     rest_time: number;
     is_active: boolean;
+    order?: number | null;
   }>;
 }
 
@@ -48,6 +50,7 @@ const WorkoutSchema = new mongoose.Schema(
         exercise: { type: Schema.Types.ObjectId, ref: "Exercise" },
         rest_time: Number,
         is_active: Boolean,
+        order: { type: Number, default: null },
       },
       {
         _id: false,

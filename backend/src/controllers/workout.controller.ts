@@ -24,6 +24,7 @@ const createWorkoutSchema = z.object({
         exercise: z.string().length(24, "Invalid exercise ID"),
         restTime: z.number().int().positive(),
         isActive: z.boolean().default(true),
+        order: z.number().int().positive().optional(),
       }),
     )
     .default([]),
@@ -39,9 +40,16 @@ const updateWorkoutSchema = z.object({
         exercise: z.string().length(24, "Invalid exercise ID"),
         restTime: z.number().int().positive(),
         isActive: z.boolean().default(true),
+        order: z.number().int().positive().nullable().optional(),
       }),
     )
     .optional(),
+});
+
+const reorderWorkoutExercisesSchema = z.object({
+  exerciseIds: z
+    .array(z.string().length(24, "Invalid exercise ID"))
+    .min(1, "At least one exercise ID is required"),
 });
 
 const idParamSchema = z.object({
@@ -190,6 +198,36 @@ export async function deleteWorkout(c: Context) {
     {
       success: true,
       message: "Workout deleted successfully",
+    },
+    StatusCodes.OK,
+  );
+}
+
+export async function reorderWorkoutExercises(c: Context) {
+  const params = await idParamSchema.safeParseAsync(c.req.param());
+
+  if (!params.success) {
+    throw new BadRequestError(params.error);
+  }
+
+  const body = await c.req.json();
+  const validation = await reorderWorkoutExercisesSchema.safeParseAsync(body);
+
+  if (!validation.success) {
+    throw new BadRequestError(validation.error);
+  }
+
+  const userId = c.get("user").id;
+  const workout = await workoutService.reorderWorkoutExercisesService(
+    params.data.id,
+    validation.data.exerciseIds,
+    userId,
+  );
+
+  return c.json(
+    {
+      success: true,
+      data: workout,
     },
     StatusCodes.OK,
   );

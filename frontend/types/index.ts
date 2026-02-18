@@ -15,13 +15,12 @@ export interface IWorkout {
   description?: string;
   createdAt: string;
   updatedAt: string;
-  exercises: [
-    {
-      exercise: IExercise;
-      restTime: number;
-      isActive: boolean;
-    },
-  ];
+  exercises: Array<{
+    exercise: IExercise;
+    restTime: number;
+    isActive: boolean;
+    order: number | null;
+  }>;
 }
 
 export interface IExercise {

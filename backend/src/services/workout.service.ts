@@ -7,6 +7,50 @@ import * as planRepository from "../repositories/plan.repository.js";
 import * as workoutRepository from "../repositories/workout.repository.js";
 import * as exerciseService from "./exercise.service.js";
 
+type WorkoutExerciseItem = IWorkout["exercises"][number];
+
+function getExerciseId(exerciseItem: WorkoutExerciseItem): string {
+  if (typeof exerciseItem.exercise === "string") {
+    return exerciseItem.exercise;
+  }
+
+  const exercise = exerciseItem.exercise as { id?: string; _id?: string };
+  return exercise.id ?? exercise._id ?? "";
+}
+
+function normalizeExercisesOrder(
+  exercises: WorkoutExerciseItem[],
+): WorkoutExerciseItem[] {
+  const withIndex = exercises.map((exercise, index) => ({ exercise, index }));
+  const activeExercises = withIndex.filter(({ exercise }) => exercise.isActive);
+  const inactiveExercises = withIndex.filter(
+    ({ exercise }) => !exercise.isActive,
+  );
+
+  const sortByOrderThenIndex = (
+    a: { exercise: WorkoutExerciseItem; index: number },
+    b: { exercise: WorkoutExerciseItem; index: number },
+  ) => {
+    const aOrder = a.exercise.order ?? Number.MAX_SAFE_INTEGER;
+    const bOrder = b.exercise.order ?? Number.MAX_SAFE_INTEGER;
+    return aOrder === bOrder ? a.index - b.index : aOrder - bOrder;
+  };
+
+  const normalizedActive = activeExercises
+    .sort(sortByOrderThenIndex)
+    .map(({ exercise }, index) => ({
+      ...exercise,
+      order: index + 1,
+    }));
+
+  const normalizedInactive = inactiveExercises.map(({ exercise }) => ({
+    ...exercise,
+    order: null,
+  }));
+
+  return [...normalizedActive, ...normalizedInactive];
+}
+
 export async function getAllWorkoutsService(
   userId: string,
   filters?: { planId?: string; active?: boolean },
@@ -55,11 +99,12 @@ export async function createWorkoutWithExercisesService(
     ...payload,
     userId: userId,
     exercises: [
-      ...exercises.map((exercise) => {
+      ...exercises.map((exercise, index) => {
         return {
           exercise: exercise.id as string,
           restTime: exercise.restTime,
           isActive: true,
+          order: index + 1,
         };
       }),
     ],
@@ -85,10 +130,15 @@ export async function createWorkoutService(
   payload: Omit<IWorkout, "userId">,
   userId: string,
 ) {
+  const normalizedExercises = payload.exercises
+    ? normalizeExercisesOrder(payload.exercises as WorkoutExerciseItem[])
+    : [];
+
   // Create the workout first to get the _id
   const newWorkout = await workoutRepository.createWorkout({
     ...payload,
     userId: userId,
+    exercises: normalizedExercises,
   });
 
   // Then update the plan with the new workout's _id
@@ -123,9 +173,84 @@ export async function updateWorkoutService(
     throw new BadRequestError("Unauthorized access to workout");
   }
 
-  const payloadWithUserId = { ...payload, userId: userId };
+  const payloadWithUserId = { ...payload, userId: userId } as Partial<IWorkout>;
+
+  if (payload.exercises) {
+    payloadWithUserId.exercises = normalizeExercisesOrder(
+      payload.exercises as WorkoutExerciseItem[],
+    );
+  }
 
   return await workoutRepository.updateWorkout(id, payloadWithUserId);
+}
+
+export async function reorderWorkoutExercisesService(
+  workoutId: string,
+  exerciseIds: string[],
+  userId: string,
+) {
+  const existingWorkout = await workoutRepository.findById(workoutId);
+
+  if (!existingWorkout) {
+    throw new NotFoundError("Workout not found");
+  }
+
+  if ((existingWorkout.userId as string) !== userId) {
+    throw new BadRequestError("Unauthorized access to workout");
+  }
+
+  const activeExercises = existingWorkout.exercises.filter(
+    (exercise) => exercise.isActive,
+  );
+  const inactiveExercises = existingWorkout.exercises.filter(
+    (exercise) => !exercise.isActive,
+  );
+
+  if (exerciseIds.length !== activeExercises.length) {
+    throw new BadRequestError(
+      "Exercise IDs must include all active workout exercises",
+    );
+  }
+
+  const uniqueExerciseIds = new Set(exerciseIds);
+  if (uniqueExerciseIds.size !== exerciseIds.length) {
+    throw new BadRequestError("Exercise IDs must be unique");
+  }
+
+  const activeExerciseById = new Map(
+    activeExercises.map((exercise) => [getExerciseId(exercise), exercise]),
+  );
+
+  for (const exerciseId of exerciseIds) {
+    if (!activeExerciseById.has(exerciseId)) {
+      throw new BadRequestError(
+        "Exercise IDs can only include active workout exercises",
+      );
+    }
+  }
+
+  const reorderedActiveExercises = exerciseIds.map((exerciseId, index) => {
+    const exercise = activeExerciseById.get(exerciseId)!;
+
+    return {
+      exercise: exerciseId,
+      restTime: exercise.restTime,
+      isActive: true,
+      order: index + 1,
+    };
+  });
+
+  const normalizedInactiveExercises = inactiveExercises.map((exercise) => ({
+    exercise: getExerciseId(exercise),
+    restTime: exercise.restTime,
+    isActive: false,
+    order: null,
+  }));
+
+  return await workoutRepository.updateWorkout(workoutId, {
+    exercises: [...reorderedActiveExercises, ...normalizedInactiveExercises],
+    userId,
+  });
 }
 
 export async function deleteWorkoutService(id: string, userId: string) {

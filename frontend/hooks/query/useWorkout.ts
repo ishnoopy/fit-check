@@ -47,6 +47,7 @@ export const addWorkoutFormSchema = z.object({
           .positive()
           .max(600, { message: "Rest time must be less than 600 seconds" }),
         isActive: z.boolean().default(true),
+        order: z.number().int().positive().optional(),
       }),
     )
     .min(1, { message: "At least one exercise is required" }),
@@ -65,14 +66,24 @@ export const editWorkoutFormSchema = z.object({
           .positive()
           .max(600, { message: "Rest time must be less than 600 seconds" }),
         isActive: z.boolean().default(true),
+        order: z.number().int().positive().nullable().optional(),
       }),
     )
     .optional(),
 });
 
+export const reorderWorkoutExercisesSchema = z.object({
+  exerciseIds: z
+    .array(z.string().length(24, "Invalid exercise ID"))
+    .min(1, { message: "At least one exercise is required" }),
+});
+
 // export type AddWorkoutWithExercisesFormValues = z.input<typeof addWorkoutWithExercisesFormSchema>;
 export type AddWorkoutFormValues = z.input<typeof addWorkoutFormSchema>;
 export type EditWorkoutFormValues = z.input<typeof editWorkoutFormSchema>;
+export type ReorderWorkoutExercisesFormValues = z.input<
+  typeof reorderWorkoutExercisesSchema
+>;
 
 export const useGetAllWorkouts = ({
   planId,
@@ -303,6 +314,56 @@ export const useDeleteWorkout = ({
       if (enableToast) {
         toast.error(
           error instanceof Error ? error.message : "Failed to delete workout",
+        );
+      }
+      onError?.(error);
+    },
+  });
+
+  return { mutate, isPending, error: error };
+};
+
+export const useReorderWorkoutExercises = ({
+  workoutId,
+  enableToast = true,
+  onSuccess,
+  onError,
+  queryKey,
+}: {
+  workoutId: string;
+  enableToast?: boolean;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+  queryKey: string[];
+}) => {
+  const queryClient = useQueryClient();
+  const reorderWorkoutExercises: MutationFunction<
+    { data: IWorkout },
+    ReorderWorkoutExercisesFormValues
+  > = (values) => {
+    return api.patch<{ data: IWorkout }>(
+      `/api/workouts/${workoutId}/exercises/order`,
+      values,
+    );
+  };
+
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: reorderWorkoutExercises,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKey ?? ["workout", workoutId],
+      });
+      if (enableToast) {
+        toast.success("Exercise order updated");
+      }
+      onSuccess?.();
+    },
+    onError: (error: Error) => {
+      if (enableToast) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to reorder exercises",
         );
       }
       onError?.(error);
