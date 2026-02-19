@@ -476,6 +476,9 @@ function getTodayRange(): { start: Date; end: Date } {
   start.setUTCHours(0, 0, 0, 0);
   const end = new Date(now);
   end.setUTCHours(23, 59, 59, 999);
+
+  console.log("✏️ ~ coach.service.ts:480 ~ getTodayRange ~ start:", start)
+  console.log("✏️ ~ coach.service.ts:480 ~ getTodayRange ~ end:", end)
   return { start, end };
 }
 
