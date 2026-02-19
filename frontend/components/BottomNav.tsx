@@ -7,7 +7,15 @@ import logo from "@/public/fit-check-logo.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
+  BarChart2Icon,
   ChevronUpIcon,
+  ClockIcon,
+  HomeIcon,
+  ListChecksIcon,
+  LogOutIcon,
+  MoonIcon,
+  NotebookIcon,
+  SunIcon,
   UserIcon
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -76,10 +84,10 @@ export default function BottomNav({ className }: { className?: string }) {
   };
 
   const navItems = [
-    { href: "/dashboard", icon: "/Dashboard.png", label: "Home" },
+    { href: "/dashboard", icon: HomeIcon, label: "Home" },
     {
       href: "/plans",
-      icon: "/Plans.png",
+      icon: ListChecksIcon,
       label: "Plans",
       showPulse: hasNoPlans,
     },
@@ -90,7 +98,7 @@ export default function BottomNav({ className }: { className?: string }) {
       isCenter: true,
       requiresPioneer: true,
     },
-    { href: "/log", icon: "/Log.png", label: "Log" },
+    { href: "/log", icon: NotebookIcon, label: "Log" },
   ];
 
   useEffect(() => {
@@ -174,19 +182,12 @@ export default function BottomNav({ className }: { className?: string }) {
                         alt="FitCheck Coach"
                         width={24}
                         height={24}
-                        className="size-6 object-contain"
+                        className="size-5 object-contain"
                         priority
                       />
                     </div>
                   ) : (
-                    <Image
-                      src={item.icon}
-                      alt=""
-                      width={24}
-                      height={24}
-                      className="size-6 object-contain"
-                      priority
-                    />
+                    <item.icon className="size-5" />
                   )}
                   {showPulse && (
                     <span className="absolute top-0 right-0 z-20 size-2 bg-primary rounded-full" />
@@ -263,7 +264,7 @@ export default function BottomNav({ className }: { className?: string }) {
                       className="size-8 rounded-full object-cover"
                     />
                   ) : (
-                    <UserIcon className="size-6 text-current" />
+                    <UserIcon className="size-5 text-current" />
                   )}
                   <span className="absolute -bottom-0.5 -right-0.5 z-10 inline-flex size-4 items-center justify-center rounded-full border border-border bg-background">
                     <ChevronUpIcon className="size-3 text-muted-foreground" />
@@ -277,15 +278,8 @@ export default function BottomNav({ className }: { className?: string }) {
             <DropdownMenuContent align="end" className="w-48 rounded-lg">
               <DropdownMenuItem asChild>
                 <Link href="/profile" className="cursor-pointer rounded-lg flex items-center gap-3">
-                  <span className="flex size-6 shrink-0 items-center justify-center">
-                    <Image
-                      src={"/Profile.png"}
-                      alt="Profile"
-                      width={24}
-                      height={24}
-                      className="size-6 object-contain"
-                      priority
-                    />
+                  <span className="flex size-5 shrink-0 items-center justify-center">
+                    <UserIcon className="size-5 text-current" />
                   </span>
                   <span className="text-xs font-medium sm:inline">
                     Profile
@@ -295,15 +289,8 @@ export default function BottomNav({ className }: { className?: string }) {
 
               <DropdownMenuItem asChild>
                 <Link href="/utility" className="cursor-pointer rounded-lg flex items-center gap-3">
-                  <span className="flex size-6 shrink-0 items-center justify-center">
-                    <Image
-                      src={"/Utils.png"}
-                      alt="Utility"
-                      width={24}
-                      height={24}
-                      className="size-6 object-contain"
-                      priority
-                    />
+                  <span className="flex size-5 shrink-0 items-center justify-center">
+                    <ClockIcon className="size-5 text-current" />
                   </span>
                   <span className="text-xs font-medium sm:inline">
                     Utility
@@ -313,15 +300,8 @@ export default function BottomNav({ className }: { className?: string }) {
 
               <DropdownMenuItem asChild>
                 <Link href="/stats" className="cursor-pointer rounded-lg flex items-center gap-3">
-                  <span className="flex size-6 shrink-0 items-center justify-center">
-                    <Image
-                      src={"/Stats.png"}
-                      alt="Stats"
-                      width={24}
-                      height={24}
-                      className="size-6 object-contain"
-                      priority
-                    />
+                  <span className="flex size-5 shrink-0 items-center justify-center">
+                    <BarChart2Icon className="size-5 text-current" />
                   </span>
                   <span className="text-xs font-medium sm:inline">
                     Stats
@@ -333,25 +313,11 @@ export default function BottomNav({ className }: { className?: string }) {
                 onClick={() => setTheme(isDark ? "light" : "dark")}
                 className="cursor-pointer rounded-lg flex items-center gap-3"
               >
-                <span className="flex size-6 shrink-0 items-center justify-center">
+                <span className="flex size-5 shrink-0 items-center justify-center">
                   {isDark ? (
-                    <Image
-                      src={"/LightMode.png"}
-                      alt="Light mode"
-                      width={24}
-                      height={24}
-                      className="size-6 object-contain"
-                      priority
-                    />
+                    <SunIcon className="size-5 text-current" />
                   ) : (
-                    <Image
-                      src={"/DarkMode.png"}
-                      alt="Dark mode"
-                      width={24}
-                      height={24}
-                      className="size-6 object-contain"
-                      priority
-                    />
+                    <MoonIcon className="size-5 text-current" />
                   )}
                 </span>
                 <span className="text-xs font-medium sm:inline">
@@ -365,15 +331,8 @@ export default function BottomNav({ className }: { className?: string }) {
                 variant="destructive"
                 className="cursor-pointer rounded-lg flex items-center gap-3"
               >
-                <span className="flex size-6 shrink-0 items-center justify-center">
-                  <Image
-                    src={"/Exit.png"}
-                    alt="Sign out"
-                    width={24}
-                    height={24}
-                    className="size-6 object-contain"
-                    priority
-                  />
+                <span className="flex size-5 shrink-0 items-center justify-center">
+                  <LogOutIcon className="size-5 text-current" />
                 </span>
                 <span className="text-xs font-medium sm:inline">
                   {logoutMutation.isPending ? "Signing out..." : "Sign out"}

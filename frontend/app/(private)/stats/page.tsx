@@ -10,7 +10,9 @@ import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  AlertCircle
+  AlertCircle,
+  TargetIcon,
+  TrendingUpIcon
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -45,14 +47,14 @@ export default function StatsPage() {
       bgColor: "bg-accent/10",
     },
     {
-      icon: "/Target.png",
+      icon: TargetIcon,
       value: totalLogs,
       label: "Total Workouts",
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
     {
-      icon: "/TrendUp.png",
+      icon: TrendingUpIcon,
       value: exercisesThisWeek,
       label: "This Week",
       color: "text-green-500",
@@ -153,7 +155,11 @@ export default function StatsPage() {
                   <div
                     className={`inline-flex items-center justify-center rounded-(--radius) ${stat.bgColor} p-3 group-hover:scale-110 transition-transform ${stat.color}`}
                   >
-                    <Image src={stat.icon} alt="" width={25} height={25} className="size-6 object-contain" />
+                    {typeof stat.icon === "string" ? (
+                      <Image src={stat.icon} alt="" width={25} height={25} className="size-6 object-contain" />
+                    ) : (
+                      <stat.icon className="size-6" />
+                    )}
                   </div>
                   <div className="space-y-1">
                     <p className="text-3xl font-bold text-foreground">

@@ -10,7 +10,7 @@ import { getDayName } from "@/lib/store";
 import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { CalendarPlus, Shield } from "lucide-react";
+import { CalendarIcon, CalendarPlus, Shield, TargetIcon, TrendingUpIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -68,13 +68,13 @@ export default function DashboardPage() {
       showBuffer: true,
     },
     {
-      icon: "/Target.png",
+      icon: TargetIcon,
       value: exercisesToday.toString(),
       label: "Exercises Today",
       color: "text-primary",
     },
     {
-      icon: "/TrendUp.png",
+      icon: TrendingUpIcon,
       value: exercisesThisWeek.toString(),
       label: "Exercises This Week",
       color: "text-green-500",
@@ -190,7 +190,11 @@ export default function DashboardPage() {
                   <div
                     className={`inline-flex items-center justify-center p-3 group-hover:scale-110 transition-transform ${stat.color}`}
                   >
-                    <Image src={stat.icon} alt="" width={25} height={25} className="size-6 object-contain" />
+                    {typeof stat.icon === "string" ? (
+                      <Image src={stat.icon} alt="" width={25} height={25} className="size-6 object-contain" />
+                    ) : (
+                      <stat.icon className="size-6" />
+                    )}
                   </div>
                   <div className="space-y-1 flex-1 flex flex-col justify-between">
                     <div>
@@ -240,7 +244,7 @@ export default function DashboardPage() {
           transition={{ delay: 0.1 }}
         >
           <EmptyState
-            image={"/Calendar.png"}
+            icon={CalendarIcon}
             title="No workouts scheduled"
             description="Start your fitness journey by creating your first workout plan"
             action={{
