@@ -639,12 +639,9 @@ export default function LogPage() {
                       isDragging,
                     }) => (
                       <AccordionItem
-                        ref={setActivatorNodeRef}
-                        {...attributes}
-                        {...listeners}
                         value={exercise.id}
                         className={cn(
-                          "touch-none !border-b last:!border-b border-zinc-300 dark:border-zinc-700 bg-card/40 backdrop-blur-[1px]",
+                          "!border-b last:!border-b border-zinc-300 dark:border-zinc-700 bg-card/40 backdrop-blur-[1px]",
                           isDragging && "bg-muted/40",
                         )}
                       >
@@ -673,14 +670,15 @@ export default function LogPage() {
                               </span>
                             )}
 
-                            {!isActiveExercise && (
-                              <span
-                                className="shrink-0 inline-flex items-center justify-center rounded p-0.5 text-muted-foreground/70"
-                                aria-hidden
-                              >
-                                <GripVertical className="h-3.5 w-3.5" />
-                              </span>
-                            )}
+                            <span
+                              ref={setActivatorNodeRef}
+                              {...attributes}
+                              {...listeners}
+                              className="shrink-0 inline-flex items-center justify-center rounded p-0.5 text-muted-foreground/70 cursor-grab active:cursor-grabbing touch-none"
+                              aria-hidden
+                            >
+                              <GripVertical className="h-3.5 w-3.5" />
+                            </span>
 
                             {/* Rest Timer Button */}
                             {hasRestTime && !isLogged && isActiveExercise && (
