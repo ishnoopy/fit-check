@@ -11,6 +11,7 @@ import {
   matchExerciseDeterministic,
 } from "../utils/exercise-matcher.js";
 import {
+  COACH_INTENT,
   INTENT_CONTEXT_CONFIG,
   type ChatHistoryMessage,
   type CoachAdviceItem,
@@ -190,18 +191,42 @@ async function classifyIntent(
 export async function prepareChatSession(
   input: PrepareChatSessionInput,
 ): Promise<PrepareChatSessionResult> {
-  const intent = input.intent ?? (await classifyIntent(input.message));
-  const chatHistory = input.conversationId
+  let intent = input.intent ?? (await classifyIntent(input.message));
+  let chatHistory = input.conversationId
     ? await buildChatHistoryFromConversation(input.conversationId, input.userId)
     : input.chatHistory;
+
+  // If there are no logs for exercises done today, fallback from session feedback
+  // to past-session feedback with a short continuity hint for better UX.
+  if (intent === COACH_INTENT.SESSION_FEEDBACK) {
+    const sessionFeedbackLogs = await buildSessionFeedbackLogs(
+      input.userId,
+      INTENT_CONTEXT_CONFIG[COACH_INTENT.SESSION_FEEDBACK].workoutSummaryDepthDays,
+    );
+    if (_.isEmpty(sessionFeedbackLogs)) {
+      intent = COACH_INTENT.PAST_SESSION_FEEDBACK;
+      chatHistory = [
+        ...(chatHistory ?? []),
+        {
+          role: "coach",
+          content:
+            "No workout was logged today. Explain this briefly and offer to review the most recent session instead.",
+        },
+      ];
+    }
+  }
 
   // Try to detect focused exercise for advice persistence
   let focusedExercise: string | undefined;
   const config = INTENT_CONTEXT_CONFIG[intent];
   if (config.needsWorkoutSummary) {
-    const allLogs = await fetchRecentLogs(input.userId, config.workoutSummaryDepthDays);
-    if (allLogs.length > 0) {
-      const knownExercises = getExerciseNamesFromLogs(allLogs);
+    const logsForIntent = await getLogsForIntent(
+      input.userId,
+      intent,
+      config.workoutSummaryDepthDays,
+    );
+    if (logsForIntent.length > 0) {
+      const knownExercises = getExerciseNamesFromLogs(logsForIntent);
       const matchResult = await matchExerciseFromMessage(input.message, knownExercises);
       if (matchResult.matchedExercise) {
         focusedExercise = matchResult.matchedExercise;
@@ -253,15 +278,16 @@ async function buildChatMessages(
   chatHistory?: ChatHistoryMessage[],
 ): Promise<ChatCompletionMessageParam[]> {
   const config = INTENT_CONTEXT_CONFIG[intent];
-  // Fetch logs first to get known exercise names for matching
-  const allLogs = config.needsWorkoutSummary
-    ? await fetchRecentLogs(userId, config.workoutSummaryDepthDays)
+  // Fetch logs first to get known exercise names for matching.
+  // SESSION_FEEDBACK only includes logs for exercises trained today.
+  const logsForIntent = config.needsWorkoutSummary
+    ? await getLogsForIntent(userId, intent, config.workoutSummaryDepthDays)
     : [];
   // Try to detect if user is asking about a specific exercise
   let exerciseFilter: string | undefined;
   let matchResult: ExerciseMatchResult | undefined;
-  if (config.needsWorkoutSummary && allLogs.length > 0) {
-    const knownExercises = getExerciseNamesFromLogs(allLogs);
+  if (config.needsWorkoutSummary && logsForIntent.length > 0) {
+    const knownExercises = getExerciseNamesFromLogs(logsForIntent);
     matchResult = await matchExerciseFromMessage(userMessage, knownExercises);
     if (matchResult.matchedExercise) {
       exerciseFilter = matchResult.matchedExercise;
@@ -272,7 +298,7 @@ async function buildChatMessages(
       ? buildCoachProfile(userId)
       : buildMinimalCoachProfile(userId),
     config.needsWorkoutSummary
-      ? buildWorkoutSummaryFromLogs(allLogs, exerciseFilter)
+      ? buildWorkoutSummaryFromLogs(logsForIntent, exerciseFilter)
       : Promise.resolve(undefined),
     fetchRecentAdvice(userId, exerciseFilter),
   ]);
@@ -398,6 +424,59 @@ async function fetchRecentLogs(
   const endDate = new Date();
   const startDate = new Date(endDate.getTime() - days * MILLISECONDS_IN_DAY);
   return logRepository.findByDateRange(userId, startDate, endDate);
+}
+
+async function getLogsForIntent(
+  userId: string,
+  intent: CoachIntent,
+  depthDays: number,
+): Promise<ILog[]> {
+  if (intent === COACH_INTENT.SESSION_FEEDBACK) {
+    return buildSessionFeedbackLogs(userId, depthDays);
+  }
+  return fetchRecentLogs(userId, depthDays);
+}
+
+async function buildSessionFeedbackLogs(
+  userId: string,
+  depthDays: number,
+): Promise<ILog[]> {
+  const recentLogs = await fetchRecentLogs(userId, depthDays);
+  if (_.isEmpty(recentLogs)) return [];
+
+  const todayLogs = filterLogsByDateRange(recentLogs, getTodayRange());
+  console.log("✏️ ~ coach.service.ts:448 ~ buildSessionFeedbackLogs ~ todayLogs:", todayLogs)
+
+  if (_.isEmpty(todayLogs)) return [];
+
+  const todayExerciseNames = new Set(
+    _.filter(
+      _.map(todayLogs, getExerciseName),
+      (name) => !!name && name !== "unknown",
+    ),
+  );
+  if (todayExerciseNames.size === 0) return [];
+
+  return _.filter(recentLogs, (log) => todayExerciseNames.has(getExerciseName(log)));
+}
+
+function filterLogsByDateRange(
+  logs: ILog[],
+  range: { start: Date; end: Date },
+): ILog[] {
+  return _.filter(logs, (log) => {
+    const createdAt = new Date(log.createdAt ?? 0).getTime();
+    return createdAt >= range.start.getTime() && createdAt <= range.end.getTime();
+  });
+}
+
+function getTodayRange(): { start: Date; end: Date } {
+  const now = new Date();
+  const start = new Date(now);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(now);
+  end.setUTCHours(23, 59, 59, 999);
+  return { start, end };
 }
 
 function calculateAverageRPE(logs: ILog[]): number {
