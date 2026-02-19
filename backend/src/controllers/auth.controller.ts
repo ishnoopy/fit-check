@@ -269,25 +269,43 @@ export async function register(c: Context) {
 
 export async function completeProfile(c: Context) {
   const user = c.get("user");
+  const legacyAndNewFitnessGoals = [
+    "lose_weight",
+    "gain_muscle",
+    "maintain",
+    "improve_endurance",
+    "general_fitness",
+    "strength",
+    "hypertrophy",
+    "fat_loss",
+    "endurance",
+  ] as const;
+
+  const normalizedFitnessGoalMap: Record<
+    (typeof legacyAndNewFitnessGoals)[number],
+    "strength" | "hypertrophy" | "fat_loss" | "endurance" | "general_fitness"
+  > = {
+    lose_weight: "fat_loss",
+    gain_muscle: "hypertrophy",
+    maintain: "general_fitness",
+    improve_endurance: "endurance",
+    general_fitness: "general_fitness",
+    strength: "strength",
+    hypertrophy: "hypertrophy",
+    fat_loss: "fat_loss",
+    endurance: "endurance",
+  };
 
   const paramsSchema = z.object({
     firstName: z.string().min(1),
-    lastName: z.string().min(1),
+    lastName: z.string().min(1).optional(),
     password: z.string().min(6).optional(),
     // Optional fitness fields
     age: z.number().min(13).max(120).optional(),
     gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
     weight: z.number().min(20).max(500).optional(), // kg
     height: z.number().min(50).max(300).optional(), // cm
-    fitnessGoal: z
-      .enum([
-        "lose_weight",
-        "gain_muscle",
-        "maintain",
-        "improve_endurance",
-        "general_fitness",
-      ])
-      .optional(),
+    fitnessGoal: z.enum(legacyAndNewFitnessGoals).optional(),
     activityLevel: z
       .enum([
         "sedentary",
@@ -297,6 +315,9 @@ export async function completeProfile(c: Context) {
         "extremely_active",
       ])
       .optional(),
+    hasGymAccess: z.boolean().optional(),
+    selfMotivationNote: z.string().max(280).optional(),
+    onboardingPromiseAccepted: z.boolean().optional(),
   });
 
   const params = await paramsSchema.safeParseAsync(await c.req.json());
@@ -312,6 +333,10 @@ export async function completeProfile(c: Context) {
     throw new NotFoundError("User not found");
   }
 
+  const normalizedFitnessGoal = params.data.fitnessGoal
+    ? normalizedFitnessGoalMap[params.data.fitnessGoal]
+    : undefined;
+
   // Prepare update payload
   const updatePayload: Partial<IUser> = {
     firstName: params.data.firstName,
@@ -320,8 +345,11 @@ export async function completeProfile(c: Context) {
     gender: params.data.gender,
     weight: params.data.weight,
     height: params.data.height,
-    fitnessGoal: params.data.fitnessGoal,
+    fitnessGoal: normalizedFitnessGoal,
     activityLevel: params.data.activityLevel,
+    hasGymAccess: params.data.hasGymAccess,
+    selfMotivationNote: params.data.selfMotivationNote,
+    onboardingPromiseAccepted: params.data.onboardingPromiseAccepted,
     profileCompleted: true,
   };
 

@@ -15,10 +15,10 @@ export interface IUser {
   weight?: number;
   height?: number;
   fitnessGoal?:
-    | "lose_weight"
-    | "gain_muscle"
-    | "maintain"
-    | "improve_endurance"
+    | "strength"
+    | "hypertrophy"
+    | "fat_loss"
+    | "endurance"
     | "general_fitness";
   activityLevel?:
     | "sedentary"
@@ -39,6 +39,9 @@ export interface IUser {
 
   // personalized fields
   isPioneer?: boolean;
+  hasGymAccess?: boolean;
+  selfMotivationNote?: string;
+  onboardingPromiseAccepted?: boolean;
 }
 
 // Interface for the user model
@@ -56,10 +59,10 @@ export interface IUserModel {
   weight?: number; // in kg
   height?: number; // in cm
   fitness_goal?:
-    | "lose_weight"
-    | "gain_muscle"
-    | "maintain"
-    | "improve_endurance"
+    | "strength"
+    | "hypertrophy"
+    | "fat_loss"
+    | "endurance"
     | "general_fitness";
   activity_level?:
     | "sedentary"
@@ -81,6 +84,9 @@ export interface IUserModel {
 
   // personalized fields
   is_pioneer?: boolean;
+  has_gym_access?: boolean;
+  self_motivation_note?: string;
+  onboarding_promise_accepted?: boolean;
 }
 
 const UserSchema = new mongoose.Schema(
@@ -102,10 +108,10 @@ const UserSchema = new mongoose.Schema(
     fitness_goal: {
       type: String,
       enum: [
-        "lose_weight",
-        "gain_muscle",
-        "maintain",
-        "improve_endurance",
+        "strength",
+        "hypertrophy",
+        "fat_loss",
+        "endurance",
         "general_fitness",
       ],
     },
@@ -134,6 +140,9 @@ const UserSchema = new mongoose.Schema(
 
     // personalized fields
     is_pioneer: { type: Boolean, default: false },
+    has_gym_access: { type: Boolean },
+    self_motivation_note: { type: String, maxlength: 280 },
+    onboarding_promise_accepted: { type: Boolean, default: false },
   },
   {
     timestamps: {

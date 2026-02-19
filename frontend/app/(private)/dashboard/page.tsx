@@ -3,7 +3,6 @@
 import { AppGuide } from "@/components/AppGuide";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
-import { ProfileCompletionDialog } from "@/components/ProfileCompletionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -276,11 +275,6 @@ export default function DashboardPage() {
             }}
           />
         </motion.div>
-
-        {/* Profile Completion Dialog */}
-        {!user?.profileCompleted && user && (
-          <ProfileCompletionDialog open={!user.profileCompleted} />
-        )}
       </div>
     </div>
   );

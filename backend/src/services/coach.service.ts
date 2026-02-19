@@ -28,11 +28,15 @@ import * as conversationService from "./conversation.service.js";
 import * as openaiService from "./openai.service.js";
 
 const GOAL_MAP: Record<string, string> = {
+  strength: "strength",
+  hypertrophy: "hypertrophy",
+  fat_loss: "fat_loss",
+  endurance: "endurance",
+  general_fitness: "general_fitness",
   gain_muscle: "hypertrophy",
   lose_weight: "fat_loss",
-  maintain: "maintenance",
+  maintain: "general_fitness",
   improve_endurance: "endurance",
-  general_fitness: "general_fitness",
 };
 
 const EXPERIENCE_MAP: Record<string, string> = {

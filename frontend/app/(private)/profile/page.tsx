@@ -40,7 +40,7 @@ import { useUser } from "../../providers";
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required" }),
-  lastName: z.string().min(1, { message: "Last name is required" }),
+  lastName: z.string().optional(),
   email: z.string().email().optional(),
   password: z.string().min(6).optional().or(z.literal("")),
   age: z.string().optional(),
@@ -49,10 +49,10 @@ const profileFormSchema = z.object({
   height: z.string().optional(),
   fitnessGoal: z
     .enum([
-      "lose_weight",
-      "gain_muscle",
-      "maintain",
-      "improve_endurance",
+      "strength",
+      "hypertrophy",
+      "fat_loss",
+      "endurance",
       "general_fitness",
     ])
     .optional(),
@@ -95,8 +95,8 @@ interface GalleryImage {
 
 const updateProfile = (values: ProfileFormValues) => {
   const transformedValues: Partial<IUser> = {
-    firstName: values.firstName,
-    lastName: values.lastName,
+    firstName: values.firstName.trim(),
+    lastName: values.lastName?.trim() || undefined,
     age: values.age && values.age !== "" ? Number(values.age) : undefined,
     weight:
       values.weight && values.weight !== "" ? Number(values.weight) : undefined,
@@ -373,8 +373,7 @@ export default function ProfilePage() {
               <div className="flex items-center gap-4 mb-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-light">
-                    {user?.firstName?.toLowerCase()}
-                    {user?.lastName?.toLowerCase()}
+                    {`${user?.firstName?.toLowerCase() || ""} ${user?.lastName?.toLowerCase() || ""}`.trim()}
                   </h1>
                   {user?.isPioneer && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-(--radius) text-xs font-medium bg-primary/10 text-primary border border-primary/20 shadow-xs font-mono tracking-tight">
@@ -621,7 +620,7 @@ export default function ProfilePage() {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name *</FormLabel>
+                      <FormLabel>Last Name</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -769,12 +768,10 @@ export default function ProfilePage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="lose_weight">Lose Weight</SelectItem>
-                        <SelectItem value="gain_muscle">Gain Muscle</SelectItem>
-                        <SelectItem value="maintain">Maintain</SelectItem>
-                        <SelectItem value="improve_endurance">
-                          Improve Endurance
-                        </SelectItem>
+                        <SelectItem value="strength">Strength</SelectItem>
+                        <SelectItem value="hypertrophy">Hypertrophy</SelectItem>
+                        <SelectItem value="fat_loss">Fat Loss</SelectItem>
+                        <SelectItem value="endurance">Endurance</SelectItem>
                         <SelectItem value="general_fitness">
                           General Fitness
                         </SelectItem>

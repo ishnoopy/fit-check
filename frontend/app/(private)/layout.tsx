@@ -1,4 +1,5 @@
 import BottomNav from "@/components/BottomNav";
+import { OnboardingGuard } from "@/components/OnboardingGuard";
 import { TimerPill } from "@/components/TimerPill";
 import { TimerProvider } from "@/contexts/TimerContext";
 import type { Metadata } from "next";
@@ -48,9 +49,11 @@ export default async function RootLayout({
         <div
           className={`${roboto.variable} ${robotoMono.variable} ${cinzel.variable} antialiased font-sans text-foreground flex min-h-screen flex-col relative`}
         >
-          <TimerPill />
-          <div className="flex-1 relative z-10">{children}</div>
-          <BottomNav className="" />
+          <OnboardingGuard>
+            <TimerPill />
+            <div className="flex-1 relative z-10">{children}</div>
+            <BottomNav className="" />
+          </OnboardingGuard>
         </div>
       </TimerProvider>
     </Providers>

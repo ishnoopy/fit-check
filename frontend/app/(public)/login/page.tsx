@@ -30,9 +30,14 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+type LoginResponse = {
+  data: {
+    profileCompleted: boolean;
+  };
+};
 
 const login = async (values: FormValues) => {
-  return api.post("/api/auth/login", values);
+  return api.post<LoginResponse>("/api/auth/login", values);
 };
 
 export default function Login() {
@@ -52,9 +57,9 @@ export default function Login() {
   const queryClient = useQueryClient();
   const loginMutation = useMutation({
     mutationFn: login,
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
-      router.push("/dashboard");
+      router.push(response?.data?.profileCompleted ? "/dashboard" : "/onboarding");
     },
     onError: (error) => {
       console.error("Failed to login", error);
