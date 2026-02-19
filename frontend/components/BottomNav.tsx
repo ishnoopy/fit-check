@@ -93,9 +93,8 @@ export default function BottomNav({ className }: { className?: string }) {
     },
     {
       href: "/coach",
-      icon: logo,
+      image: logo,
       label: "Coach",
-      isCenter: true,
       requiresPioneer: true,
     },
     { href: "/log", icon: NotebookIcon, label: "Log" },
@@ -168,24 +167,15 @@ export default function BottomNav({ className }: { className?: string }) {
               >
                 {/* Icon with relative positioning to show badge — fixed size for alignment */}
                 <div className="relative size-8 flex items-center justify-center shrink-0">
-                  {item.isCenter ? (
-                    <div
-                      className={cn(
-                        "relative z-10 size-8 rounded-full flex items-center justify-center border",
-                        isActive
-                          ? "bg-primary/10 border-primary/30"
-                          : "bg-background/70 border-border",
-                      )}
-                    >
-                      <Image
-                        src={logo}
-                        alt="FitCheck Coach"
-                        width={24}
-                        height={24}
-                        className="size-5 object-contain"
-                        priority
-                      />
-                    </div>
+                  {"image" in item && item.image ? (
+                    <Image
+                      src={item.image}
+                      alt={item.label}
+                      width={24}
+                      height={24}
+                      className="size-5 object-contain"
+                      priority
+                    />
                   ) : (
                     <item.icon className="size-5" />
                   )}
