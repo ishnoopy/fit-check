@@ -1,11 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { LucideIcon } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface EmptyStateProps {
   icon?: LucideIcon;
+  image?: string;
   title: string;
   description: string;
   action?: {
@@ -16,10 +18,13 @@ interface EmptyStateProps {
 
 export function EmptyState({
   icon: Icon,
+  image,
   title,
   description,
   action,
 }: EmptyStateProps) {
+  const hasVisual = Icon || image;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -27,14 +32,24 @@ export function EmptyState({
       transition={{ duration: 0.1 }}
       className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-4"
     >
-      {Icon && (
+      {hasVisual && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
           className="bg-muted/50 p-6"
         >
-          <Icon className="h-12 w-12 text-muted-foreground/50" />
+          {image ? (
+            <Image
+              src={image}
+              alt=""
+              width={48}
+              height={48}
+              className="h-12 w-12 object-contain text-muted-foreground/50"
+            />
+          ) : Icon ? (
+            <Icon className="h-12 w-12 text-muted-foreground/50" />
+          ) : null}
         </motion.div>
       )}
       <div className="space-y-2 max-w-md">

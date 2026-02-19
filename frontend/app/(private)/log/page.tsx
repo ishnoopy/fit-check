@@ -1,6 +1,5 @@
 "use client";
 
-import { AppGuide } from "@/components/AppGuide";
 import { PageHeader } from "@/components/PageHeader";
 import {
   Accordion,
@@ -522,7 +521,6 @@ export default function LogPage() {
         <div className="p-4 max-w-xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <PageHeader title="Log" subtitle="Log your workouts" />
-            <AppGuide />
           </div>
           <Card className="border-dashed">
             <CardContent className="text-center py-8">
@@ -560,7 +558,6 @@ export default function LogPage() {
           <PageHeader title="Log" subtitle="Log your workouts" />
           {/* Action Buttons */}
           <div className="flex items-center gap-1.5 absolute right-3 top-3 sm:relative sm:top-0 sm:right-0 z-10">
-            <AppGuide />
             <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
               <Link href="/logs/archive">
                 <HistoryIcon className="h-4 w-4" />
@@ -641,48 +638,52 @@ export default function LogPage() {
                       setActivatorNodeRef,
                       isDragging,
                     }) => (
-              <AccordionItem
-                ref={setActivatorNodeRef}
-                {...attributes}
-                {...listeners}
-                value={exercise.id}
-                className={cn(
-                  "touch-none !border-b last:!border-b border-zinc-300 dark:border-zinc-700 bg-card/40 backdrop-blur-[1px]",
-                  isDragging && "bg-muted/40",
-                )}
-              >
-                <AccordionTrigger
-                  className={`cursor-pointer py-2.5 px-3 hover:no-underline transition-colors ${isLogged ? "bg-muted/30" : "hover:bg-muted/20"
-                    }`}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    {isLogged && (
-                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                    )}
-                    {!isLogged && (
-                      <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-zinc-300/80 dark:border-zinc-700/80 text-[9px] font-medium text-muted-foreground/90">
-                        {index + 1}
-                      </span>
-                    )}
-                    <span
-                      className={`flex-1 text-left text-sm ${isLogged ? "font-medium" : ""
-                        } ${isActiveExercise ? "font-bold text-primary" : ""}`}
+                      <AccordionItem
+                        ref={setActivatorNodeRef}
+                        {...attributes}
+                        {...listeners}
+                        value={exercise.id}
+                        className={cn(
+                          "touch-none !border-b last:!border-b border-zinc-300 dark:border-zinc-700 bg-card/40 backdrop-blur-[1px]",
+                          isDragging && "bg-muted/40",
+                        )}
+                      >
+                        <AccordionTrigger
+                          className={`cursor-pointer py-2.5 px-3 hover:no-underline transition-colors ${isLogged ? "bg-muted/30" : "hover:bg-muted/20"
+                            }`}
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            {isLogged && (
+                              <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                            )}
+                            {!isLogged && (
+                              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-zinc-300/80 dark:border-zinc-700/80 text-[9px] font-medium text-muted-foreground/90">
+                                {index + 1}
+                              </span>
+                            )}
+                            <span
+                              className={`flex-1 text-left text-sm ${isLogged ? "font-medium" : ""
+                                } ${isActiveExercise ? "font-bold text-primary" : ""}`}
                             >
                               {exercise.name}
                             </span>
-                    {isLogged && (
-                      <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        Done
-                      </span>
-                    )}
-                    <span
-                      className="shrink-0 inline-flex items-center justify-center rounded p-0.5 text-muted-foreground/70"
-                      aria-hidden
-                    >
-                      <GripVertical className="h-3.5 w-3.5" />
-                    </span>
-                    {/* Rest Timer Button */}
-                    {hasRestTime && !isLogged && isActiveExercise && (
+                            {isLogged && (
+                              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                Done
+                              </span>
+                            )}
+
+                            {!isActiveExercise && (
+                              <span
+                                className="shrink-0 inline-flex items-center justify-center rounded p-0.5 text-muted-foreground/70"
+                                aria-hidden
+                              >
+                                <GripVertical className="h-3.5 w-3.5" />
+                              </span>
+                            )}
+
+                            {/* Rest Timer Button */}
+                            {hasRestTime && !isLogged && isActiveExercise && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -703,8 +704,8 @@ export default function LogPage() {
                                 </span>
                               </button>
                             )}
-                    <Dialog
-                      onOpenChange={(open) => {
+                            <Dialog
+                              onOpenChange={(open) => {
                                 if (
                                   open &&
                                   !exerciseHistoryCache[exercise.id] &&

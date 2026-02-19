@@ -10,12 +10,9 @@ import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  AlertCircle,
-  Calendar as CalendarIcon,
-  Flame,
-  Target,
-  TrendingUp,
+  AlertCircle
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function StatsPage() {
@@ -41,21 +38,21 @@ export default function StatsPage() {
 
   const stats = [
     {
-      icon: Flame,
+      icon: "/Flame.png",
       value: streak,
       label: "Day Streak",
       color: "text-red-500",
       bgColor: "bg-accent/10",
     },
     {
-      icon: Target,
+      icon: "/Target.png",
       value: totalLogs,
       label: "Total Workouts",
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
     {
-      icon: TrendingUp,
+      icon: "/TrendUp.png",
       value: exercisesThisWeek,
       label: "This Week",
       color: "text-green-500",
@@ -101,7 +98,7 @@ export default function StatsPage() {
             subtitle="Your workout statistics and progress 📊"
           />
           <EmptyState
-            icon={CalendarIcon}
+            image={"/Calendar.png"}
             title="No workouts yet"
             description="Start logging your workouts to see your progress and statistics"
             action={{
@@ -156,7 +153,7 @@ export default function StatsPage() {
                   <div
                     className={`inline-flex items-center justify-center rounded-(--radius) ${stat.bgColor} p-3 group-hover:scale-110 transition-transform ${stat.color}`}
                   >
-                    <stat.icon className="h-5 w-5" />
+                    <Image src={stat.icon} alt="" width={25} height={25} className="size-6 object-contain" />
                   </div>
                   <div className="space-y-1">
                     <p className="text-3xl font-bold text-foreground">
@@ -182,7 +179,7 @@ export default function StatsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl">
                 <div className="rounded-(--radius) bg-primary/10 p-2">
-                  <CalendarIcon className="h-5 w-5 text-primary" />
+                  <Image src={"/Calendar.png"} alt="" width={25} height={25} className="size-6 object-contain text-primary" />
                 </div>
                 Workout Calendar
               </CardTitle>
@@ -231,8 +228,8 @@ export default function StatsPage() {
                   <p className="text-3xl font-bold">
                     {Math.round(
                       totalLogs /
-                        Math.max(datesWithWorkouts.length / 7, 1) /
-                        10,
+                      Math.max(datesWithWorkouts.length / 7, 1) /
+                      10,
                     ) * 10}
                   </p>
                   <p className="text-xs text-muted-foreground">

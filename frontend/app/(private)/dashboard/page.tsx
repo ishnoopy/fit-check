@@ -10,7 +10,8 @@ import { getDayName } from "@/lib/store";
 import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { CalendarPlus, Flame, Shield, Target, TrendingUp } from "lucide-react";
+import { CalendarPlus, Shield } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "../../providers";
@@ -60,20 +61,20 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      icon: Flame,
+      icon: "/Flame.png",
       value: streak.toString(),
       label: "Day Streak",
       color: "text-red-500",
       showBuffer: true,
     },
     {
-      icon: Target,
+      icon: "/Target.png",
       value: exercisesToday.toString(),
       label: "Exercises Today",
       color: "text-primary",
     },
     {
-      icon: TrendingUp,
+      icon: "/TrendUp.png",
       value: exercisesThisWeek.toString(),
       label: "Exercises This Week",
       color: "text-green-500",
@@ -182,15 +183,14 @@ export default function DashboardPage() {
           {stats.map((stat) => (
             <motion.div key={stat.label} variants={item}>
               <Card
-                className={`bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 group h-full flex flex-col ${
-                  stat.showBuffer && isBufferUsedUp ? "border-accent/30" : ""
-                }`}
+                className={`bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 group h-full flex flex-col ${stat.showBuffer && isBufferUsedUp ? "border-accent/30" : ""
+                  }`}
               >
                 <CardContent className="p-6 text-center space-y-3 flex flex-col flex-1">
                   <div
                     className={`inline-flex items-center justify-center p-3 group-hover:scale-110 transition-transform ${stat.color}`}
                   >
-                    <stat.icon className="h-5 w-5" />
+                    <Image src={stat.icon} alt="" width={25} height={25} className="size-6 object-contain" />
                   </div>
                   <div className="space-y-1 flex-1 flex flex-col justify-between">
                     <div>
@@ -240,7 +240,7 @@ export default function DashboardPage() {
           transition={{ delay: 0.1 }}
         >
           <EmptyState
-            icon={CalendarPlus}
+            image={"/Calendar.png"}
             title="No workouts scheduled"
             description="Start your fitness journey by creating your first workout plan"
             action={{
