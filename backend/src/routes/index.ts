@@ -1,6 +1,7 @@
 import AuthRoutes from "./auth.routes.js";
 import CoachRoutes from "./coach.routes.js";
 import ExerciseRoutes from "./exercise.routes.js";
+import FeedbackRoutes from "./feedback.routes.js";
 import GalleryRoutes from "./gallery.routes.js";
 import LogRoutes from "./log.routes.js";
 import PlanRoutes from "./plan.routes.js";
@@ -16,6 +17,7 @@ const groupRoutes = [
   WorkoutRoutes,
   ExerciseRoutes,
   LogRoutes,
+  FeedbackRoutes,
   SettingRoutes,
   UploadRoutes,
   GalleryRoutes,

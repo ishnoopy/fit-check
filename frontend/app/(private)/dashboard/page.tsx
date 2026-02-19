@@ -4,13 +4,21 @@ import { AppGuide } from "@/components/AppGuide";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { ProfileCompletionDialog } from "@/components/ProfileCompletionDialog";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getDayName } from "@/lib/store";
 import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { CalendarIcon, CalendarPlus, Shield, TargetIcon, TrendingUpIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  CalendarPlus,
+  MessageSquareText,
+  Shield,
+  TargetIcon,
+  TrendingUpIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -92,7 +100,18 @@ export default function DashboardPage() {
               day: "numeric",
             })}`}
           />
-          <div className="shrink-0 mt-1">
+          <div className="shrink-0 mt-1 flex items-center gap-2">
+            <Link href="/feedback">
+              <Button
+                variant="default"
+                size="sm"
+                className="rounded-(--radius) shadow-sm"
+                aria-label="Open feedback form"
+              >
+                <MessageSquareText className="h-5 w-5" />
+                Feedback
+              </Button>
+            </Link>
             <AppGuide />
           </div>
         </div>
