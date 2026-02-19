@@ -7,16 +7,17 @@ import logo from "@/public/fit-check-logo.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  BarChart2Icon,
+  CalendarIcon,
+  ChartBarIcon,
   ChevronUpIcon,
-  ClockIcon,
+  DumbbellIcon,
   HomeIcon,
-  ListChecksIcon,
   LogOutIcon,
+  MessageCircleIcon,
   MoonIcon,
-  NotebookIcon,
   SunIcon,
-  UserIcon
+  UserIcon,
+  WrenchIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
@@ -31,7 +32,6 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-
 interface Plan {
   id: string;
   title: string;
@@ -87,17 +87,18 @@ export default function BottomNav({ className }: { className?: string }) {
     { href: "/dashboard", icon: HomeIcon, label: "Home" },
     {
       href: "/plans",
-      icon: ListChecksIcon,
+      icon: DumbbellIcon,
       label: "Plans",
       showPulse: hasNoPlans,
     },
     {
       href: "/coach",
-      image: logo,
+      icon: MessageCircleIcon,
       label: "Coach",
+      isCenter: true,
       requiresPioneer: true,
     },
-    { href: "/log", icon: NotebookIcon, label: "Log" },
+    { href: "/log", icon: CalendarIcon, label: "Log" },
   ];
 
   useEffect(() => {
@@ -165,26 +166,35 @@ export default function BottomNav({ className }: { className?: string }) {
                       : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {/* Icon with relative positioning to show badge — fixed size for alignment */}
-                <div className="relative size-8 flex items-center justify-center shrink-0">
-                  {"image" in item && item.image ? (
-                    <Image
-                      src={item.image}
-                      alt={item.label}
-                      width={24}
-                      height={24}
-                      className="size-5 object-contain"
-                      priority
-                    />
+                {/* Icon with relative positioning to show badge */}
+                <div className="relative">
+                  {item.isCenter ? (
+                    <div
+                      className={cn(
+                        "relative z-10 size-8 rounded-full flex items-center justify-center border",
+                        isActive
+                          ? "bg-primary/10 border-primary/30"
+                          : "bg-background/70 border-border",
+                      )}
+                    >
+                      <Image
+                        src={logo}
+                        alt="FitCheck Coach"
+                        width={26}
+                        height={26}
+                        className="size-6 object-contain"
+                        priority
+                      />
+                    </div>
                   ) : (
-                    <item.icon className="size-5" />
+                    <item.icon className="h-4 w-4 relative z-10" />
                   )}
                   {showPulse && (
-                    <span className="absolute top-0 right-0 z-20 size-2 bg-primary rounded-full" />
+                    <span className="absolute -top-0.5 -right-0.5 z-20 size-2 bg-primary" />
                   )}
                 </div>
 
-                <span className="text-xs font-medium relative z-10 sm:inline">
+                <span className="text-xs font-medium relative z-10 hidden sm:inline">
                   {item.label}
                 </span>
 
@@ -238,95 +248,72 @@ export default function BottomNav({ className }: { className?: string }) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-1.5 px-2 transition-colors",
+                  "flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-2 px-3 transition-colors",
                   pathname === "/profile"
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <div className="relative size-8 flex items-center justify-center shrink-0">
+                <div className="relative">
                   {user?.avatar ? (
                     <Image
                       src={user.avatar}
                       alt="Profile"
-                      width={32}
-                      height={32}
-                      className="size-8 rounded-full object-cover"
+                      width={30}
+                      height={30}
+                      className="rounded-full object-cover"
                     />
                   ) : (
-                    <UserIcon className="size-5 text-current" />
+                    <UserIcon className="h-5 w-5" />
                   )}
-                  <span className="absolute -bottom-0.5 -right-0.5 z-10 inline-flex size-4 items-center justify-center rounded-full border border-border bg-background">
+                  <span className="absolute -bottom-1 -right-1 z-10 inline-flex size-4 items-center justify-center rounded-full border border-border bg-background">
                     <ChevronUpIcon className="size-3 text-muted-foreground" />
                   </span>
                 </div>
-                <span className="text-xs font-medium sm:inline">
+                <span className="text-xs font-medium hidden sm:inline">
                   Profile
                 </span>
               </motion.button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 rounded-lg">
               <DropdownMenuItem asChild>
-                <Link href="/profile" className="cursor-pointer rounded-lg flex items-center gap-3">
-                  <span className="flex size-5 shrink-0 items-center justify-center">
-                    <UserIcon className="size-5 text-current" />
-                  </span>
-                  <span className="text-xs font-medium sm:inline">
-                    Profile
-                  </span>
+                <Link href="/profile" className="cursor-pointer rounded-lg">
+                  <UserIcon className="mr-2 h-4 w-4" /> Profile
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem asChild>
-                <Link href="/utility" className="cursor-pointer rounded-lg flex items-center gap-3">
-                  <span className="flex size-5 shrink-0 items-center justify-center">
-                    <ClockIcon className="size-5 text-current" />
-                  </span>
-                  <span className="text-xs font-medium sm:inline">
-                    Utility
-                  </span>
+                <Link href="/utility" className="cursor-pointer rounded-lg">
+                  <WrenchIcon className="mr-2 h-4 w-4" /> Utility
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem asChild>
-                <Link href="/stats" className="cursor-pointer rounded-lg flex items-center gap-3">
-                  <span className="flex size-5 shrink-0 items-center justify-center">
-                    <BarChart2Icon className="size-5 text-current" />
-                  </span>
-                  <span className="text-xs font-medium sm:inline">
-                    Stats
-                  </span>
+                <Link href="/stats" className="cursor-pointer rounded-lg">
+                  <ChartBarIcon className="mr-2 h-4 w-4" /> Stats
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem
                 onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="cursor-pointer rounded-lg flex items-center gap-3"
+                className="cursor-pointer rounded-lg"
               >
-                <span className="flex size-5 shrink-0 items-center justify-center">
-                  {isDark ? (
-                    <SunIcon className="size-5 text-current" />
-                  ) : (
-                    <MoonIcon className="size-5 text-current" />
-                  )}
-                </span>
-                <span className="text-xs font-medium sm:inline">
-                  {isDark ? "Light mode" : "Dark mode"}
-                </span>
+                {isDark ? (
+                  <SunIcon className="mr-2 h-4 w-4" />
+                ) : (
+                  <MoonIcon className="mr-2 h-4 w-4" />
+                )}
+                {isDark ? "Light mode" : "Dark mode"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleSignOut}
                 disabled={logoutMutation.isPending}
                 variant="destructive"
-                className="cursor-pointer rounded-lg flex items-center gap-3"
+                className="cursor-pointer rounded-lg"
               >
-                <span className="flex size-5 shrink-0 items-center justify-center">
-                  <LogOutIcon className="size-5 text-current" />
-                </span>
-                <span className="text-xs font-medium sm:inline">
-                  {logoutMutation.isPending ? "Signing out..." : "Sign out"}
-                </span>
+                <LogOutIcon className="mr-2 h-4 w-4" />
+                {logoutMutation.isPending ? "Signing out..." : "Sign out"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
