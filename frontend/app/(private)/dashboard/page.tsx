@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import {
   CalendarIcon,
   CalendarPlus,
+  FlameIcon,
   MessageSquareText,
   Shield,
   TargetIcon,
@@ -69,23 +70,26 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      icon: "/Flame.png",
+      icon: FlameIcon,
       value: streak.toString(),
       label: "Day Streak",
       color: "text-red-500",
       showBuffer: true,
+      classNames: "",
     },
     {
       icon: TargetIcon,
       value: exercisesToday.toString(),
       label: "Exercises Today",
       color: "text-primary",
+      classNames: "",
     },
     {
       icon: TrendingUpIcon,
       value: exercisesThisWeek.toString(),
       label: "Exercises This Week",
       color: "text-green-500",
+      classNames: "",
     },
   ];
 
@@ -202,7 +206,7 @@ export default function DashboardPage() {
           {stats.map((stat) => (
             <motion.div key={stat.label} variants={item}>
               <Card
-                className={`bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 group h-full flex flex-col ${stat.showBuffer && isBufferUsedUp ? "border-accent/30" : ""
+                className={`bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 group h-full flex flex-col ${stat.classNames} ${stat.showBuffer && isBufferUsedUp ? "border-accent/30" : ""
                   }`}
               >
                 <CardContent className="p-6 text-center space-y-3 flex flex-col flex-1">

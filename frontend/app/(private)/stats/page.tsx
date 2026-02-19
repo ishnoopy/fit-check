@@ -11,6 +11,8 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
+  CalendarIcon,
+  FlameIcon,
   TargetIcon,
   TrendingUpIcon
 } from "lucide-react";
@@ -40,7 +42,7 @@ export default function StatsPage() {
 
   const stats = [
     {
-      icon: "/Flame.png",
+      icon: FlameIcon,
       value: streak,
       label: "Day Streak",
       color: "text-red-500",
@@ -100,7 +102,7 @@ export default function StatsPage() {
             subtitle="Your workout statistics and progress 📊"
           />
           <EmptyState
-            image={"/Calendar.png"}
+            icon={CalendarIcon}
             title="No workouts yet"
             description="Start logging your workouts to see your progress and statistics"
             action={{
@@ -185,7 +187,7 @@ export default function StatsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl">
                 <div className="rounded-(--radius) bg-primary/10 p-2">
-                  <Image src={"/Calendar.png"} alt="" width={25} height={25} className="size-6 object-contain text-primary" />
+                  <CalendarIcon className="size-6 text-primary" />
                 </div>
                 Workout Calendar
               </CardTitle>
