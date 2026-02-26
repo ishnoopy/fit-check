@@ -10,6 +10,7 @@ import {
   FileText,
   Flame,
   ListChecks,
+  Play,
   Target,
   Timer,
   TrendingUp,
@@ -143,22 +144,30 @@ export default function LandingPage() {
         </div>
       </header>
 
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-[800px] overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-foreground/5 rounded-full blur-[120px]" />
+        <div className="absolute top-[20%] -left-[10%] w-[50%] h-[50%] bg-foreground/5 rounded-full blur-[120px]" />
+      </div>
+
       {/* Hero Section */}
-      <section className="relative max-w-7xl mx-auto px-6 pt-24 pb-16 md:pt-40 md:pb-24">
+      <section className="relative max-w-7xl mx-auto px-6 pt-24 pb-12 md:pt-32 md:pb-20">
         <div className="text-center space-y-8 max-w-4xl mx-auto">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-(--radius) bg-foreground/5 border text-sm font-medium">
-              <Zap className="h-4 w-4" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-foreground/5 border border-foreground/10 text-sm font-medium backdrop-blur-sm shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-none">
+              <Zap className="h-4 w-4 text-yellow-500" />
               <span>Built for lifters, by lifters</span>
             </div>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.1] font-serif">
               Stop Guessing.
               <br />
-              <span className="text-muted-foreground">Start Progressing.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground/60">
+                Start Progressing.
+              </span>
             </h1>
           </div>
 
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             The no-BS workout tracker. Simple logging, smart tracking,
             progressive overload made easy. For lifters who want results, not
             distractions.
@@ -167,7 +176,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Button
               size="lg"
-              className="h-12 px-8 text-base font-semibold w-full sm:w-auto"
+              className="h-12 px-8 text-base font-semibold w-full sm:w-auto shadow-lg hover:shadow-xl transition-shadow"
               asChild
             >
               <Link href="/register">
@@ -178,17 +187,38 @@ export default function LandingPage() {
             <Button
               size="lg"
               variant="outline"
-              className="h-12 px-8 text-base font-semibold w-full sm:w-auto"
+              className="h-12 px-8 text-base font-semibold w-full sm:w-auto bg-background/50 backdrop-blur-sm border-foreground/10 hover:bg-foreground/5 transition-colors"
               asChild
             >
-              <Link href="/login">Sign In</Link>
+              <Link href="#demo">
+                <Play className="mr-2 h-4 w-4" />
+                See How It Works
+              </Link>
             </Button>
           </div>
 
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-2">
-            <Activity className="h-4 w-4" />
-            <span>Free forever • No fluff • No credit card</span>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-4 font-medium">
+            <Activity className="h-4 w-4 text-green-500" />
+            <span>Start for free. No credit card required.</span>
           </div>
+        </div>
+      </section>
+
+      {/* Demo Video Section */}
+      <section id="demo" className="relative max-w-5xl mx-auto px-6 pb-20 md:pb-32 z-10 scroll-m-24">
+        <div className="rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-foreground/10 bg-muted/30 backdrop-blur-sm aspect-video relative group">
+          <div className="absolute inset-0 bg-gradient-to-tr from-foreground/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/y-DCCrFVZJM?autoplay=0&rel=0&showinfo=0"
+            title="FitCheck App Demo"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+            className="absolute top-0 left-0 w-full h-full"
+          ></iframe>
         </div>
       </section>
 
@@ -207,24 +237,27 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
           {mainFeatures.map((feature) => {
             const Icon = feature.icon;
             return (
               <Card
                 key={feature.title}
-                className="h-full hover:shadow-sm transition-shadow duration-200"
+                className="h-full group hover:shadow-lg transition-all duration-300 border-foreground/10 bg-background/50 backdrop-blur-sm overflow-hidden relative"
               >
-                <CardContent className="p-8 space-y-4">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-foreground/5 border-2">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none">
+                  <Icon className="w-32 h-32 transform rotate-12" />
+                </div>
+                <CardContent className="p-8 space-y-5 relative z-10">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-foreground text-background shadow-md group-hover:scale-105 transition-transform duration-300">
                     <Icon className="h-7 w-7" />
                   </div>
                   <div className="space-y-3">
-                    <h3 className="text-2xl font-bold">{feature.title}</h3>
+                    <h3 className="text-2xl font-bold tracking-tight">{feature.title}</h3>
                     <p className="text-muted-foreground leading-relaxed">
                       {feature.description}
                     </p>
-                    <p className="text-sm font-semibold pt-2">
+                    <p className="text-sm font-semibold pt-2 text-foreground/80 border-t border-foreground/10 mt-4 pt-4 inline-block w-full">
                       {feature.highlight}
                     </p>
                   </div>
@@ -253,15 +286,15 @@ export default function LandingPage() {
             return (
               <Card
                 key={feature.title}
-                className="h-full hover:shadow-sm transition-shadow duration-200"
+                className="h-full hover:shadow-md transition-all duration-300 border-foreground/10 bg-background/50 backdrop-blur-sm group hover:-translate-y-1"
               >
-                <CardContent className="p-6 space-y-3">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-foreground/5 border">
+                <CardContent className="p-6 space-y-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-foreground/5 border border-foreground/10 group-hover:bg-foreground/10 transition-colors duration-300">
                     <Icon className="h-6 w-6" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-lg font-bold">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-lg font-bold tracking-tight">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
@@ -274,13 +307,15 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="relative max-w-7xl mx-auto px-6 py-24 border-t">
-        <Card className="bg-linear-to-br from-foreground/5 to-foreground/10 border-2">
-          <CardContent className="p-12 md:p-16 text-center space-y-8">
-            <div className="space-y-4">
-              <h2 className="text-4xl md:text-6xl font-black tracking-tighter font-serif">
+        <Card className="overflow-hidden border-2 border-foreground/10 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-foreground/5 via-background to-foreground/10 -z-10" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-foreground/5 rounded-full blur-[100px] pointer-events-none" />
+          <CardContent className="p-12 md:p-20 text-center space-y-10 relative z-10">
+            <div className="space-y-6">
+              <h2 className="text-5xl md:text-7xl font-black tracking-tighter font-serif">
                 Time to Get Serious.
               </h2>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                 Stop winging it in the gym. Start tracking, progressing, and
                 getting the results you deserve.
               </p>
@@ -289,17 +324,18 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
                 size="lg"
-                className="h-14 px-10 text-lg font-bold w-full sm:w-auto"
+                className="h-16 px-12 text-lg font-bold w-full sm:w-auto shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all"
                 asChild
               >
                 <Link href="/register">
                   Start Training Now
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-6 w-6" />
                 </Link>
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-2">
+              <Activity className="h-4 w-4 text-green-500" />
               Join lifters who track smart and train harder.
             </p>
           </CardContent>
