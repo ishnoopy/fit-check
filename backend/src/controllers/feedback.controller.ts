@@ -1,8 +1,8 @@
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { BadRequestError } from "../lib/errors.js";
 import * as feedbackService from "../services/feedback.service.js";
+import { BadRequestError } from "../utils/errors.js";
 
 const createFeedbackSchema = z.object({
   category: z.enum(["general", "bug", "feature"]).optional(),

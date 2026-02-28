@@ -1,9 +1,9 @@
 import { hash } from "bcrypt";
 import { google } from "googleapis";
 import * as jose from "jose";
-import { BadRequestError } from "../lib/errors.js";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
+import { BadRequestError } from "../utils/errors.js";
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,

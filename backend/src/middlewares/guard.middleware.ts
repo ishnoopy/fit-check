@@ -1,7 +1,6 @@
-import type { Next } from "hono";
-import type { Context } from "hono";
-import { UnauthorizedError } from "../lib/errors.js";
+import type { Context, Next } from "hono";
 import { ROLES } from "../utils/constants/roles.js";
+import { UnauthorizedError } from "../utils/errors.js";
 
 type Role = (typeof ROLES)[keyof typeof ROLES];
 

@@ -1,8 +1,8 @@
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { BadRequestError } from "../lib/errors.js";
 import { findAll } from "../repositories/user.repository.js";
+import { BadRequestError } from "../utils/errors.js";
 
 export async function getUsers(c: Context) {
   const query = c.req.query();

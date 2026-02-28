@@ -1,8 +1,8 @@
 import { formatInTimeZone } from "date-fns-tz";
 import type { SortOrder } from "mongoose";
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { ILog } from "../models/log.model.js";
 import * as logRepository from "../repositories/log.repository.js";
+import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
 export async function getAllLogsService(
   userId: string,
@@ -176,11 +176,11 @@ Use emojis to make it engaging. Keep it concise but actionable.
 
 **Workout Logs:**
 ${logsData
-  .map(
-    (log, idx) =>
-      `${idx + 1}. ${log.date || "N/A"} - ${log.exercise} (${log.workout})\n   Sets: ${log.sets}${log.notes ? `\n   Notes: ${log.notes}` : ""}`,
-  )
-  .join("\n\n")}`;
+        .map(
+          (log, idx) =>
+            `${idx + 1}. ${log.date || "N/A"} - ${log.exercise} (${log.workout})\n   Sets: ${log.sets}${log.notes ? `\n   Notes: ${log.notes}` : ""}`,
+        )
+        .join("\n\n")}`;
 
     return message;
   }

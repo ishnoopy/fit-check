@@ -1,9 +1,9 @@
 import { compare, hash } from "bcrypt";
 import * as jose from "jose";
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
 import { createUser, findOne } from "../repositories/user.repository.js";
+import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
 export async function loginService(email: string, password: string) {
   const user = await findOne({ email });

@@ -1,8 +1,8 @@
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { BadRequestError } from "../lib/errors.js";
 import * as workoutService from "../services/workout.service.js";
+import { BadRequestError } from "../utils/errors.js";
 import { createExerciseSchema } from "./exercise.controller.js";
 
 const createWorkoutWithExercisesSchema = z.object({

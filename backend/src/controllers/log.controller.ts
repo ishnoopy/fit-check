@@ -1,9 +1,9 @@
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { BadRequestError } from "../lib/errors.js";
 import type { ISetData } from "../models/log.model.js";
 import * as logService from "../services/log.service.js";
+import { BadRequestError } from "../utils/errors.js";
 import { toCamelCase } from "../utils/transformer.js";
 
 const setDataSchema: z.ZodType<ISetData> = z.object({

@@ -2,10 +2,10 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
-import { BadRequestError } from "../lib/errors.js";
 import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
 import * as galleryService from "../services/gallery.service.js";
+import { BadRequestError } from "../utils/errors.js";
 
 /**
  * Get all gallery images for the authenticated user

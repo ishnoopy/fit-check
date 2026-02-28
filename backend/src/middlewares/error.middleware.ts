@@ -3,7 +3,7 @@ import { deleteCookie } from "hono/cookie";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { StatusCodes } from "http-status-codes";
 import * as jose from "jose";
-import { CustomError } from "../lib/errors.js";
+import { CustomError } from "../utils/errors.js";
 
 export async function errorMiddleware(err: Error, c: Context) {
   console.error(err);

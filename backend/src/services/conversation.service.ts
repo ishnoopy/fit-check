@@ -1,6 +1,6 @@
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { IConversation, IMessage } from "../models/conversation.model.js";
 import * as conversationRepository from "../repositories/conversation.repository.js";
+import { BadRequestError, NotFoundError } from "../utils/errors.js";
 import { toSnakeCase } from "../utils/transformer.js";
 
 const MAX_CONVERSATIONS_PER_USER = 50;

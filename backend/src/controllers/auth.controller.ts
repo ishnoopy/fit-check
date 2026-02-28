@@ -4,16 +4,16 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { StatusCodes } from "http-status-codes";
 import * as jose from "jose";
 import { z } from "zod";
-import {
-  BadRequestError,
-  NotFoundError,
-  UnauthorizedError,
-} from "../lib/errors.js";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
 import * as OAuthService from "../services/oauth.service.js";
 import { loginService, registerService } from "../services/user.service.js";
 import { ROLES_LIST } from "../utils/constants/roles.js";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../utils/errors.js";
 
 export async function googleOAuth(c: Context) {
   const url = await OAuthService.getGoogleOAuthUrl();

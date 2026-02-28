@@ -1,11 +1,11 @@
 import type { Context } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import { BadRequestError } from "../lib/errors.js";
 import * as coachService from "../services/coach.service.js";
+import { BadRequestError } from "../utils/errors.js";
 import {
-  MAX_MESSAGE_LENGTH,
   COACH_INTENT,
+  MAX_MESSAGE_LENGTH,
 } from "../utils/types/coach.types.js";
 
 const chatRequestSchema = z.object({

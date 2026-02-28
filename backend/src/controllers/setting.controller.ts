@@ -1,8 +1,8 @@
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { BadRequestError } from "../lib/errors.js";
 import * as settingService from "../services/setting.service.js";
+import { BadRequestError } from "../utils/errors.js";
 
 const createSettingSchema = z.object({
   settings: z.object({

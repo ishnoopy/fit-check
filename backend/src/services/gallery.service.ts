@@ -1,7 +1,7 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
+import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
 export async function deleteGalleryImageService(
   imageId: string,

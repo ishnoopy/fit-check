@@ -1,6 +1,6 @@
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { ISetting } from "../models/setting.model.js";
 import * as settingRepository from "../repositories/setting.repository.js";
+import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
 export async function getSettingByUserIdService(userId: string) {
   const setting = await settingRepository.findByUserId(userId);

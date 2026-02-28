@@ -1,6 +1,6 @@
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { IExercise } from "../models/exercise.model.js";
 import * as exerciseRepository from "../repositories/exercise.repository.js";
+import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
 export async function getAllExercisesService(
   userId: string,
@@ -13,11 +13,11 @@ export async function getAllExercisesService(
   const query =
     options?.search && options.search.trim().length > 0
       ? {
-          $and: [
-            baseQuery,
-            { name: { $regex: options.search.trim(), $options: "i" } },
-          ],
-        }
+        $and: [
+          baseQuery,
+          { name: { $regex: options.search.trim(), $options: "i" } },
+        ],
+      }
       : baseQuery;
 
   if (options?.page !== undefined && options?.limit !== undefined) {

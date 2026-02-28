@@ -1,10 +1,10 @@
 import type { FilterQuery } from "mongoose";
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { IExercise } from "../models/exercise.model.js";
 import type { IPlan } from "../models/plan.model.js";
 import type { IWorkout } from "../models/workout.model.js";
 import * as planRepository from "../repositories/plan.repository.js";
 import * as workoutRepository from "../repositories/workout.repository.js";
+import { BadRequestError, NotFoundError } from "../utils/errors.js";
 import * as exerciseService from "./exercise.service.js";
 
 type WorkoutExerciseItem = IWorkout["exercises"][number];

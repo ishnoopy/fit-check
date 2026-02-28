@@ -1,7 +1,7 @@
-import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { IPlan } from "../models/plan.model.js";
 import * as planRepository from "../repositories/plan.repository.js";
 import * as workoutRepository from "../repositories/workout.repository.js";
+import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
 export async function getAllPlansService(userId: string) {
   return await planRepository.findAll({ userId });

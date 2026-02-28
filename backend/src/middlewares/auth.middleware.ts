@@ -2,7 +2,7 @@
 import type { Context, Next } from "hono";
 import { deleteCookie, getCookie } from "hono/cookie";
 import * as jose from "jose";
-import { UnauthorizedError } from "../lib/errors.js";
+import { UnauthorizedError } from "../utils/errors.js";
 
 export async function authMiddleware(c: Context, next: Next) {
   const token = getCookie(c, "access_token");

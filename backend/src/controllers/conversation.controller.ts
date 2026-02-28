@@ -1,8 +1,8 @@
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { BadRequestError } from "../lib/errors.js";
 import * as conversationService from "../services/conversation.service.js";
+import { BadRequestError } from "../utils/errors.js";
 
 const idParamSchema = z.object({
   id: z.string().length(24, "Invalid conversation ID"),
