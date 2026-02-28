@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+description: 
+alwaysApply: false
 ---
 
 # Agent Behavior Rules
