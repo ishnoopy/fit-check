@@ -28,6 +28,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   cn,
+  formatSecondsToMinutesSeconds,
   getItemFromLocalStorage
 } from "@/lib/utils";
 import { ILog } from "@/types";
@@ -694,11 +695,11 @@ export default function LogPage() {
                                     ? "bg-muted/20 border-border/30 text-muted-foreground/50 cursor-not-allowed"
                                     : "bg-muted/30 border-border/50 text-muted-foreground hover:bg-muted/50 hover:border-primary/30 hover:text-primary cursor-pointer",
                                 )}
-                                aria-label={`Start ${exerciseItem.restTime}s timer for ${exercise.name}`}
+                                aria-label={`Start ${formatSecondsToMinutesSeconds(exerciseItem.restTime ?? 0)} timer for ${exercise.name}`}
                               >
                                 <Timer className="h-3.5 w-3.5 shrink-0" />
                                 <span className="text-xs font-mono font-semibold tabular-nums">
-                                  {exerciseItem.restTime}s
+                                  {formatSecondsToMinutesSeconds(exerciseItem.restTime ?? 0)}
                                 </span>
                               </button>
                             )}

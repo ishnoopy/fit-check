@@ -51,3 +51,10 @@ export function getRpeLabel(rpe?: number): string {
 
   return rpeLabels[rpe] || "";
 }
+
+/** Format seconds as "M:SS" (e.g. 90 → "1:30", 5 → "0:05") */
+export function formatSecondsToMinutesSeconds(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}

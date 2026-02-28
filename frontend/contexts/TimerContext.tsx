@@ -1,10 +1,12 @@
 "use client";
 
+import { formatSecondsToMinutesSeconds } from "@/lib/utils";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface TimerContextType {
   countdown: number;
+  countdownFormatted: string;
   isTimerRunning: boolean;
   timerExerciseId: string | null;
   timerExerciseName: string | null;
@@ -145,6 +147,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     <TimerContext.Provider
       value={{
         countdown,
+        countdownFormatted: formatSecondsToMinutesSeconds(countdown),
         isTimerRunning,
         timerExerciseId,
         timerExerciseName,

@@ -6,7 +6,7 @@ import { useTimer } from "@/contexts/TimerContext";
 
 export function TimerPill() {
   const {
-    countdown,
+    countdownFormatted,
     isTimerRunning,
     timerExerciseName,
     showTimerPill,
@@ -32,7 +32,7 @@ export function TimerPill() {
         <Timer className="h-4 w-4 shrink-0" />
         <div className="flex flex-col items-start min-w-[80px]">
           <span className="text-xs font-mono font-bold tabular-nums">
-            {countdown}s
+            {countdownFormatted}
           </span>
           {timerExerciseName && (
             <span className="text-[10px] leading-tight opacity-70 truncate max-w-[120px]">
