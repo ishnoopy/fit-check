@@ -14,3 +14,8 @@ export async function findByUserId(userId: string) {
 
   return toCamelCase(feedbacks) as IFeedback[];
 }
+
+export async function findAll() {
+  const feedbacks = await FeedbackModel.find().sort({ created_at: -1 }).lean();
+  return toCamelCase(feedbacks) as IFeedback[];
+}

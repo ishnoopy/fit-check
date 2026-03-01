@@ -16,3 +16,7 @@ export async function createFeedbackService(
 export async function getFeedbackByUserIdService(userId: string) {
   return feedbackRepository.findByUserId(userId);
 }
+
+export async function getAllFeedbackService() {
+  return feedbackRepository.findAll();
+}

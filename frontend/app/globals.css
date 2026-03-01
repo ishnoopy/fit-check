@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@custom-variant dark (&:is(.dark *));
 /* --font-sans: "Balsamiq Sans", cursive;
   --font-serif: "Lora", serif;
   --font-mono: "DM Mono", monospace; */

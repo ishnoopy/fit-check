@@ -7,7 +7,6 @@ import { Cinzel, Roboto, Roboto_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import "../globals.css";
-import Providers from "../providers";
 
 const roboto = Roboto({
   variable: "--font-sans",
@@ -44,18 +43,16 @@ export default async function RootLayout({
   }
 
   return (
-    <Providers>
-      <TimerProvider>
-        <div
-          className={`${roboto.variable} ${robotoMono.variable} ${cinzel.variable} antialiased font-sans text-foreground flex min-h-screen flex-col relative`}
-        >
-          <OnboardingGuard>
-            <TimerPill />
-            <div className="flex-1 relative z-10">{children}</div>
-            <BottomNav className="" />
-          </OnboardingGuard>
-        </div>
-      </TimerProvider>
-    </Providers>
+    <TimerProvider>
+      <div
+        className={`${roboto.variable} ${robotoMono.variable} ${cinzel.variable} antialiased font-sans text-foreground flex min-h-screen flex-col relative`}
+      >
+        <OnboardingGuard>
+          <TimerPill />
+          <div className="flex-1 relative z-10">{children}</div>
+          <BottomNav className="" />
+        </OnboardingGuard>
+      </div>
+    </TimerProvider>
   );
 }

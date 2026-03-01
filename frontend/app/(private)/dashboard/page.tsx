@@ -5,16 +5,24 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import { api } from "@/lib/api";
 import { getDayName } from "@/lib/store";
 import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
+  AlertCircleIcon,
   CalendarIcon,
   CalendarPlus,
   FlameIcon,
-  MessageSquareText,
   Shield,
   TargetIcon,
   TrendingUpIcon,
@@ -22,6 +30,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useUser } from "../../providers";
 
 const container = {
@@ -39,10 +48,36 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+const patchNotesDetails = [
+  {
+    date: "2026-03-01",
+    element: <p className="text-sm text-muted-foreground">
+      • Exercise timer in logs set to the format of <span className="font-mono text-primary font-bold">MM:SS</span> (e.g. <span className="font-mono text-primary font-bold">02:30</span>).
+    </p>,
+  },
+  {
+    date: "2026-03-01",
+    element: <p className="text-sm text-muted-foreground">
+      • Log&apos;s timer pill is now <span className="font-bold italic">draggable</span> to anywhere on the screen.
+    </p>,
+  },
+  {
+    date: "2026-03-01",
+    element: <p className="text-sm text-muted-foreground">
+      • Moved feedback hub to the main menu for easier access.
+    </p>,
+  },
+];
+
 export default function DashboardPage() {
   const { user } = useUser();
   const router = useRouter();
   const dayName = getDayName(new Date().getDay());
+  const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
+
+  const now = new Date();
+  const patchNoteDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const patchNoteReadKey = `readPatchNote-${patchNoteDate}`;
 
   const getStats = async () => {
     return api.get<{ data: ILogStats }>("/api/logs/stats");
@@ -52,6 +87,19 @@ export default function DashboardPage() {
     queryKey: ["stats"],
     queryFn: getStats,
   });
+
+  useEffect(() => {
+    const hasReadPatchNote = localStorage.getItem(patchNoteReadKey) === "true";
+
+    if (!hasReadPatchNote) {
+      setIsPatchNotesOpen(true);
+    }
+  }, [patchNoteReadKey]);
+
+  const handleClosePatchNotes = () => {
+    localStorage.setItem(patchNoteReadKey, "true");
+    setIsPatchNotesOpen(false);
+  };
 
   const totalLogs = statsData?.data?.totalLogs || 0;
   const exercisesToday = statsData?.data?.exercisesToday || 0;
@@ -94,6 +142,50 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen pb-24">
+      <Dialog
+        open={isPatchNotesOpen}
+        onOpenChange={(open) => {
+          if (!open) return;
+          setIsPatchNotesOpen(open);
+        }}
+      >
+        <DialogContent
+          className="max-w-md"
+          showCloseButton={false}
+          onEscapeKeyDown={e => e.preventDefault()}
+          onInteractOutside={e => e.preventDefault()}
+        >
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-2xl font-semibold text-center">
+              <AlertCircleIcon className="size-6" /> What&apos;s new in FitCheck?
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Effective March 1, 2026:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            {patchNotesDetails.map(patchNote => (
+              <div key={patchNote.date}>
+                <p className="text-sm text-muted-foreground">
+                  {patchNote.element}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-md bg-emerald-50 dark:bg-emerald-900/10 px-4 py-3 mt-4 text-sm text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700 flex items-center gap-2">
+            <span role="img" aria-label="gratitude">
+              🙏
+            </span>
+            <span>
+              Thank you for being a part of the FitCheck community. Your support, feedback, and dedication means a lot to us!
+            </span>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleClosePatchNotes}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="p-6 max-w-2xl mx-auto space-y-8">
         <div className="flex items-start justify-between gap-4">
           <PageHeader
@@ -103,18 +195,7 @@ export default function DashboardPage() {
               day: "numeric",
             })}`}
           />
-          <div className="shrink-0 mt-1 flex items-center gap-2">
-            <Link href="/feedback">
-              <Button
-                variant="default"
-                size="sm"
-                className="rounded-(--radius) shadow-sm"
-                aria-label="Open feedback form"
-              >
-                <MessageSquareText className="h-5 w-5" />
-                Feedback
-              </Button>
-            </Link>
+          <div className="shrink-0 mt-1 flex items-center">
             <AppGuide />
           </div>
         </div>

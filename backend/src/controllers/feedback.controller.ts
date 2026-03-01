@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
+import * as userRepository from "../repositories/user.repository.js";
 import * as feedbackService from "../services/feedback.service.js";
 import { BadRequestError } from "../utils/errors.js";
 
@@ -42,7 +43,10 @@ export async function createFeedback(c: Context) {
 
 export async function getMyFeedback(c: Context) {
   const userId = c.get("user").id;
-  const feedbacks = await feedbackService.getFeedbackByUserIdService(userId);
+  const user = await userRepository.findOne({ id: userId });
+  const feedbacks = user?.isPioneer
+    ? await feedbackService.getAllFeedbackService()
+    : await feedbackService.getFeedbackByUserIdService(userId);
 
   return c.json(
     {

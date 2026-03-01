@@ -294,6 +294,12 @@ export default function BottomNav({ className }: { className?: string }) {
                 </Link>
               </DropdownMenuItem>
 
+              <DropdownMenuItem asChild>
+                <Link href="/feedback" className="cursor-pointer rounded-lg">
+                  <MessageCircleIcon className="mr-2 h-4 w-4" /> Feedback
+                </Link>
+              </DropdownMenuItem>
+
               <DropdownMenuItem
                 onClick={() => setTheme(isDark ? "light" : "dark")}
                 className="cursor-pointer rounded-lg"
