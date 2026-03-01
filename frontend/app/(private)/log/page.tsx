@@ -642,7 +642,7 @@ export default function LogPage() {
                       <AccordionItem
                         value={exercise.id}
                         className={cn(
-                          "!border-b last:!border-b border-zinc-300 dark:border-zinc-700 bg-card/40 backdrop-blur-[1px]",
+                          "border-b! last:border-b! border-zinc-300 dark:border-zinc-700 bg-card/40 backdrop-blur-[1px]",
                           isDragging && "bg-muted/40",
                         )}
                       >
