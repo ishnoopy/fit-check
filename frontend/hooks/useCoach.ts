@@ -75,6 +75,10 @@ export function useCoach(): UseCoachReturn {
   const [quota, setQuota] = useState<ICoachQuota | null>(null);
   const [isLoadingQuota, setIsLoadingQuota] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const typingBufferRef = useRef("");
+  const typingIntervalRef = useRef<number | null>(null);
+  const streamCompletedRef = useRef(false);
+  const activeCoachMessageIdRef = useRef<string | null>(null);
 
   const fetchQuota = useCallback(async () => {
     setIsLoadingQuota(true);
@@ -166,6 +170,13 @@ export function useCoach(): UseCoachReturn {
   /** Start a fresh conversation */
   const startNewChat = useCallback(() => {
     abortControllerRef.current?.abort();
+    typingBufferRef.current = "";
+    streamCompletedRef.current = false;
+    activeCoachMessageIdRef.current = null;
+    if (typingIntervalRef.current !== null) {
+      window.clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
     setMessages([createInitialMessage({ clientName })]);
     setConversationId(null);
     setIsLoading(false);
@@ -199,8 +210,50 @@ export function useCoach(): UseCoachReturn {
 
       setMessages((prev) => [...prev, userMessage, coachPlaceholder]);
       setIsLoading(true);
+      typingBufferRef.current = "";
+      streamCompletedRef.current = false;
+      activeCoachMessageIdRef.current = coachMessageId;
+      if (typingIntervalRef.current !== null) {
+        window.clearInterval(typingIntervalRef.current);
+        typingIntervalRef.current = null;
+      }
 
       abortControllerRef.current = new AbortController();
+
+      const ensureTypingInterval = () => {
+        if (typingIntervalRef.current !== null) return;
+        typingIntervalRef.current = window.setInterval(() => {
+          const targetMessageId = activeCoachMessageIdRef.current;
+          if (!targetMessageId) return;
+
+          if (!typingBufferRef.current.length) {
+            if (streamCompletedRef.current) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === targetMessageId ? { ...m, isStreaming: false } : m,
+                ),
+              );
+              window.clearInterval(typingIntervalRef.current!);
+              typingIntervalRef.current = null;
+              activeCoachMessageIdRef.current = null;
+              streamCompletedRef.current = false;
+            }
+            return;
+          }
+
+          const chunkSize = typingBufferRef.current.length > 40 ? 4 : 2;
+          const nextSlice = typingBufferRef.current.slice(0, chunkSize);
+          typingBufferRef.current = typingBufferRef.current.slice(chunkSize);
+
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === targetMessageId
+                ? { ...m, content: m.content + nextSlice }
+                : m,
+            ),
+          );
+        }, 20);
+      };
 
       try {
         const response = await fetch(`${BASE_URL}/api/coach/chat`, {
@@ -264,13 +317,8 @@ export function useCoach(): UseCoachReturn {
                 const payload = JSON.parse(parsed.data) as {
                   content: string;
                 };
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === coachMessageId
-                      ? { ...m, content: m.content + payload.content }
-                      : m,
-                  ),
-                );
+                typingBufferRef.current += payload.content;
+                ensureTypingInterval();
               } catch {
                 // Skip malformed JSON chunks
               }
@@ -311,11 +359,8 @@ export function useCoach(): UseCoachReturn {
               } catch {
                 // Skip malformed JSON chunks
               }
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === coachMessageId ? { ...m, isStreaming: false } : m,
-                ),
-              );
+              streamCompletedRef.current = true;
+              ensureTypingInterval();
             }
 
             if (currentEvent === "error" && parsed.data) {
@@ -323,6 +368,13 @@ export function useCoach(): UseCoachReturn {
                 const payload = JSON.parse(parsed.data) as {
                   error: string;
                 };
+                typingBufferRef.current = "";
+                streamCompletedRef.current = false;
+                if (typingIntervalRef.current !== null) {
+                  window.clearInterval(typingIntervalRef.current);
+                  typingIntervalRef.current = null;
+                }
+                activeCoachMessageIdRef.current = null;
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === coachMessageId
@@ -341,24 +393,39 @@ export function useCoach(): UseCoachReturn {
           }
         }
 
-        // Finalize streaming state
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === coachMessageId ? { ...m, isStreaming: false } : m,
-          ),
-        );
+        streamCompletedRef.current = true;
+        ensureTypingInterval();
 
         // Refresh conversations list after a successful exchange
         fetchConversations();
         fetchQuota();
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
+          typingBufferRef.current = "";
+          streamCompletedRef.current = false;
+          activeCoachMessageIdRef.current = null;
+          if (typingIntervalRef.current !== null) {
+            window.clearInterval(typingIntervalRef.current);
+            typingIntervalRef.current = null;
+          }
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === coachMessageId ? { ...m, isStreaming: false } : m,
+            ),
+          );
           return;
         }
         const errorContent =
           err instanceof Error
             ? `Sorry, something went wrong: ${err.message}`
             : "Sorry, an unexpected error occurred. Please try again.";
+        typingBufferRef.current = "";
+        streamCompletedRef.current = false;
+        activeCoachMessageIdRef.current = null;
+        if (typingIntervalRef.current !== null) {
+          window.clearInterval(typingIntervalRef.current);
+          typingIntervalRef.current = null;
+        }
         setMessages((prev) =>
           prev.map((m) =>
             m.id === coachMessageId
@@ -396,6 +463,14 @@ export function useCoach(): UseCoachReturn {
     void fetchConversations();
     void fetchQuota();
   }, [loadConversation, fetchConversations, fetchQuota]);
+
+  useEffect(() => {
+    return () => {
+      if (typingIntervalRef.current !== null) {
+        window.clearInterval(typingIntervalRef.current);
+      }
+    };
+  }, []);
 
   return {
     messages,
