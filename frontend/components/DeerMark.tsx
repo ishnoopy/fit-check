@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import { cn } from "@/lib/utils";
-import logo from "@/public/fit-check-logo.png";
+import logo from "@/assets/fit-check-logo.png";
 
 export function DeerMark({
   className,

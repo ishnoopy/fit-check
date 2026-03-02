@@ -7,6 +7,7 @@ export const COACH_INTENT = {
   DIFFICULTY_ANALYSIS: "DIFFICULTY_ANALYSIS",
   TIPS: "TIPS",
   GENERAL_COACHING: "GENERAL_COACHING",
+  GENERAL_CONVERSATION: "GENERAL_CONVERSATION",
 } as const;
 
 export type CoachIntent = (typeof COACH_INTENT)[keyof typeof COACH_INTENT];
@@ -87,35 +88,35 @@ export const INTENT_CONTEXT_CONFIG: Record<CoachIntent, IntentContextConfig> = {
   NEXT_WORKOUT: {
     needsFullProfile: true,
     needsWorkoutSummary: true,
-    workoutSummaryDepthDays: 14,
+    workoutSummaryDepthDays: 45,
     needsChatHistory: false,
     maxChatHistoryPairs: 0,
   },
   SESSION_FEEDBACK: {
     needsFullProfile: false,
     needsWorkoutSummary: true,
-    workoutSummaryDepthDays: 7,
+    workoutSummaryDepthDays: 30,
     needsChatHistory: true,
     maxChatHistoryPairs: 2,
   },
   PAST_SESSION_FEEDBACK: {
     needsFullProfile: false,
     needsWorkoutSummary: true,
-    workoutSummaryDepthDays: 14,
+    workoutSummaryDepthDays: 45,
     needsChatHistory: true,
     maxChatHistoryPairs: 2,
   },
   PROGRESS_CHECK: {
     needsFullProfile: true,
     needsWorkoutSummary: true,
-    workoutSummaryDepthDays: 14,
+    workoutSummaryDepthDays: 60,
     needsChatHistory: false,
     maxChatHistoryPairs: 0,
   },
   DIFFICULTY_ANALYSIS: {
     needsFullProfile: false,
     needsWorkoutSummary: true,
-    workoutSummaryDepthDays: 7,
+    workoutSummaryDepthDays: 30,
     needsChatHistory: true,
     maxChatHistoryPairs: 1,
   },
@@ -129,7 +130,14 @@ export const INTENT_CONTEXT_CONFIG: Record<CoachIntent, IntentContextConfig> = {
   GENERAL_COACHING: {
     needsFullProfile: false,
     needsWorkoutSummary: true,
-    workoutSummaryDepthDays: 7,
+    workoutSummaryDepthDays: 30,
+    needsChatHistory: true,
+    maxChatHistoryPairs: 5,
+  },
+  GENERAL_CONVERSATION: {
+    needsFullProfile: false,
+    needsWorkoutSummary: false,
+    workoutSummaryDepthDays: 0,
     needsChatHistory: true,
     maxChatHistoryPairs: 5,
   },

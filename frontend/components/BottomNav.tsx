@@ -3,7 +3,7 @@
 import { useUser } from "@/app/providers";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import logo from "@/public/fit-check-logo.png";
+import logo from "@/assets/fit-check-logo.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {

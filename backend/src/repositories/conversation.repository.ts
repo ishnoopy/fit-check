@@ -2,6 +2,7 @@ import ConversationModel, {
   type IConversation,
   type IMessageModel,
 } from "../models/conversation.model.js";
+import { Types } from "mongoose";
 import { toCamelCase, toSnakeCase } from "../utils/transformer.js";
 
 /** Create a new conversation */
@@ -83,4 +84,29 @@ export async function deleteConversation(
 /** Count conversations for a user */
 export async function countByUserId(userId: string): Promise<number> {
   return ConversationModel.countDocuments({ user_id: userId });
+}
+
+/** Count user-authored messages for a conversation owner in a time range */
+export async function countUserMessagesByDateRange(
+  userId: string,
+  startDate: Date,
+  endDate: Date,
+): Promise<number> {
+  if (!Types.ObjectId.isValid(userId)) {
+    return 0;
+  }
+
+  const result = await ConversationModel.aggregate([
+    { $match: { user_id: new Types.ObjectId(userId) } },
+    { $unwind: "$messages" },
+    {
+      $match: {
+        "messages.role": "user",
+        "messages.created_at": { $gte: startDate, $lte: endDate },
+      },
+    },
+    { $count: "count" },
+  ]);
+
+  return result[0]?.count ?? 0;
 }

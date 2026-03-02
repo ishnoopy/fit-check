@@ -41,6 +41,8 @@ interface User {
   hasGymAccess?: boolean;
   selfMotivationNote?: string;
   onboardingPromiseAccepted?: boolean;
+  referralCode?: string;
+  successfulReferralCount?: number;
 }
 
 interface UserContextType {

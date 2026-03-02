@@ -3,6 +3,7 @@ import { google } from "googleapis";
 import * as jose from "jose";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
+import { createUniqueReferralCode } from "./coach-access.service.js";
 import { BadRequestError } from "../utils/errors.js";
 
 const oauth2Client = new google.auth.OAuth2(
@@ -38,6 +39,7 @@ export async function handleGoogleOAuthCallback(code: string) {
     let user = await UserRepository.findOne({ email: data.email });
 
     if (!user) {
+      const referralCode = await createUniqueReferralCode();
       // Create new user with Google data
       user = await UserRepository.createUser({
         email: data.email,
@@ -48,6 +50,7 @@ export async function handleGoogleOAuthCallback(code: string) {
         authProvider: "google",
         role: "user",
         profileCompleted: false,
+        referralCode,
       });
     } else if (!user.googleId) {
       // Link existing account to Google

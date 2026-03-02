@@ -1,7 +1,7 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
 import { useUser } from "@/app/providers";
+import coachImage from "@/assets/coach.jpeg";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCoach } from "@/hooks/useCoach";
@@ -11,8 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
   History,
+  Link as LinkIcon,
   Loader2,
-  Lock,
   MessageSquarePlus,
   SendHorizontal,
   Trash2,
@@ -20,7 +20,6 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -37,33 +36,14 @@ const quickPrompts: QuickPrompt[] = [
 
 export default function CoachPage() {
   const { user } = useUser();
-
-  // Guard: Only pioneers can access Coach Mode
-  if (!user?.isPioneer) {
-    return (
-      <div className="min-h-screen pb-24 flex flex-col items-center justify-center px-4">
-        <div className="max-w-md w-full text-center space-y-4">
-          <div className="inline-flex items-center justify-center size-16 rounded-full bg-primary/10 border border-primary/20">
-            <Lock className="size-8 text-primary" />
-          </div>
-          <h1 className="font-display text-2xl tracking-tight">Coming Soon</h1>
-          <p className="text-muted-foreground">
-            Coach Mode is currently in beta and only available to pioneer users.
-            We&apos;re working hard to make it available to everyone soon!
-          </p>
-          <Button asChild variant="outline" className="mt-4">
-            <Link href="/dashboard">Back to Dashboard</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
   const {
     messages,
     conversationId,
     conversations,
     isLoading,
     isLoadingConversations,
+    quota,
+    isLoadingQuota,
     sendMessage,
     startNewChat,
     loadConversation,
@@ -128,6 +108,15 @@ export default function CoachPage() {
             <p className="text-sm text-muted-foreground">
               Chat with your coach and get quick feedback.
             </p>
+            <div className="mt-2 text-xs text-muted-foreground">
+              {isLoadingQuota
+                ? "Loading weekly quota..."
+                : quota
+                  ? quota.isUnlimited
+                    ? "Unlimited requests"
+                    : `${quota.remainingThisWeek}/${quota.allowedThisWeek} requests left this week`
+                  : "Weekly quota unavailable"}
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -169,6 +158,20 @@ export default function CoachPage() {
       {/* Messages */}
       <div ref={listRef} className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
+          {quota && (
+            <div className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <p>
+                Invite up to {quota.maxReferrals} people and earn{" "}
+                {quota.bonusPerSuccessfulReferral} extra requests each when they
+                log their first workout ({quota.successfulReferrals}/
+                {quota.maxReferrals} redeemed).
+              </p>
+              <p className="mt-1 break-all">
+                <LinkIcon className="inline-block mr-1 size-3" />
+                {quota.invitationLink}
+              </p>
+            </div>
+          )}
           {messages.map((m) => {
             const isUser = m.role === "user";
             return (
@@ -336,7 +339,7 @@ function ChatHead({
   return (
     <div className="mt-0.5 size-9 shrink-0 overflow-hidden rounded-full border border-border bg-muted/40 flex items-center justify-center">
       {role === "coach" ? (
-        <Image src="/fitcheck-coach-icon.png" alt="FitCheck Coach" width={36} height={36} className="h-full w-full object-cover" />
+        <Image src={coachImage} alt="FitCheck Coach" width={36} height={36} className="h-full w-full object-cover" />
       ) : avatarUrl ? (
         <Image
           src={avatarUrl}

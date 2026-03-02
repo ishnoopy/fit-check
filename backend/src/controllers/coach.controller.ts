@@ -1,8 +1,10 @@
 import type { Context } from "hono";
 import { streamSSE } from "hono/streaming";
+import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import * as coachService from "../services/coach.service.js";
-import { BadRequestError } from "../utils/errors.js";
+import * as coachAccessService from "../services/coach-access.service.js";
+import { BadRequestError, ForbiddenError } from "../utils/errors.js";
 import {
   COACH_INTENT,
   MAX_MESSAGE_LENGTH,
@@ -41,7 +43,15 @@ export async function chat(c: Context) {
   const body = params.data;
   const userId: string = c.get("user").id;
   const { message, conversationId } = body;
-  const { intent, chatHistory, focusedExercise } = await coachService.prepareChatSession({
+
+  const quota = await coachAccessService.getCoachQuota(userId);
+  if (!coachAccessService.canUseCoach(quota)) {
+    throw new ForbiddenError(
+      "Weekly AI coach request limit reached. Refer a friend who logs their first workout to unlock 10 more requests.",
+    );
+  }
+
+  const { intent, chatHistory } = await coachService.prepareChatSession({
     userId,
     message,
     intent: body.intent,
@@ -57,7 +67,7 @@ export async function chat(c: Context) {
         event: "intent",
         id: String(eventId++),
       });
-      const textStream = await coachService.streamCoachResponse(
+      const { stream: textStream, focusedExercise: responseFocusedExercise } = await coachService.streamCoachResponse(
         userId,
         message,
         intent,
@@ -78,7 +88,7 @@ export async function chat(c: Context) {
         userMessage: message,
         coachResponse: fullResponse,
         intent,
-        focusedExercise,
+        focusedExercise: responseFocusedExercise,
       });
       await stream.writeSSE({
         data: JSON.stringify({ done: true, conversationId: savedConversationId }),
@@ -95,4 +105,26 @@ export async function chat(c: Context) {
       });
     }
   });
+}
+
+/**
+ * GET /api/coach/quota
+ * Returns weekly quota usage and referral invitation details.
+ */
+export async function getQuota(c: Context) {
+  const userId: string = c.get("user").id;
+  const referralCode = await coachAccessService.ensureUserReferralCode(userId);
+  const quota = await coachAccessService.getCoachQuota(userId);
+
+  return c.json(
+    {
+      success: true,
+      data: {
+        ...quota,
+        referralCode,
+        invitationLink: coachAccessService.buildInvitationLink(referralCode),
+      },
+    },
+    StatusCodes.OK,
+  );
 }

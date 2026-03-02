@@ -164,8 +164,8 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
-            {patchNotesDetails.map(patchNote => (
-              <div key={patchNote.date}>
+            {patchNotesDetails.map((patchNote, index) => (
+              <div key={`${patchNote.date}-${index}`}>
                 <p className="text-sm text-muted-foreground">
                   {patchNote.element}
                 </p>

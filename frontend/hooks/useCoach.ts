@@ -5,6 +5,7 @@ import type {
   CoachIntent,
   IConversation,
   IConversationListItem,
+  ICoachQuota,
 } from "@/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -20,6 +21,8 @@ interface UseCoachReturn {
   conversations: IConversationListItem[];
   isLoading: boolean;
   isLoadingConversations: boolean;
+  quota: ICoachQuota | null;
+  isLoadingQuota: boolean;
   sendMessage: (text: string, intent?: CoachIntent) => void;
   startNewChat: () => void;
   loadConversation: (id: string) => Promise<void>;
@@ -69,7 +72,23 @@ export function useCoach(): UseCoachReturn {
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  const [quota, setQuota] = useState<ICoachQuota | null>(null);
+  const [isLoadingQuota, setIsLoadingQuota] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const fetchQuota = useCallback(async () => {
+    setIsLoadingQuota(true);
+    try {
+      const result = await api.get<{ success: boolean; data: ICoachQuota }>(
+        "/api/coach/quota",
+      );
+      setQuota(result.data);
+    } catch {
+      // Silently fail - quota panel is non-critical
+    } finally {
+      setIsLoadingQuota(false);
+    }
+  }, []);
 
   /** Fetch the list of conversations for the sidebar */
   const fetchConversations = useCallback(async () => {
@@ -197,7 +216,16 @@ export function useCoach(): UseCoachReturn {
         });
 
         if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
+          let errorMessage = `Request failed with status ${response.status}`;
+          try {
+            const payload = (await response.json()) as { message?: string };
+            if (payload?.message) {
+              errorMessage = payload.message;
+            }
+          } catch {
+            // no-op
+          }
+          throw new Error(errorMessage);
         }
 
         const reader = response.body?.getReader();
@@ -322,6 +350,7 @@ export function useCoach(): UseCoachReturn {
 
         // Refresh conversations list after a successful exchange
         fetchConversations();
+        fetchQuota();
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
@@ -342,7 +371,7 @@ export function useCoach(): UseCoachReturn {
         abortControllerRef.current = null;
       }
     },
-    [isLoading, conversationId, fetchConversations],
+    [isLoading, conversationId, fetchConversations, fetchQuota],
   );
 
   /** Update welcome message when user loads (user may be null on initial render) */
@@ -365,7 +394,8 @@ export function useCoach(): UseCoachReturn {
       void loadConversation(storedConversationId);
     }
     void fetchConversations();
-  }, [loadConversation, fetchConversations]);
+    void fetchQuota();
+  }, [loadConversation, fetchConversations, fetchQuota]);
 
   return {
     messages,
@@ -373,6 +403,8 @@ export function useCoach(): UseCoachReturn {
     conversations,
     isLoading,
     isLoadingConversations,
+    quota,
+    isLoadingQuota,
     sendMessage,
     startNewChat,
     loadConversation,

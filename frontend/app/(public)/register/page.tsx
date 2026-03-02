@@ -16,7 +16,7 @@ import { useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -35,16 +35,22 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 
-const register = async (values: Omit<FormValues, "confirmPassword">) => {
+const register = async (
+  values: Omit<FormValues, "confirmPassword">,
+  referralCode?: string | null,
+) => {
   return api.post("/api/auth/register", {
     email: values.email,
     password: values.password,
     role: "user",
+    ...(referralCode ? { referralCode } : {}),
   });
 };
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("ref");
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -55,7 +61,8 @@ export default function RegisterPage() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: register,
+    mutationFn: (values: Omit<FormValues, "confirmPassword">) =>
+      register(values, referralCode),
     onSuccess: () => {
       router.push("/login");
     },
@@ -65,8 +72,10 @@ export default function RegisterPage() {
   });
 
   function onSubmit(values: FormValues) {
-    const { confirmPassword, ...registerData } = values;
-    registerMutation.mutate(registerData);
+    registerMutation.mutate({
+      email: values.email,
+      password: values.password,
+    });
   }
 
   const errorMessage =
@@ -101,6 +110,11 @@ export default function RegisterPage() {
           >
             Quick sign up - complete your profile after logging in
           </motion.p>
+          {referralCode && (
+            <p className="text-xs text-muted-foreground">
+              Referral applied: <span className="font-mono">{referralCode}</span>
+            </p>
+          )}
         </div>
 
         <motion.div

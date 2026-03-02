@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import logo from "@/public/fit-check-logo.png";
+import logo from "@/assets/fit-check-logo.png";
 import {
   Activity,
   ArrowRight,

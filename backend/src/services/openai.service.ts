@@ -10,6 +10,7 @@ const CLASSIFICATION_MODEL = "gpt-4.1-mini";
 const CHAT_MODEL = "gpt-4.1-mini";
 const CLASSIFICATION_MAX_TOKENS = 20;
 const EXERCISE_EXTRACTION_MAX_TOKENS = 50;
+const EXERCISE_NARROWING_MAX_TOKENS = 3;
 const ADVICE_EXTRACTION_MAX_TOKENS = 500;
 const CHAT_MAX_TOKENS = 500;
 
@@ -34,7 +35,8 @@ const INTENT_CLASSIFICATION_PROMPT = `Classify the user's fitness coaching quest
 - PROGRESS_CHECK: Asking about long-term progress, trends, improvements
 - DIFFICULTY_ANALYSIS: Asking why something was hard, fatigue, struggle
 - TIPS: Asking for general advice, form tips, recovery tips
-- GENERAL_COACHING: Any other fitness question that doesn't fit above
+- GENERAL_COACHING: Other fitness coaching questions
+- GENERAL_CONVERSATION: Casual chat, check-ins, motivation, or natural conversation not asking for specific coaching analysis
 
 Respond with ONLY the intent name, nothing else.`;
 
@@ -57,7 +59,7 @@ export async function classifyIntent(message: string): Promise<CoachIntent> {
   if (VALID_INTENTS.has(rawIntent)) {
     return rawIntent as CoachIntent;
   }
-  return COACH_INTENT.GENERAL_COACHING;
+  return COACH_INTENT.GENERAL_CONVERSATION;
 }
 
 /**
@@ -86,6 +88,13 @@ Rules:
 - Be conservative: only match if confident
 
 Respond with ONLY the exercise name or "NONE", nothing else.`;
+
+const EXERCISE_NARROWING_PROMPT = `Decide whether workout context should be narrowed to one matched exercise.
+
+Return ONLY "YES" or "NO".
+
+Return "YES" only when the user is clearly asking for analysis or advice specifically about one exercise.
+Return "NO" when the request is session-wide, progress-wide, multi-exercise, or ambiguous.`;
 
 /**
  * Extract a specific exercise name from user message using LLM.
@@ -117,6 +126,37 @@ export async function extractExerciseFromMessage(
     (ex) => ex.toLowerCase() === result.toLowerCase()
   );
   return matched ?? null;
+}
+
+/**
+ * Decide if context should be narrowed to a matched exercise.
+ * Conservative by default to preserve broader context.
+ */
+export async function shouldNarrowExerciseContext(
+  userMessage: string,
+  matchedExercise: string,
+  intent: CoachIntent,
+): Promise<boolean> {
+  const client = getClient();
+  try {
+    const response = await client.chat.completions.create({
+      model: CLASSIFICATION_MODEL,
+      max_tokens: EXERCISE_NARROWING_MAX_TOKENS,
+      temperature: 0,
+      messages: [
+        { role: "system", content: EXERCISE_NARROWING_PROMPT },
+        {
+          role: "user",
+          content: `Intent: ${intent}\nMatched exercise: ${matchedExercise}\nMessage: "${userMessage}"`,
+        },
+      ],
+    });
+    const result = response.choices[0]?.message?.content?.trim().toUpperCase() ?? "NO";
+    return result === "YES";
+  } catch (error) {
+    console.error("Failed to decide exercise context narrowing:", error);
+    return false;
+  }
 }
 
 const ADVICE_EXTRACTION_PROMPT = `Extract actionable training recommendations from this coach response, PRESERVING the coach's tone and observations.
@@ -191,4 +231,3 @@ export async function extractActionableAdvice(
     return [];
   }
 }
-

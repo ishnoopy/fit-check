@@ -28,6 +28,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import { IUser } from "@/types";
+import pioneerBadge from "@/assets/psyduck.gif";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Grid3x3, Settings2, Upload, UserIcon } from "lucide-react";
@@ -356,7 +357,7 @@ export default function ProfilePage() {
                 <div className="absolute -bottom-1 -left-1 md:-bottom-2 md:-left-2">
                   <div className="relative rounded-(--radius) p-0.5 bg-primary">
                     <Image
-                      src="/psyduck.gif"
+                      src={pioneerBadge}
                       alt="Pioneer Badge"
                       width={32}
                       height={32}

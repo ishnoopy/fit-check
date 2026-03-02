@@ -3,6 +3,10 @@ import * as jose from "jose";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
 import { createUser, findOne } from "../repositories/user.repository.js";
+import {
+  createUniqueReferralCode,
+  resolveReferrerUserIdByCode,
+} from "./coach-access.service.js";
 import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
 export async function loginService(email: string, password: string) {
@@ -56,6 +60,7 @@ export async function loginService(email: string, password: string) {
 
 export async function registerService(
   payload: Omit<IUser, "password"> & { password: string },
+  options?: { referralCode?: string },
 ) {
   const { email } = payload;
   // Check if user already exists
@@ -68,8 +73,18 @@ export async function registerService(
   // Hash password
   const hashedPassword = await hash(payload.password, 10);
 
+  const [generatedReferralCode, referredByUserId] = await Promise.all([
+    createUniqueReferralCode(),
+    resolveReferrerUserIdByCode(options?.referralCode),
+  ]);
+
   // Create user
-  const newUser = await createUser({ ...payload, password: hashedPassword });
+  const newUser = await createUser({
+    ...payload,
+    password: hashedPassword,
+    referralCode: generatedReferralCode,
+    referredByUserId,
+  });
 
   const { password, ...userWithoutPassword } = newUser as IUser;
 

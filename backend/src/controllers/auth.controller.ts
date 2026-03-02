@@ -243,6 +243,7 @@ export async function register(c: Context) {
     email: z.string().email(),
     password: z.string().min(6),
     role: z.enum(ROLES_LIST as [string, ...string[]]).optional(),
+    referralCode: z.string().trim().min(1).max(32).optional(),
   });
 
   const params = await paramsSchema.safeParseAsync(await c.req.json());
@@ -256,6 +257,8 @@ export async function register(c: Context) {
     password: params.data.password,
     role: params.data.role || "user",
     profileCompleted: false,
+  }, {
+    referralCode: params.data.referralCode,
   });
 
   return c.json(

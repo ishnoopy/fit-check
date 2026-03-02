@@ -1,6 +1,7 @@
 import { formatInTimeZone } from "date-fns-tz";
 import type { SortOrder } from "mongoose";
 import type { ILog } from "../models/log.model.js";
+import { applyReferralRewardOnFirstWorkout } from "./coach-access.service.js";
 import * as logRepository from "../repositories/log.repository.js";
 import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
@@ -211,7 +212,14 @@ export async function createLogService(
   payload: Omit<ILog, "userId">,
   userId: string,
 ) {
-  return await logRepository.createLog({ ...payload, userId: userId });
+  const existingLogsCount = await logRepository.countByQuery(userId, {});
+  const createdLog = await logRepository.createLog({ ...payload, userId: userId });
+
+  if (existingLogsCount === 0) {
+    await applyReferralRewardOnFirstWorkout(userId);
+  }
+
+  return createdLog;
 }
 
 export async function updateLogService(

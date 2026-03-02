@@ -159,3 +159,16 @@ export interface IConversationListItem {
   summary?: string;
   updatedAt: string;
 }
+
+export interface ICoachQuota {
+  usedThisWeek: number;
+  allowedThisWeek: number;
+  remainingThisWeek: number;
+  isUnlimited: boolean;
+  weeklyBaseRequests: number;
+  bonusPerSuccessfulReferral: number;
+  successfulReferrals: number;
+  maxReferrals: number;
+  referralCode: string;
+  invitationLink: string;
+}

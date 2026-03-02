@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { chat } from "../controllers/coach.controller.js";
+import { chat, getQuota } from "../controllers/coach.controller.js";
 import {
   deleteConversation,
   getConversation,
@@ -12,6 +12,7 @@ import {
 } from "../middlewares/rate-limiter.middleware.js";
 
 const router = new Hono()
+  .get("/coach/quota", authMiddleware, generalRateLimiter, getQuota)
   .post("/coach/chat", authMiddleware, moderateRateLimiter, chat)
   .get(
     "/coach/conversations",

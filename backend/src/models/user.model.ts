@@ -42,6 +42,11 @@ export interface IUser {
   hasGymAccess?: boolean;
   selfMotivationNote?: string;
   onboardingPromiseAccepted?: boolean;
+  referralCode?: string;
+  referredByUserId?: mongoose.Schema.Types.ObjectId | string | null;
+  successfulReferralCount?: number;
+  firstWorkoutLoggedAt?: Date | null;
+  referralRewardGrantedAt?: Date | null;
 }
 
 // Interface for the user model
@@ -87,6 +92,11 @@ export interface IUserModel {
   has_gym_access?: boolean;
   self_motivation_note?: string;
   onboarding_promise_accepted?: boolean;
+  referral_code?: string;
+  referred_by_user_id?: mongoose.Schema.Types.ObjectId | string | null;
+  successful_referral_count?: number;
+  first_workout_logged_at?: Date | null;
+  referral_reward_granted_at?: Date | null;
 }
 
 const UserSchema = new mongoose.Schema(
@@ -143,6 +153,15 @@ const UserSchema = new mongoose.Schema(
     has_gym_access: { type: Boolean },
     self_motivation_note: { type: String, maxlength: 280 },
     onboarding_promise_accepted: { type: Boolean, default: false },
+    referral_code: { type: String, unique: true, sparse: true },
+    referred_by_user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+    },
+    successful_referral_count: { type: Number, default: 0, min: 0 },
+    first_workout_logged_at: { type: Date, required: false },
+    referral_reward_granted_at: { type: Date, required: false },
   },
   {
     timestamps: {
@@ -151,5 +170,8 @@ const UserSchema = new mongoose.Schema(
     },
   },
 );
+
+UserSchema.index({ referral_code: 1 }, { unique: true, sparse: true });
+UserSchema.index({ referred_by_user_id: 1 });
 
 export default model<IUserModel>("User", UserSchema);
