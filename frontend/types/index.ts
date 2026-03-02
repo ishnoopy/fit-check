@@ -67,6 +67,8 @@ export interface IUser {
   hasGymAccess?: boolean;
   selfMotivationNote?: string;
   onboardingPromiseAccepted?: boolean;
+  acknowledgedPatchNoteVersion?: string;
+  acknowledgedPatchNoteAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }

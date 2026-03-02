@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import {
+  acknowledgePatchNote,
   completeProfile,
   googleOAuth,
   handleGoogleOAuthCallback,
@@ -24,6 +25,12 @@ const routes = new Hono()
     authMiddleware,
     generalRateLimiter,
     completeProfile,
+  )
+  .patch(
+    "/auth/patch-notes/ack",
+    authMiddleware,
+    generalRateLimiter,
+    acknowledgePatchNote,
   )
   .delete("/auth/logout", authMiddleware, generalRateLimiter, logout)
   .post("/auth/refresh", generalRateLimiter, refreshToken)

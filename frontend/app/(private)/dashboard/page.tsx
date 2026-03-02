@@ -14,6 +14,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
+import { queryClient } from "@/lib/query-client";
 import { getDayName } from "@/lib/store";
 import { ILogStats } from "@/types";
 import { useQuery } from "@tanstack/react-query";
@@ -62,22 +63,26 @@ const patchNotesDetails = [
     </p>,
   },
   {
+    date: "2026-03-02",
+    element: <p className="text-sm text-muted-foreground">
+      • Added a new <span className="font-bold italic">coach</span> feature to help you with your fitness journey <span className="font-bold italic">(beta)</span>.
+    </p>,
+  },
+  {
     date: "2026-03-01",
     element: <p className="text-sm text-muted-foreground">
       • Moved feedback hub to the main menu for easier access.
     </p>,
   },
 ];
+const PATCH_NOTE_VERSION = "2026-03-02";
 
 export default function DashboardPage() {
   const { user } = useUser();
   const router = useRouter();
   const dayName = getDayName(new Date().getDay());
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
-
-  const now = new Date();
-  const patchNoteDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const patchNoteReadKey = `readPatchNote-${patchNoteDate}`;
+  const [isAcknowledgingPatchNotes, setIsAcknowledgingPatchNotes] = useState(false);
 
   const getStats = async () => {
     return api.get<{ data: ILogStats }>("/api/logs/stats");
@@ -89,16 +94,35 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    const hasReadPatchNote = localStorage.getItem(patchNoteReadKey) === "true";
+    if (!user) return;
+    const hasAcknowledgedCurrentPatchNote =
+      user.acknowledgedPatchNoteVersion === PATCH_NOTE_VERSION;
+    setIsPatchNotesOpen(!hasAcknowledgedCurrentPatchNote);
+  }, [user]);
 
-    if (!hasReadPatchNote) {
-      setIsPatchNotesOpen(true);
+  const handleClosePatchNotes = async () => {
+    setIsAcknowledgingPatchNotes(true);
+    try {
+      await api.patch("/api/auth/patch-notes/ack", {
+        version: PATCH_NOTE_VERSION,
+      });
+      queryClient.setQueryData<{ data?: { acknowledgedPatchNoteVersion?: string } }>(
+        ["user"],
+        (previous) => {
+          if (!previous?.data) return previous;
+          return {
+            ...previous,
+            data: {
+              ...previous.data,
+              acknowledgedPatchNoteVersion: PATCH_NOTE_VERSION,
+            },
+          };
+        },
+      );
+      setIsPatchNotesOpen(false);
+    } finally {
+      setIsAcknowledgingPatchNotes(false);
     }
-  }, [patchNoteReadKey]);
-
-  const handleClosePatchNotes = () => {
-    localStorage.setItem(patchNoteReadKey, "true");
-    setIsPatchNotesOpen(false);
   };
 
   const totalLogs = statsData?.data?.totalLogs || 0;
@@ -181,7 +205,9 @@ export default function DashboardPage() {
             </span>
           </div>
           <DialogFooter>
-            <Button onClick={handleClosePatchNotes}>Close</Button>
+            <Button onClick={handleClosePatchNotes} disabled={isAcknowledgingPatchNotes}>
+              {isAcknowledgingPatchNotes ? "Saving..." : "Close"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

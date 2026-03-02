@@ -378,3 +378,36 @@ export async function completeProfile(c: Context) {
     StatusCodes.OK,
   );
 }
+
+export async function acknowledgePatchNote(c: Context) {
+  const user = c.get("user");
+
+  const paramsSchema = z.object({
+    version: z.string().trim().min(1).max(64),
+  });
+
+  const params = await paramsSchema.safeParseAsync(await c.req.json());
+
+  if (!params.success) {
+    throw new BadRequestError(params.error);
+  }
+
+  const updatedUser = await UserRepository.updateUser(user.id, {
+    acknowledgedPatchNoteVersion: params.data.version,
+    acknowledgedPatchNoteAt: new Date(),
+  });
+
+  if (!updatedUser) {
+    throw new NotFoundError("User not found");
+  }
+
+  const { password, ...userWithoutPassword } = updatedUser;
+
+  return c.json(
+    {
+      success: true,
+      data: userWithoutPassword,
+    },
+    StatusCodes.OK,
+  );
+}

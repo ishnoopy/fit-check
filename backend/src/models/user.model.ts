@@ -47,6 +47,8 @@ export interface IUser {
   successfulReferralCount?: number;
   firstWorkoutLoggedAt?: Date | null;
   referralRewardGrantedAt?: Date | null;
+  acknowledgedPatchNoteVersion?: string | null;
+  acknowledgedPatchNoteAt?: Date | null;
 }
 
 // Interface for the user model
@@ -97,6 +99,8 @@ export interface IUserModel {
   successful_referral_count?: number;
   first_workout_logged_at?: Date | null;
   referral_reward_granted_at?: Date | null;
+  acknowledged_patch_note_version?: string | null;
+  acknowledged_patch_note_at?: Date | null;
 }
 
 const UserSchema = new mongoose.Schema(
@@ -162,6 +166,8 @@ const UserSchema = new mongoose.Schema(
     successful_referral_count: { type: Number, default: 0, min: 0 },
     first_workout_logged_at: { type: Date, required: false },
     referral_reward_granted_at: { type: Date, required: false },
+    acknowledged_patch_note_version: { type: String, required: false },
+    acknowledged_patch_note_at: { type: Date, required: false },
   },
   {
     timestamps: {

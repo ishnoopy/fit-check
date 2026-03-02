@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import { createContext, useContext, useState } from "react";
 
 interface User {
+  id: string;
   email: string;
   firstName?: string;
   lastName?: string;
@@ -43,6 +44,8 @@ interface User {
   onboardingPromiseAccepted?: boolean;
   referralCode?: string;
   successfulReferralCount?: number;
+  acknowledgedPatchNoteVersion?: string;
+  acknowledgedPatchNoteAt?: string;
 }
 
 interface UserContextType {
