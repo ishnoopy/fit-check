@@ -113,6 +113,17 @@ export default function DashboardPage() {
   const isBufferUsedUp =
     bufferDaysUsed === restDaysBuffer && bufferDaysUsed > 0;
 
+  const today = new Date();
+  console.log("✏️ ~ page.tsx:117 ~ DashboardPage ~ today:", today)
+
+  const isTodayWorkout = datesWithWorkouts.map(dateStr => new Date(dateStr + 'T00:00:00')).some((d) =>
+    d.getFullYear() === today.getFullYear() &&
+    d.getMonth() === today.getMonth() &&
+    d.getDate() === today.getDate(),
+  );
+  console.log("✏️ ~ page.tsx:124 ~ DashboardPage ~ isTodayWorkout:", isTodayWorkout)
+
+
   const stats = [
     {
       icon: FlameIcon,
@@ -372,10 +383,12 @@ export default function DashboardPage() {
                   return;
                 }}
                 modifiers={{
+                  todayHighlight: isTodayWorkout ? [] : [today],
                   workout: datesWithWorkouts.map(dateStr => new Date(dateStr + 'T00:00:00')),
                 }}
                 modifiersClassNames={{
-                  workout: "[&>button]:opacity-100 bg-accent rounded [--cell-size:--spacing(10)]",
+                  todayHighlight: "[&>button]:opacity-100 bg-primary/40 rounded",
+                  workout: "[&>button]:opacity-100 bg-accent rounded",
                 }}
                 className="rounded-(--radius) border-0"
               />

@@ -193,7 +193,7 @@ export default function StatsPage() {
                   workout: datesWithWorkouts.map(dateStr => new Date(dateStr + 'T00:00:00')),
                 }}
                 modifiersClassNames={{
-                  workout: "[&>button]:opacity-100 bg-accent rounded [--cell-size:--spacing(10)]",
+                  workout: "[&>button]:opacity-100 bg-accent rounded",
                 }}
                 className="rounded-(--radius) border-0"
               />
