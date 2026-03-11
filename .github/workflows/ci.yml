@@ -58,7 +58,7 @@ jobs:
           push: true
           tags: ishnoopy/fit-check-backend:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max,
+          cache-to: type=gha,mode=max
 
   deploy:
     name: Deploy to EC2
