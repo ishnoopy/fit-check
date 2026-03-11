@@ -4,6 +4,7 @@ import { useUser } from "@/app/providers";
 import coachImage from "@/assets/coach.jpeg";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import UnavailableFeature from "@/components/Unavailable";
 import { useCoach } from "@/hooks/useCoach";
 import { cn } from "@/lib/utils";
 import type { IConversationListItem, QuickPrompt } from "@/types";
@@ -97,6 +98,11 @@ export default function CoachPage() {
     startNewChat();
     setIsHistoryOpen(false);
   };
+
+
+  if (!user?.isPioneer) {
+    return <UnavailableFeature description="Currently, this feature is only available to pioneers." title="Pioneer Only" />;
+  }
 
   return (
     <div className="min-h-screen pb-24 flex flex-col">
