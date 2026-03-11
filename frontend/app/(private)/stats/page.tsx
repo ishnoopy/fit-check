@@ -5,9 +5,7 @@ import { LoadingState } from "@/components/LoadingState";
 import { PageHeader } from "@/components/PageHeader";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/lib/api";
-import { ILogStats } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { useGetStats } from "@/hooks/query/useStats";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -21,23 +19,13 @@ import { useRouter } from "next/navigation";
 
 export default function StatsPage() {
   const router = useRouter();
-  const getStats = async () => {
-    return api.get<{ data: ILogStats }>("/api/logs/stats");
-  };
-
-  const {
-    data: statsData,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["stats"],
-    queryFn: getStats,
-    select: (data) => data.data,
-  });
+  const { data: statsData, isLoading, error } = useGetStats({ queryKey: ["stats"] });
 
   const totalLogs = statsData?.totalLogs || 0;
   const exercisesThisWeek = statsData?.exercisesThisWeek || 0;
   const datesWithWorkouts = statsData?.datesWithWorkouts || [];
+  console.log("✏️ ~ page.tsx:27 ~ StatsPage ~ datesWithWorkouts:", datesWithWorkouts)
+
   const streak = statsData?.streak || 0;
 
   const stats = [
@@ -198,10 +186,15 @@ export default function StatsPage() {
             <CardContent className="flex justify-center">
               <Calendar
                 mode="multiple"
-                selected={datesWithWorkouts.map(
-                  (dateStr: string) => new Date(dateStr + "T00:00:00"),
-                )}
-                disabled={true}
+                onSelect={() => {
+                  return;
+                }}
+                modifiers={{
+                  workout: datesWithWorkouts.map(dateStr => new Date(dateStr + 'T00:00:00')),
+                }}
+                modifiersClassNames={{
+                  workout: "[&>button]:opacity-100 bg-accent rounded [--cell-size:--spacing(10)]",
+                }}
                 className="rounded-(--radius) border-0"
               />
             </CardContent>

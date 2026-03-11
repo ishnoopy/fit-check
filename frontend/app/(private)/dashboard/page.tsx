@@ -1,10 +1,11 @@
 "use client";
 
 import { AppGuide } from "@/components/AppGuide";
-import { EmptyState } from "@/components/EmptyState";
+import { LoadingState } from "@/components/LoadingState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,11 +14,10 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import { useGetStats } from "@/hooks/query/useStats";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/query-client";
 import { getDayName } from "@/lib/store";
-import { ILogStats } from "@/types";
-import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   AlertCircleIcon,
@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../../providers";
 
@@ -51,47 +50,21 @@ const item = {
 
 const patchNotesDetails = [
   {
-    date: "2026-03-01",
+    date: "2026-03-11",
     element: <p className="text-sm text-muted-foreground">
-      • Exercise timer in logs set to the format of <span className="font-mono text-primary font-bold">MM:SS</span> (e.g. <span className="font-mono text-primary font-bold">02:30</span>).
-    </p>,
-  },
-  {
-    date: "2026-03-01",
-    element: <p className="text-sm text-muted-foreground">
-      • Log&apos;s timer pill is now <span className="font-bold italic">draggable</span> to anywhere on the screen.
-    </p>,
-  },
-  {
-    date: "2026-03-02",
-    element: <p className="text-sm text-muted-foreground">
-      • Added a new <span className="font-bold italic">coach</span> feature to help you with your fitness journey <span className="font-bold italic">(beta)</span>.
-    </p>,
-  },
-  {
-    date: "2026-03-01",
-    element: <p className="text-sm text-muted-foreground">
-      • Moved feedback hub to the main menu for easier access.
+      Workout Calendar added to dashboard.
     </p>,
   },
 ];
-const PATCH_NOTE_VERSION = "2026-03-02";
+const PATCH_NOTE_VERSION = "2026-03-11";
 
 export default function DashboardPage() {
   const { user } = useUser();
-  const router = useRouter();
   const dayName = getDayName(new Date().getDay());
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
   const [isAcknowledgingPatchNotes, setIsAcknowledgingPatchNotes] = useState(false);
 
-  const getStats = async () => {
-    return api.get<{ data: ILogStats }>("/api/logs/stats");
-  };
-
-  const { data: statsData } = useQuery({
-    queryKey: ["stats"],
-    queryFn: getStats,
-  });
+  const { data: statsData } = useGetStats({ queryKey: ["stats"] });
 
   useEffect(() => {
     if (!user) return;
@@ -125,12 +98,13 @@ export default function DashboardPage() {
     }
   };
 
-  const totalLogs = statsData?.data?.totalLogs || 0;
-  const exercisesToday = statsData?.data?.exercisesToday || 0;
-  const exercisesThisWeek = statsData?.data?.exercisesThisWeek || 0;
-  const streak = statsData?.data?.streak || 0;
-  const bufferDaysUsed = statsData?.data?.bufferDaysUsed || 0;
-  const restDaysBuffer = statsData?.data?.restDaysBuffer || 0;
+  const totalLogs = statsData?.totalLogs || 0;
+  const exercisesToday = statsData?.exercisesToday || 0;
+  const exercisesThisWeek = statsData?.exercisesThisWeek || 0;
+  const streak = statsData?.streak || 0;
+  const bufferDaysUsed = statsData?.bufferDaysUsed || 0;
+  const restDaysBuffer = statsData?.restDaysBuffer || 0;
+  const datesWithWorkouts = statsData?.datesWithWorkouts || [];
 
   // Check if buffer is being used
   const isBufferActive = bufferDaysUsed > 0;
@@ -164,6 +138,12 @@ export default function DashboardPage() {
     },
   ];
 
+  if (!statsData) {
+    // or use isLoading from useGetStats
+    return <LoadingState message="Loading your stats..." />;
+  }
+
+
   return (
     <div className="min-h-screen pb-24">
       <Dialog
@@ -184,7 +164,7 @@ export default function DashboardPage() {
               <AlertCircleIcon className="size-6" /> What&apos;s new in FitCheck?
             </DialogTitle>
             <DialogDescription className="text-center">
-              Effective March 1, 2026:
+              Effective March 11, 2026:
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
@@ -241,11 +221,7 @@ export default function DashboardPage() {
                 </strong>{" "}
                 👋
               </p>
-              <p className="text-sm text-muted-foreground">
-                {streak > 0
-                  ? `You're on a ${streak}-day streak! Keep it up! 🔥`
-                  : "Ready to start your fitness journey?"}
-              </p>
+
             </div>
 
             {/* Reminder: Buffer used up */}
@@ -367,20 +343,44 @@ export default function DashboardPage() {
           ))}
         </motion.div>
 
+        {/* Calendar View */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <EmptyState
-            icon={CalendarIcon}
-            title="No workouts scheduled"
-            description="Start your fitness journey by creating your first workout plan"
-            action={{
-              label: "Create a plan",
-              onClick: () => router.push("/plans"),
-            }}
-          />
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-lg">
+                <div className="rounded-(--radius) bg-primary/10 p-2">
+                  <CalendarIcon className="size-6 text-primary" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {streak > 0
+                    ? `You're on a ${streak}-day streak! Keep it up! 🔥`
+                    : "Workout Calendar"}
+                </p>
+              </CardTitle>
+              <CardDescription>
+
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <Calendar
+                mode="multiple"
+                onSelect={() => {
+                  return;
+                }}
+                modifiers={{
+                  workout: datesWithWorkouts.map(dateStr => new Date(dateStr + 'T00:00:00')),
+                }}
+                modifiersClassNames={{
+                  workout: "[&>button]:opacity-100 bg-accent rounded [--cell-size:--spacing(10)]",
+                }}
+                className="rounded-(--radius) border-0"
+              />
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
     </div>
