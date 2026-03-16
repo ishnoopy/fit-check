@@ -40,9 +40,9 @@ services:
     volumes:
       - mongo_data:/data/db
 
-  nginx:
-    image: nginx:1.27.3-alpine
-    container_name: nginx
+  caddy:
+    image: caddy:2
+    container_name: caddy
     restart: unless-stopped
     depends_on:
       - frontend
@@ -51,18 +51,11 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/certs:/etc/letsencrypt:ro
-      - ./nginx/certbot:/var/www/certbot
-
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    volumes:
-      - ./nginx/certs:/etc/letsencrypt
-      - ./nginx/certbot:/var/www/certbot
-    entrypoint: >
-      certbot certonly --webroot --webroot-path=/var/www/certbot --email ishnoopy@gmail.com --agree-tos --no-eff-email -d fit-check.ishnoopy.space
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/data:/data
+      - ./caddy/config:/config
 
 volumes:
   mongo_data:
+  caddy_data:
+  caddy_config:
