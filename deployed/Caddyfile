@@ -1,0 +1,16 @@
+fit-check.ishnoopy.space {
+  encode zstd gzip
+
+    handle /api/* {
+        reverse_proxy backend:4000
+    }
+
+    handle {
+        reverse_proxy frontend:3000
+    }
+
+  log {
+    output stdout
+    format json
+  }
+}
