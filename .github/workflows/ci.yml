@@ -94,13 +94,32 @@ jobs:
             docker compose up -d
             docker image prune -f
 
+      - name: Check API health
+        run: |
+          success=0
+
+          for i in {1..10}; do
+            if curl -f https://${{ vars.DOMAIN }}/api/health; then
+              success=1
+              break
+            fi
+
+            echo "API health check failed, retrying..."
+            sleep 5
+          done
+
+          if [ "$success" -ne 1 ]; then
+            echo "API health check failed after 10 attempts, exiting..."
+            exit 1
+          fi
+
       - name: Success
         if: success()
-        run: echo "Deployment successful"
+        run: echo "Deployment successful ✅"
 
       - name: Failure
         if: failure()
-        run: echo "Deployment failed"
+        run: echo "Deployment failed ❌"
 
       - name: Clean up
         if: always()
