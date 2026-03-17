@@ -1,6 +1,6 @@
+import logo from "@/assets/fit-check-logo.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import logo from "@/assets/fit-check-logo.png";
 import {
   Activity,
   ArrowRight,
@@ -209,6 +209,7 @@ export default function LandingPage() {
         <div className="rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-foreground/10 bg-muted/30 backdrop-blur-sm aspect-video relative group">
           <div className="absolute inset-0 bg-gradient-to-tr from-foreground/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
           <iframe
+            loading="lazy"
             width="100%"
             height="100%"
             src="https://www.youtube.com/embed/y-DCCrFVZJM?autoplay=0&rel=0&showinfo=0"
