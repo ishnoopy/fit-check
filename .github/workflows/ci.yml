@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-frontend:
-    name: Build and Push Docker Images
+    name: Build and Push Frontend Docker Image
     runs-on: ubuntu-latest
 
     steps:
@@ -34,7 +34,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-backend:
-    name: Build and Push Docker Images
+    name: Build and Push Backend Docker Image
     runs-on: ubuntu-latest
 
     steps:
