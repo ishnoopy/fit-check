@@ -15,7 +15,7 @@ fit-check.ishnoopy.space {
     header @html Cache-Control "no-cache"
 
     handle /api/* {
-        reverse_proxy backend-1:4000 backend-2:4001 {
+        reverse_proxy backend-1:4000 backend-2:4000 {
             lb_policy round_robin
             health_uri /api/health
         }

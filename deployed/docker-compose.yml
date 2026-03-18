@@ -46,7 +46,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:
-      - "4001:4001"
+      - "4001:4000"
 
   mongo:
     image: mongo:7.0.14
