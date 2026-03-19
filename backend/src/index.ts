@@ -4,11 +4,18 @@ import { cors } from "hono/cors";
 import dbConnect from "./lib/database.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import { loggerMiddleware } from "./middlewares/logger.middleware.js";
+import {
+  closeRedisConnection,
+  connectRateLimiterRedis,
+} from "./middlewares/rate-limiter.middleware.js";
 import routes from "./routes/index.js";
 export const app = new Hono();
 
 // Connect to the database
 dbConnect();
+void connectRateLimiterRedis().catch((error) => {
+  console.error("Rate limiter Redis connection failed:", error);
+});
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -49,6 +56,19 @@ app.get("/api/health", (c) => c.json({ message: "API is running" }));
 
 const port = process.env.PORT || 4000;
 console.log(`Server is running on http://localhost:${port}`);
+
+const shutdown = async () => {
+  await closeRedisConnection();
+  process.exit(0);
+};
+
+process.on("SIGINT", () => {
+  void shutdown();
+});
+
+process.on("SIGTERM", () => {
+  void shutdown();
+});
 
 if (!import.meta.vitest) {
   console.log("Starting server...");

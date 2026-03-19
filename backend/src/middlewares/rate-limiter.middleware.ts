@@ -1,38 +1,102 @@
+import { RedisStore } from "@hono-rate-limiter/redis";
+import { getConnInfo } from "@hono/node-server/conninfo";
 import type { Context } from "hono";
 import { rateLimiter } from "hono-rate-limiter";
 import { StatusCodes } from "http-status-codes";
+import { createClient } from "redis";
 
-interface RateLimiterConfig {
-  windowMs: number;
-  limit: number;
-  standardHeaders: boolean;
-  keyGenerator: (c: Context) => string;
-}
 
-// Get client IP address
+const redisClient = createClient({
+  url: process.env.REDIS_URL || "redis://localhost:6379",
+});
+
+let redisConnectionPromise: Promise<void> | null = null;
+
+redisClient.on("error", (error) => {
+  console.error("Rate limiter Redis error:", error);
+});
+
+const ensureRedisConnection = async () => {
+  if (redisClient.isOpen) {
+    return;
+  }
+
+  if (!redisConnectionPromise) {
+    redisConnectionPromise = redisClient.connect().then(() => {
+      console.log("Rate limiter Redis connected");
+    }).catch((error) => {
+      redisConnectionPromise = null;
+      throw error;
+    });
+  }
+
+  await redisConnectionPromise;
+};
+
+const redisStoreClient = {
+  scriptLoad: async (script: string) => {
+    await ensureRedisConnection();
+    return redisClient.scriptLoad(script);
+  },
+  evalsha: async <TArgs extends unknown[], TData = unknown>(
+    sha1: string,
+    keys: string[],
+    args: TArgs,
+  ) => {
+    await ensureRedisConnection();
+    return redisClient.evalSha(sha1, {
+      keys,
+      arguments: args.map((value) => String(value)),
+    }) as Promise<TData>;
+  },
+  decr: async (key: string) => {
+    await ensureRedisConnection();
+    return redisClient.decr(key);
+  },
+  del: async (key: string) => {
+    await ensureRedisConnection();
+    return redisClient.del(key);
+  },
+};
+
+const createRedisStore = (prefix: string) => {
+  return new RedisStore({
+    client: redisStoreClient,
+    prefix: `rate-limit:${prefix}:`,
+  });
+};
+
 const getClientIp = (c: Context): string => {
-  // Check for forwarded IP (if behind proxy/nginx)
   const forwardedFor = c.req.header("x-forwarded-for");
+
   if (forwardedFor) {
     return forwardedFor.split(",")[0].trim();
   }
-
-  // Check for real IP header
   const realIp = c.req.header("x-real-ip");
+
   if (realIp) {
     return realIp;
   }
 
-  // Fallback to connection remote address
+  // Fallback to direct connection IP (local dev)
+  try {
+    const connInfo = getConnInfo(c);
+    if (connInfo?.remote?.address) {
+      return connInfo.remote.address;
+    }
+  } catch {
+    // connInfo might not be available in all contexts
+  }
   return "unknown";
 };
 
-// General API rate limiter - 100 requests per 15 minutes
+// General API rate limiter - 500 requests per 15 minutes
 export const generalRateLimiter = rateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 500, // Limit each IP to 500 requests per window
-  standardHeaders: "draft-7", // Return rate limit info in headers
+  windowMs: 15 * 60 * 1000,
+  limit: 500,
+  standardHeaders: "draft-7",
   keyGenerator: (c) => getClientIp(c),
+  store: createRedisStore("general"),
   handler: (c) => {
     return c.json(
       {
@@ -45,18 +109,18 @@ export const generalRateLimiter = rateLimiter({
   },
 });
 
-// Strict rate limiter for auth endpoints - 5 requests per 15 minutes
+// Auth rate limiter - 20 requests per 15 minutes
 export const authRateLimiter = rateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 20, // Limit each IP to 20 login/register attempts per window
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
   standardHeaders: "draft-7",
   keyGenerator: (c) => getClientIp(c),
+  store: createRedisStore("auth"),
   handler: (c) => {
     return c.json(
       {
         error: "Too many authentication attempts",
-        message:
-          "You have exceeded the authentication rate limit. Please try again after 15 minutes.",
+        message: "You have exceeded the authentication rate limit. Please try again after 15 minutes.",
         retryAfter: `${c.res.headers.get("Retry-After")} seconds`,
       },
       StatusCodes.TOO_MANY_REQUESTS,
@@ -64,12 +128,13 @@ export const authRateLimiter = rateLimiter({
   },
 });
 
-// Moderate rate limiter for sensitive operations - 30 requests per 15 minutes
+// Moderate rate limiter - 100 requests per 15 minutes
 export const moderateRateLimiter = rateLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 100,
   standardHeaders: "draft-7",
   keyGenerator: (c) => getClientIp(c),
+  store: createRedisStore("moderate"),
   handler: (c) => {
     return c.json(
       {
@@ -81,3 +146,13 @@ export const moderateRateLimiter = rateLimiter({
     );
   },
 });
+
+export const connectRateLimiterRedis = async () => {
+  await ensureRedisConnection();
+};
+
+export const closeRedisConnection = async () => {
+  if (redisClient.isOpen) {
+    await redisClient.quit();
+  }
+};
