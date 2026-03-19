@@ -4,7 +4,7 @@ import path from "path";
 
 //DOCS: Load environment variables based on the environment
 process.env.NODE_ENV !== "production"
-  ? dotenv.config({ path: path.resolve(process.cwd(), ".env.local") })
+  ? dotenv.config({ path: path.resolve(process.cwd(), ".env") })
   : dotenv.config();
 
 const DB_URL = process.env.DB_URL || "";
