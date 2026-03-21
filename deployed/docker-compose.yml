@@ -72,18 +72,6 @@ services:
       redis:
         condition: service_healthy
 
-  mongo:
-    image: mongo:7.0.14
-    container_name: mongo
-    restart: unless-stopped
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-    expose:
-      - "27017"
-    volumes:
-      - mongo_data:/data/db
-
   caddy:
     image: caddy:2
     container_name: caddy
@@ -120,7 +108,6 @@ services:
       start_period: 15s
 
 volumes:
-  mongo_data:
   caddy_data:
   caddy_config:
   redis_data:
