@@ -6,13 +6,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -60,8 +53,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { type MouseEvent, useEffect, useState } from "react";
+import { type UseFormReturn, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 interface Plan {
@@ -70,20 +63,91 @@ interface Plan {
   description?: string;
 }
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
+function PlanDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  form,
+  onSubmit,
+  pending,
+  submitLabel,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  form: UseFormReturn<CreatePlanFormValues>;
+  onSubmit: (values: CreatePlanFormValues) => void;
+  pending: boolean;
+  submitLabel: string;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg rounded-[1.75rem] border-border/60 bg-card/95 shadow-xl dark:border-white/8 dark:bg-[rgba(30,32,38,0.96)]">
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="text-2xl font-semibold tracking-[-0.04em]">
+            {title}
+          </DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., Strength and Conditioning"
+                      className="h-12 rounded-2xl border-border/70 bg-background/70"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add a short note about the intent of this plan."
+                      rows={4}
+                      className="rounded-2xl border-border/70 bg-background/70"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter className="gap-3 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={pending}
+                className="rounded-full"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={pending} className="rounded-full">
+                {pending ? `${submitLabel}...` : submitLabel}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function PlansPage() {
   const { activePlanId, setActivePlanId } = useGeneral();
@@ -124,16 +188,13 @@ export default function PlansPage() {
     if (activePlanId === planId) {
       setActivePlanId(null);
       localStorage.removeItem("activePlanId");
-
-      // remove active workout and exercise from local storage
       localStorage.removeItem("activeWorkoutId");
       localStorage.removeItem("activeExerciseId");
       return;
     }
+
     setActivePlanId(planId);
     localStorage.setItem("activePlanId", planId);
-
-    // set active workout and exercise to local storage
     localStorage.setItem("activeWorkoutId", "");
     localStorage.setItem("activeExerciseId", "");
   };
@@ -143,9 +204,7 @@ export default function PlansPage() {
       enableToast: false,
       queryKey: ["plans"],
       onSuccess: (response: { data: IPlan }) => {
-        toast.success(
-          "Plan created successfully! 🎉 Let's add your first workout",
-        );
+        toast.success("Plan created successfully. Add your first workout next.");
         createPlanForm.reset();
         setCreateDialogOpen(false);
         router.push(`/plans/${response.data.id}`);
@@ -161,7 +220,6 @@ export default function PlansPage() {
         setDeleteDialogOpen(false);
         setPlanToDelete(null);
 
-        // Clear active plan if it was deleted
         if (planToDelete && activePlanId === planToDelete.id) {
           setActivePlanId(null);
           localStorage.removeItem("activePlanId");
@@ -176,42 +234,20 @@ export default function PlansPage() {
       queryKey: ["plans"],
     });
 
-  const handleDeleteClick = (plan: Plan, e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleDeleteClick = (plan: Plan, event: MouseEvent) => {
+    event.preventDefault();
     setPlanToDelete(plan);
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (planToDelete) {
-      deletePlanMutation(planToDelete.id);
-    }
-  };
-
-  const handleEditClick = (plan: Plan, e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleEditClick = (plan: Plan, event: MouseEvent) => {
+    event.preventDefault();
     setPlanToEdit(plan);
     editPlanForm.reset({
       title: plan.title,
       description: plan.description || "",
     });
     setEditDialogOpen(true);
-  };
-
-  const handleConfirmEdit = (values: CreatePlanFormValues) => {
-    if (planToEdit) {
-      updatePlanMutation(values, {
-        onSuccess: () => {
-          setEditDialogOpen(false);
-          setPlanToEdit(null);
-          editPlanForm.reset();
-        },
-      });
-    }
-  };
-
-  const onSubmit = (values: CreatePlanFormValues) => {
-    createPlanMutation(values);
   };
 
   const getPlans: QueryFunction<{ data: Plan[] }> = () => {
@@ -223,32 +259,32 @@ export default function PlansPage() {
     queryFn: getPlans,
   });
 
-  //* Empty Plans State
-  if (!plans?.data || plans.data.length === 0) {
+  const planList = plans?.data ?? [];
+  const activePlan = planList.find((plan) => plan.id === activePlanId) || null;
+
+  if (planList.length === 0) {
     return (
-      <div className="min-h-screen pb-24">
-        <div className="p-6 max-w-2xl mx-auto space-y-8">
-          <div className="flex items-start justify-between gap-3">
+      <div className="min-h-screen pb-28">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 pb-8 pt-6 sm:px-6">
+          <div className="flex items-start justify-between gap-4">
             <PageHeader
               title="Plans"
-              subtitle="Create and manage your workout routines 💪"
+              subtitle="Build your workout library and keep one plan ready for logging."
             />
-            <div className="shrink-0 mt-1">
+            <div className="mt-1 shrink-0">
               <AppGuide />
             </div>
           </div>
           <EmptyState
             icon={Dumbbell}
             title="No workout plans yet"
-            description="Create your first workout plan to organize your exercises and track your progress"
+            description="Create the first plan to define your training split, then mark it active when you want to log against it."
             action={{
               label: "Create your first plan",
               onClick: () => setCreateDialogOpen(true),
             }}
           />
-
-          {/* Create Plan Dialog */}
-          <Dialog
+          <PlanDialog
             open={createDialogOpen}
             onOpenChange={(open) => {
               setCreateDialogOpen(open);
@@ -256,239 +292,251 @@ export default function PlansPage() {
                 router.replace("/plans", { scroll: false });
               }
             }}
-          >
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Create New Plan</DialogTitle>
-                <DialogDescription>
-                  Create a new workout plan to organize your training routine 💪
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...createPlanForm}>
-                <form
-                  onSubmit={createPlanForm.handleSubmit(onSubmit)}
-                  className="space-y-6"
-                >
-                  <FormField
-                    control={createPlanForm.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., Summer Body Program"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={createPlanForm.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description (optional)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="e.g., 6-week plan to build muscle and lose fat"
-                            rows={4}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCreateDialogOpen(false)}
-                      disabled={isCreatePlanPending}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isCreatePlanPending}>
-                      {isCreatePlanPending ? "Creating..." : "Create Plan"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+            title="Create new plan"
+            description="Start with a title and a short note. You can add workouts inside the plan after creation."
+            form={createPlanForm}
+            onSubmit={(values) => createPlanMutation(values)}
+            pending={isCreatePlanPending}
+            submitLabel="Create plan"
+          />
         </div>
       </div>
     );
   }
 
-  //* Plans State
   return (
-    <div className="min-h-screen pb-24">
-      <div className="p-6 max-w-2xl mx-auto space-y-8">
-        <div className="flex items-start justify-between gap-3">
+    <div className="min-h-screen pb-28">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 pb-8 pt-6 sm:px-6">
+        <div className="flex items-start justify-between gap-4">
           <PageHeader
             title="Plans"
-            subtitle="Create and manage your workout routines 💪"
+            subtitle="Organize your routines, set one active, and move directly into training."
           />
-          <div className="flex items-center gap-2 shrink-0 mt-1">
+          <div className="mt-1 flex shrink-0 items-center gap-2">
             <AppGuide />
             <Button
               size="lg"
-              className="gap-2"
+              className="rounded-full px-5"
               onClick={() => setCreateDialogOpen(true)}
             >
-              <Plus className="h-5 w-5" />
-              New Plan
+              <Plus className="size-4" />
+              New plan
             </Button>
           </div>
         </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2"
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28 }}
+          className="overflow-hidden rounded-[2.4rem] bg-[rgb(24,26,21)] p-6 text-[rgb(245,242,235)] shadow-xl dark:border dark:border-white/6 dark:bg-[linear-gradient(180deg,rgba(15,15,17,0.98),rgba(8,8,10,0.98))]"
         >
-          {plans?.data?.map((plan: Plan) => {
+          <div className="flex items-start justify-between gap-4">
+            <div className="max-w-md space-y-3">
+              <p className="text-sm uppercase tracking-[0.18em] text-[rgba(245,242,235,0.55)]">
+                Active library
+              </p>
+              <h2 className="text-3xl font-semibold tracking-[-0.05em]">
+                {activePlan ? activePlan.title : "Choose one plan to anchor your logging"}
+              </h2>
+              <p className="text-sm leading-6 text-[rgba(245,242,235,0.7)]">
+                {activePlan?.description ||
+                  "An active plan keeps workout logging focused and removes friction when you jump into a session."}
+              </p>
+            </div>
+            <div className="rounded-full border border-[rgba(245,242,235,0.14)] bg-[rgba(245,242,235,0.08)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[rgba(245,242,235,0.7)]">
+              {planList.length} saved plans
+            </div>
+          </div>
+
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-[rgba(245,242,235,0.48)]">
+                Active
+              </p>
+              <p className="mt-2 text-2xl font-semibold">
+                {activePlan ? "01" : "00"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-[rgba(245,242,235,0.48)]">
+                Available
+              </p>
+              <p className="mt-2 text-2xl font-semibold">{planList.length}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-[rgba(245,242,235,0.48)]">
+                Status
+              </p>
+              <p className="mt-2 text-2xl font-semibold">
+                {activePlan ? "Ready" : "Pick"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-[rgba(245,242,235,0.48)]">
+                Next
+              </p>
+              <p className="mt-2 text-2xl font-semibold">
+                {activePlan ? "Log" : "Set"}
+              </p>
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08, duration: 0.28 }}
+          className="space-y-4"
+        >
+          {planList.map((plan, index) => {
             const isActive = activePlanId === plan.id;
 
             return (
-              <motion.div key={plan.id} variants={item}>
-                <Card
-                  className={`group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 h-full flex flex-col ${isActive
-                      ? "border-primary/50 shadow-sm ring-1 ring-primary/20"
-                      : ""
-                    }`}
-                >
-                  {isActive && (
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl" />
-                  )}
-
-                  <CardHeader className="pb-4 relative">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 space-y-1">
-                        <CardTitle className="text-xl font-bold line-clamp-2">
-                          {plan.title}
-                        </CardTitle>
-                        {isActive && (
-                          <div className="flex items-center gap-1.5 text-primary">
-                            <Star className="h-4 w-4 fill-current" />
-                            <span className="text-xs font-semibold">
-                              Active Plan
-                            </span>
-                          </div>
-                        )}
+              <motion.article
+                key={plan.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 * index, duration: 0.28 }}
+                whileHover={{ y: -4 }}
+                className={`rounded-[2rem] border p-5 shadow-sm backdrop-blur-sm ${
+                  isActive
+                    ? "border-primary/30 bg-[linear-gradient(135deg,rgba(232,203,207,0.78),rgba(255,255,255,0.7))] dark:border-primary/30 dark:bg-[linear-gradient(135deg,rgba(42,36,40,0.96),rgba(24,24,28,0.96))] dark:text-[rgb(248,235,236)]"
+                    : "border-border/60 bg-card/80 dark:border-white/8 dark:bg-[rgba(30,32,38,0.9)]"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex size-11 items-center justify-center rounded-full ${
+                          isActive
+                            ? "bg-[rgba(255,255,255,0.58)] text-[rgb(110,38,46)] dark:bg-primary/14 dark:text-primary"
+                            : "bg-secondary/50 text-secondary-foreground"
+                        }`}
+                      >
+                        <Dumbbell className="size-5" />
                       </div>
-
-                      {/* Plan Actions */}
-                      <div className="flex items-center gap-2">
-                        <div className="bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors">
-                          <Dumbbell className="h-5 w-5 text-primary" />
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9"
-                              onClick={(e) => e.preventDefault()}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              className="cursor-pointer"
-                              onClick={(e) => handleEditClick(plan, e)}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Plan
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive cursor-pointer"
-                              onClick={(e) => handleDeleteClick(plan, e)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Plan
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <div>
+                        <h3
+                          className={`text-xl font-semibold tracking-[-0.04em] ${
+                            isActive ? "dark:text-[rgb(255,241,243)]" : ""
+                          }`}
+                        >
+                          {plan.title}
+                        </h3>
+                        <p
+                          className={`text-sm ${
+                            isActive
+                              ? "text-[rgb(121,61,67)] dark:text-white/74"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {isActive ? "Current active plan" : "Available in library"}
+                        </p>
                       </div>
                     </div>
-                  </CardHeader>
-
-                  <CardContent className="flex-1 pb-4 relative">
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {plan.description || (
-                        <span className="italic opacity-70">
-                          No description provided
-                        </span>
-                      )}
+                    <p
+                      className={`max-w-lg text-sm leading-6 ${
+                        isActive
+                          ? "text-[rgb(100,54,60)] dark:text-white/82"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {plan.description || "No description yet. Use the edit action to clarify the intent of this routine."}
                     </p>
-                  </CardContent>
+                  </div>
 
-                  <CardFooter className="pt-0 flex flex-col gap-2 relative">
-                    <Button
-                      asChild
-                      variant="default"
-                      className="w-full  group/btn"
-                      size="lg"
-                    >
-                      <Link
-                        href={`/plans/${plan.id}`}
-                        className="flex items-center justify-center gap-2"
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full"
+                        onClick={(event) => event.preventDefault()}
                       >
-                        <Eye className="h-4 w-4" />
-                        View Details
-                      </Link>
-                    </Button>
-
-                    {/* Set as Active Button */}
-                    <Button
-                      type="button"
-                      variant={isActive ? "secondary" : "outline"}
-                      className={`w-full  ${isActive
-                          ? "bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
-                          : ""
-                        }`}
-                      onClick={() => handleToggleActivePlan(plan.id)}
+                        <MoreVertical className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-48 rounded-2xl border-border/60 bg-card/95 dark:border-white/8 dark:bg-[rgba(30,32,38,0.96)]"
                     >
-                      {isActive ? (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Active Plan
-                        </>
-                      ) : (
-                        <>
-                          <Star className="h-4 w-4 mr-2" />
-                          Set as Active
-                        </>
-                      )}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
+                      <DropdownMenuItem
+                        className="cursor-pointer rounded-xl"
+                        onClick={(event) => handleEditClick(plan, event)}
+                      >
+                        <Edit className="mr-2 size-4" />
+                        Edit plan
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer rounded-xl text-destructive focus:text-destructive"
+                        onClick={(event) => handleDeleteClick(plan, event)}
+                      >
+                        <Trash2 className="mr-2 size-4" />
+                        Delete plan
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                  <Button asChild className="h-11 rounded-full px-5">
+                    <Link href={`/plans/${plan.id}`}>
+                      <Eye className="size-4" />
+                      View details
+                    </Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={isActive ? "secondary" : "outline"}
+                    className={`h-11 rounded-full px-5 ${
+                      isActive
+                        ? "bg-foreground text-background hover:bg-foreground/92"
+                        : "border-border/70 bg-background/75"
+                    }`}
+                    onClick={() => handleToggleActivePlan(plan.id)}
+                  >
+                    {isActive ? (
+                      <>
+                        <CheckCircle2 className="size-4" />
+                        Active plan
+                      </>
+                    ) : (
+                      <>
+                        <Star className="size-4" />
+                        Set as active
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </motion.article>
             );
           })}
-        </motion.div>
+        </motion.section>
 
-        {/* Edit Plan Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Edit Plan</DialogTitle>
+          <DialogContent className="max-w-lg rounded-[1.75rem] border-border/60 bg-card/95 shadow-xl dark:border-white/8 dark:bg-[rgba(30,32,38,0.96)]">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-2xl font-semibold tracking-[-0.04em]">
+                Edit plan
+              </DialogTitle>
               <DialogDescription>
-                Update your workout plan details
+                Adjust the title or rewrite the note that explains this routine.
               </DialogDescription>
             </DialogHeader>
             <Form {...editPlanForm}>
               <form
-                onSubmit={editPlanForm.handleSubmit(handleConfirmEdit)}
+                onSubmit={editPlanForm.handleSubmit((values) => {
+                  if (!planToEdit) return;
+                  updatePlanMutation(values, {
+                    onSuccess: () => {
+                      setEditDialogOpen(false);
+                      setPlanToEdit(null);
+                      editPlanForm.reset();
+                    },
+                  });
+                })}
                 className="space-y-6"
               >
                 <FormField
@@ -496,10 +544,11 @@ export default function PlansPage() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Title *</FormLabel>
+                      <FormLabel>Title</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="e.g., Summer Body Program"
+                          placeholder="e.g., Strength and Conditioning"
+                          className="h-12 rounded-2xl border-border/70 bg-background/70"
                           {...field}
                         />
                       </FormControl>
@@ -507,17 +556,17 @@ export default function PlansPage() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={editPlanForm.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description (optional)</FormLabel>
+                      <FormLabel>Description</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="e.g., 6-week plan to build muscle and lose fat"
+                          placeholder="Add a short note about the intent of this plan."
                           rows={4}
+                          className="rounded-2xl border-border/70 bg-background/70"
                           {...field}
                         />
                       </FormControl>
@@ -525,8 +574,7 @@ export default function PlansPage() {
                     </FormItem>
                   )}
                 />
-
-                <DialogFooter>
+                <DialogFooter className="gap-3 sm:gap-0">
                   <Button
                     type="button"
                     variant="outline"
@@ -536,11 +584,16 @@ export default function PlansPage() {
                       editPlanForm.reset();
                     }}
                     disabled={isUpdatePlanPending}
+                    className="rounded-full"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isUpdatePlanPending}>
-                    {isUpdatePlanPending ? "Updating..." : "Update Plan"}
+                  <Button
+                    type="submit"
+                    disabled={isUpdatePlanPending}
+                    className="rounded-full"
+                  >
+                    {isUpdatePlanPending ? "Updating..." : "Update plan"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -548,38 +601,43 @@ export default function PlansPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Plan</DialogTitle>
+          <DialogContent className="rounded-[1.75rem] border-border/60 bg-card/95 shadow-xl dark:border-white/8 dark:bg-[rgba(30,32,38,0.96)]">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-2xl font-semibold tracking-[-0.04em]">
+                Delete plan
+              </DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete &quot;{planToDelete?.title}
-                &quot;? This action cannot be undone and will also delete all
-                associated workouts.
+                Delete &quot;{planToDelete?.title}&quot; and its associated
+                workouts. This cannot be undone.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
+            <DialogFooter className="gap-3 sm:gap-0">
               <Button
                 variant="outline"
                 onClick={() => setDeleteDialogOpen(false)}
                 disabled={isDeletePlanPending}
+                className="rounded-full"
               >
                 Cancel
               </Button>
               <Button
                 variant="destructive"
-                onClick={handleConfirmDelete}
+                onClick={() => {
+                  if (planToDelete) {
+                    deletePlanMutation(planToDelete.id);
+                  }
+                }}
                 disabled={isDeletePlanPending}
+                className="rounded-full"
               >
-                {isDeletePlanPending ? "Deleting..." : "Delete Plan"}
+                {isDeletePlanPending ? "Deleting..." : "Delete plan"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Create Plan Dialog */}
-        <Dialog
+        <PlanDialog
           open={createDialogOpen}
           onOpenChange={(open) => {
             setCreateDialogOpen(open);
@@ -587,71 +645,13 @@ export default function PlansPage() {
               router.replace("/plans", { scroll: false });
             }
           }}
-        >
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Create New Plan</DialogTitle>
-              <DialogDescription>
-                Create a new workout plan to organize your training routine 💪
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...createPlanForm}>
-              <form
-                onSubmit={createPlanForm.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={createPlanForm.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Summer Body Program"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={createPlanForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description (optional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="e.g., 6-week plan to build muscle and lose fat"
-                          rows={4}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCreateDialogOpen(false)}
-                    disabled={isCreatePlanPending}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isCreatePlanPending}>
-                    {isCreatePlanPending ? "Creating..." : "Create Plan"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+          title="Create new plan"
+          description="Start with a title and a short note. You can add workouts inside the plan after creation."
+          form={createPlanForm}
+          onSubmit={(values) => createPlanMutation(values)}
+          pending={isCreatePlanPending}
+          submitLabel="Create plan"
+        />
       </div>
     </div>
   );

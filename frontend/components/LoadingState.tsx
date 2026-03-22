@@ -23,15 +23,19 @@ export function LoadingState({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex flex-col items-center justify-center py-12 space-y-4"
+      className="flex min-h-[40vh] flex-col items-center justify-center space-y-4"
     >
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      >
-        <Loader2 className={`${sizeClasses[size]} text-primary`} />
-      </motion.div>
-      <p className="text-sm text-muted-foreground">{message}</p>
+      <div className="flex size-20 items-center justify-center rounded-full border border-border/60 bg-card/80 shadow-sm backdrop-blur-sm">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Loader2 className={`${sizeClasses[size]} text-primary`} />
+        </motion.div>
+      </div>
+      <p className="text-sm tracking-[0.08em] text-muted-foreground uppercase">
+        {message}
+      </p>
     </motion.div>
   );
 }
@@ -45,7 +49,7 @@ export function SkeletonCard() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className="rounded-(--radius) border border-border/60 bg-muted/30 p-6 space-y-3"
+          className="space-y-3 rounded-[1.75rem] border border-border/60 bg-card/70 p-6 shadow-sm backdrop-blur-sm"
         >
           <div className="h-4 w-3/4 bg-muted-foreground/20 rounded animate-pulse" />
           <div className="h-3 w-1/2 bg-muted-foreground/10 rounded animate-pulse" />

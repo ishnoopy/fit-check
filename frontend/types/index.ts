@@ -53,17 +53,17 @@ export interface IUser {
   weight?: number; // in kg
   height?: number; // in cm
   fitnessGoal?:
-    | "strength"
-    | "hypertrophy"
-    | "fat_loss"
-    | "endurance"
-    | "general_fitness";
+  | "strength"
+  | "hypertrophy"
+  | "fat_loss"
+  | "endurance"
+  | "general_fitness";
   activityLevel?:
-    | "sedentary"
-    | "lightly_active"
-    | "moderately_active"
-    | "very_active"
-    | "extremely_active";
+  | "sedentary"
+  | "lightly_active"
+  | "moderately_active"
+  | "very_active"
+  | "extremely_active";
   hasGymAccess?: boolean;
   selfMotivationNote?: string;
   onboardingPromiseAccepted?: boolean;

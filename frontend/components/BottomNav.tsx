@@ -3,11 +3,10 @@
 import { useUser } from "@/app/providers";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/fit-check-logo.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  CalendarIcon,
+  Brain,
   ChartBarIcon,
   ChevronUpIcon,
   DumbbellIcon,
@@ -15,6 +14,7 @@ import {
   LogOutIcon,
   MessageCircleIcon,
   MoonIcon,
+  PlusIcon,
   SunIcon,
   UserIcon,
   WrenchIcon,
@@ -32,7 +32,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 interface Plan {
   id: string;
   title: string;
@@ -107,13 +106,12 @@ export default function BottomNav({ className }: { className?: string }) {
       showPulse: hasNoPlans,
     },
     {
-      href: "/coach",
-      icon: MessageCircleIcon,
-      label: "Coach",
+      href: "/log",
+      icon: PlusIcon,
+      label: "Log",
       isCenter: true,
-      requiresPioneer: true,
     },
-    { href: "/log", icon: CalendarIcon, label: "Log" },
+    { href: "/stats", icon: ChartBarIcon, label: "Stats" },
   ];
 
   useEffect(() => {
@@ -156,95 +154,52 @@ export default function BottomNav({ className }: { className?: string }) {
       animate={{ y: isVisible ? 0 : 80 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 px-2 pb-2 sm:px-3 sm:pb-3",
+        "fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 sm:px-4 sm:pb-4",
         className,
       )}
       style={{ pointerEvents: isVisible ? "auto" : "none" }}
     >
-      <div className="mx-auto max-w-2xl bg-background/90 backdrop-blur border border-border shadow-sm rounded-full">
-        <div className="flex justify-around items-center py-2 gap-1 px-1.5">
+      <div className="mx-auto max-w-2xl rounded-[2rem] border border-border/60 bg-card/88 px-2 py-2 shadow-lg backdrop-blur-xl dark:border-white/8 dark:bg-[rgba(30,32,38,0.94)]">
+        <div className="flex items-center justify-around gap-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const showPulse = item.showPulse && !isActive;
-            const isDisabled = item.requiresPioneer && !user?.isPioneer;
 
             const navContent = (
               <motion.div
-                whileHover={{ scale: isDisabled ? 1 : 1.05 }}
-                whileTap={{ scale: isDisabled ? 1 : 0.95 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-full py-1.5 px-2 transition-colors relative",
-                  isDisabled
-                    ? "opacity-50 cursor-not-allowed"
-                    : isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground",
+                  "relative flex min-w-[4.5rem] flex-col items-center justify-center gap-1 rounded-[1.4rem] px-3 py-2.5 transition-colors",
+                  isActive
+                    ? "bg-foreground text-background shadow-sm dark:bg-white/10 dark:text-white"
+                    : "text-muted-foreground hover:bg-background/80 hover:text-foreground dark:hover:bg-white/6 dark:hover:text-white",
                 )}
               >
-                {/* Icon with relative positioning to show badge */}
                 <div className="relative">
                   {item.isCenter ? (
                     <div
                       className={cn(
-                        "relative z-10 size-8 rounded-full flex items-center justify-center border",
-                        isActive
-                          ? "bg-primary/10 border-primary/30"
-                          : "bg-background/70 border-border",
+                        "relative z-10 flex size-9 items-center justify-center rounded-full border",
+                        "border-primary/25 bg-primary text-primary-foreground dark:border-primary/30 dark:bg-primary",
                       )}
                     >
-                      <Image
-                        src={logo}
-                        alt="FitCheck Coach"
-                        width={26}
-                        height={26}
-                        className="size-6 object-contain"
-                        priority
-                      />
+                      <PlusIcon className="size-5" />
                     </div>
                   ) : (
-                    <item.icon className="h-4 w-4 relative z-10" />
+                    <item.icon className="relative z-10 h-4 w-4" />
                   )}
                   {showPulse && (
-                    <span className="absolute -top-0.5 -right-0.5 z-20 size-2 bg-primary" />
+                    <span className="absolute -right-0.5 -top-0.5 z-20 size-2 rounded-full bg-primary" />
                   )}
                 </div>
 
-                <span className="text-xs font-medium relative z-10 hidden sm:inline">
+                <span className="relative z-10 text-[0.72rem] font-medium tracking-[0.08em] uppercase hidden sm:block">
                   {item.label}
                 </span>
 
-                {isActive && !isDisabled && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full mx-auto w-1/2"
-                    initial={false}
-                    animate={{ opacity: 1 }}
-                    transition={{
-                      layout: {
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 30,
-                      },
-                    }}
-                  />
-                )}
               </motion.div>
             );
-
-            if (isDisabled) {
-              return (
-                <div key={item.href} className="flex-1 relative">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>{navContent}</div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={8}>
-                      <p>Coming soon</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              );
-            }
 
             return (
               <Link
@@ -265,10 +220,10 @@ export default function BottomNav({ className }: { className?: string }) {
                 whileTap={{ scale: 0.95 }}
                 onClick={triggerPressHapticFeedback}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-2 px-3 transition-colors",
+                  "relative flex flex-1 flex-col items-center justify-center gap-1 rounded-[1.4rem] px-3 py-2.5 transition-colors",
                   pathname === "/profile"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-foreground text-background shadow-sm dark:bg-white/10 dark:text-white"
+                    : "text-muted-foreground hover:bg-background/80 hover:text-foreground dark:hover:bg-white/6 dark:hover:text-white",
                 )}
               >
                 <div className="relative">
@@ -283,16 +238,16 @@ export default function BottomNav({ className }: { className?: string }) {
                   ) : (
                     <UserIcon className="h-5 w-5" />
                   )}
-                  <span className="absolute -bottom-1 -right-1 z-10 inline-flex size-4 items-center justify-center rounded-full border border-border bg-background">
-                    <ChevronUpIcon className="size-3 text-muted-foreground" />
+                  <span className="absolute -bottom-1 -right-1 z-10 inline-flex size-4 items-center justify-center rounded-full border border-border bg-card dark:border-white/10 dark:bg-[rgba(20,22,28,0.96)]">
+                    <ChevronUpIcon className="size-3 text-muted-foreground dark:text-white/70" />
                   </span>
                 </div>
-                <span className="text-xs font-medium hidden sm:inline">
+                <span className="text-[0.72rem] font-medium tracking-[0.08em] uppercase hidden sm:block">
                   Profile
                 </span>
               </motion.button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-lg">
+            <DropdownMenuContent align="end" className="w-48 rounded-lg border-border/60 bg-card/95 dark:border-white/8 dark:bg-[rgba(28,30,36,0.96)]">
               <DropdownMenuItem asChild>
                 <Link
                   href="/profile"
@@ -315,11 +270,20 @@ export default function BottomNav({ className }: { className?: string }) {
 
               <DropdownMenuItem asChild>
                 <Link
-                  href="/stats"
-                  className="cursor-pointer rounded-lg"
-                  onClick={triggerPressHapticFeedback}
+                  href="/coach"
+                  className={cn(
+                    "cursor-pointer rounded-lg",
+                    !user?.isPioneer && "pointer-events-none opacity-50",
+                  )}
+                  onClick={(event) => {
+                    if (!user?.isPioneer) {
+                      event.preventDefault();
+                      return;
+                    }
+                    triggerPressHapticFeedback();
+                  }}
                 >
-                  <ChartBarIcon className="mr-2 h-4 w-4" /> Stats
+                  <Brain className="mr-2 h-4 w-4" /> Coach
                 </Link>
               </DropdownMenuItem>
 
