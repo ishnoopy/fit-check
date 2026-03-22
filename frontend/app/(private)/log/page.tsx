@@ -63,6 +63,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { WebHaptics } from "web-haptics";
 import { z } from "zod";
 
 import {
@@ -132,6 +133,7 @@ const DEFAULT_SETS = [
   },
 ];
 
+
 function SortableExerciseItem({
   id,
   children,
@@ -175,6 +177,7 @@ function SortableExerciseItem({
 
 export default function LogPage() {
   const { isTimerRunning, startRestTime } = useTimer();
+  const hapticsRef = useRef<WebHaptics | null>(null);
   const [activePlanId] = useState<string>(
     getItemFromLocalStorage("activePlanId") || "",
   );
@@ -196,6 +199,19 @@ export default function LogPage() {
   );
 
   const { data: settings } = useGetSettings();
+
+  useEffect(() => {
+    hapticsRef.current = new WebHaptics();
+
+    return () => {
+      hapticsRef.current?.destroy();
+      hapticsRef.current = null;
+    };
+  }, []);
+
+  const triggerHapticFeedback = (type: "success" | "error") => {
+    void hapticsRef.current?.trigger(type);
+  };
 
   const userTimezone =
     settings?.settings?.timezone ||
@@ -273,6 +289,7 @@ export default function LogPage() {
     enableToast: false,
     queryKey: ["workouts", activePlanId],
     onError: (error) => {
+      triggerHapticFeedback("error");
       toast.error(
         error instanceof Error ? error.message : "Failed to reorder exercises",
       );
@@ -325,6 +342,7 @@ export default function LogPage() {
         });
       }
 
+      triggerHapticFeedback("success");
       toast.success("Log created successfully");
 
       // remove the key from the local storage
@@ -341,6 +359,7 @@ export default function LogPage() {
     },
     onError: (error: Error) => {
       console.error("Failed to create log", error);
+      triggerHapticFeedback("error");
       toast.error("Failed to create log. Please try again.");
     },
   });
@@ -473,6 +492,10 @@ export default function LogPage() {
   const onSubmit = (values: FormValues) => {
     setPendingFormValues(values);
     setShowRpeDialog(true);
+  };
+
+  const onSubmitInvalid = () => {
+    triggerHapticFeedback("error");
   };
 
   const handleRpeSelection = (rpe: number) => {
@@ -847,7 +870,10 @@ export default function LogPage() {
                             <Form {...form} key={exercise.id}>
                               <fieldset disabled={isLogged} className="space-y-2.5">
                                 <form
-                                  onSubmit={form.handleSubmit(onSubmit)}
+                                  onSubmit={form.handleSubmit(
+                                    onSubmit,
+                                    onSubmitInvalid,
+                                  )}
                                   className="space-y-2.5"
                                 >
                                   <FormField
@@ -1083,6 +1109,7 @@ export default function LogPage() {
                                                       ),
                                                     );
 
+                                                    triggerHapticFeedback("error");
                                                     toast.success("Form reset");
                                                   }}
                                                 >
