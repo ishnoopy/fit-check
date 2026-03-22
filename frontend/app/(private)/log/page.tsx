@@ -209,8 +209,15 @@ export default function LogPage() {
     };
   }, []);
 
-  const triggerHapticFeedback = (type: "success" | "error") => {
-    void hapticsRef.current?.trigger(type);
+  const triggerErrorHapticFeedback = () => {
+    void hapticsRef.current?.trigger("error");
+  };
+
+  const triggerSuccessHapticFeedback = () => {
+    void hapticsRef.current?.trigger([
+      { duration: 30 },
+      { delay: 60, duration: 40, intensity: 1 },
+    ]);
   };
 
   const userTimezone =
@@ -289,7 +296,7 @@ export default function LogPage() {
     enableToast: false,
     queryKey: ["workouts", activePlanId],
     onError: (error) => {
-      triggerHapticFeedback("error");
+      triggerErrorHapticFeedback();
       toast.error(
         error instanceof Error ? error.message : "Failed to reorder exercises",
       );
@@ -342,7 +349,6 @@ export default function LogPage() {
         });
       }
 
-      triggerHapticFeedback("success");
       toast.success("Log created successfully");
 
       // remove the key from the local storage
@@ -359,7 +365,7 @@ export default function LogPage() {
     },
     onError: (error: Error) => {
       console.error("Failed to create log", error);
-      triggerHapticFeedback("error");
+      triggerErrorHapticFeedback();
       toast.error("Failed to create log. Please try again.");
     },
   });
@@ -491,11 +497,12 @@ export default function LogPage() {
 
   const onSubmit = (values: FormValues) => {
     setPendingFormValues(values);
+    triggerSuccessHapticFeedback();
     setShowRpeDialog(true);
   };
 
   const onSubmitInvalid = () => {
-    triggerHapticFeedback("error");
+    triggerErrorHapticFeedback();
   };
 
   const handleRpeSelection = (rpe: number) => {
@@ -508,6 +515,7 @@ export default function LogPage() {
       exerciseId: activeExerciseId,
       rateOfPerceivedExertion: rpe,
     };
+    triggerSuccessHapticFeedback();
     createLogMutation.mutate(payload);
     setShowRpeDialog(false);
     setPendingFormValues(null);
@@ -1109,7 +1117,7 @@ export default function LogPage() {
                                                       ),
                                                     );
 
-                                                    triggerHapticFeedback("error");
+                                                    triggerErrorHapticFeedback();
                                                     toast.success("Form reset");
                                                   }}
                                                 >

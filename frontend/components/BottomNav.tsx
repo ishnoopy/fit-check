@@ -24,6 +24,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { WebHaptics } from "web-haptics";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +53,20 @@ export default function BottomNav({ className }: { className?: string }) {
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollYRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const hapticsRef = useRef<WebHaptics | null>(null);
+
+  useEffect(() => {
+    hapticsRef.current = new WebHaptics();
+
+    return () => {
+      hapticsRef.current?.destroy();
+      hapticsRef.current = null;
+    };
+  }, []);
+
+  const triggerPressHapticFeedback = () => {
+    void hapticsRef.current?.trigger("selection");
+  };
 
   // Check if user has any plans
   const { data: plansData } = useQuery({
@@ -236,6 +251,7 @@ export default function BottomNav({ className }: { className?: string }) {
                 key={item.href}
                 href={item.href}
                 className="flex-1 relative"
+                onClick={triggerPressHapticFeedback}
               >
                 {navContent}
               </Link>
@@ -247,6 +263,7 @@ export default function BottomNav({ className }: { className?: string }) {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={triggerPressHapticFeedback}
                 className={cn(
                   "flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-2 px-3 transition-colors",
                   pathname === "/profile"
@@ -277,31 +294,50 @@ export default function BottomNav({ className }: { className?: string }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 rounded-lg">
               <DropdownMenuItem asChild>
-                <Link href="/profile" className="cursor-pointer rounded-lg">
+                <Link
+                  href="/profile"
+                  className="cursor-pointer rounded-lg"
+                  onClick={triggerPressHapticFeedback}
+                >
                   <UserIcon className="mr-2 h-4 w-4" /> Profile
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem asChild>
-                <Link href="/utility" className="cursor-pointer rounded-lg">
+                <Link
+                  href="/utility"
+                  className="cursor-pointer rounded-lg"
+                  onClick={triggerPressHapticFeedback}
+                >
                   <WrenchIcon className="mr-2 h-4 w-4" /> Utility
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem asChild>
-                <Link href="/stats" className="cursor-pointer rounded-lg">
+                <Link
+                  href="/stats"
+                  className="cursor-pointer rounded-lg"
+                  onClick={triggerPressHapticFeedback}
+                >
                   <ChartBarIcon className="mr-2 h-4 w-4" /> Stats
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem asChild>
-                <Link href="/feedback" className="cursor-pointer rounded-lg">
+                <Link
+                  href="/feedback"
+                  className="cursor-pointer rounded-lg"
+                  onClick={triggerPressHapticFeedback}
+                >
                   <MessageCircleIcon className="mr-2 h-4 w-4" /> Feedback
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                onClick={() => setTheme(isDark ? "light" : "dark")}
+                onClick={() => {
+                  triggerPressHapticFeedback();
+                  setTheme(isDark ? "light" : "dark");
+                }}
                 className="cursor-pointer rounded-lg"
               >
                 {isDark ? (
@@ -313,7 +349,10 @@ export default function BottomNav({ className }: { className?: string }) {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={handleSignOut}
+                onClick={() => {
+                  triggerPressHapticFeedback();
+                  handleSignOut();
+                }}
                 disabled={logoutMutation.isPending}
                 variant="destructive"
                 className="cursor-pointer rounded-lg"
