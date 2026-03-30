@@ -87,7 +87,8 @@ const createPost = (payload: { text: string; mediaUploadId?: string }) =>
 const getFeed = (tab: FeedTab, page: number, limit: number) =>
   api.get<FeedResponse>(`/api/posts/feed?tab=${tab}&page=${page}&limit=${limit}`);
 
-const toggleHeart = (postId: string) => api.patch(`/api/posts/${postId}/heart`);
+const toggleHeart = (postId: string) =>
+  api.patch<ToggleHeartResponse>(`/api/posts/${postId}/heart`);
 
 const getUserSearch = (query: string, limit = 8) =>
   api.get<SearchUsersResponse>(
