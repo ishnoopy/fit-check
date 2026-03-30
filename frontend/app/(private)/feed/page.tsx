@@ -12,6 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { formatPostTime } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HeartIcon, ImagePlusIcon, PlusIcon, VideoIcon } from "lucide-react";
 import Image from "next/image";
@@ -219,9 +220,7 @@ export default function FeedPage() {
                         {post.author?.username || "unknown_user"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {post.createdAt
-                          ? new Date(post.createdAt).toLocaleString()
-                          : ""}
+                        {formatPostTime(post.createdAt)}
                       </p>
                     </div>
                   </div>

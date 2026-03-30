@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
+import { formatPostTime } from "@/lib/utils";
 import { IUser } from "@/types";
 import pioneerBadge from "@/assets/psyduck.gif";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -562,7 +563,7 @@ export default function ProfilePage() {
                     <div className="px-4 py-3 space-y-2">
                       <p className="text-sm whitespace-pre-wrap break-words">{post.text}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(post.createdAt).toLocaleString()}
+                        {formatPostTime(post.createdAt)}
                       </p>
                     </div>
                   </article>
