@@ -26,14 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import { formatPostTime } from "@/lib/utils";
 import { IUser } from "@/types";
-import pioneerBadge from "@/assets/psyduck.gif";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Grid3x3, Settings2, UserIcon } from "lucide-react";
+import { Grid3x3, HeartIcon, Settings2, UserIcon } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -101,6 +99,8 @@ interface Setting {
 interface ProfilePost {
   id: string;
   text: string;
+  heartCount?: number;
+  isHeartedByMe?: boolean;
   media?: {
     url: string;
     mimeType: string;
@@ -201,6 +201,7 @@ export default function ProfilePage() {
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [isFollowersDialogOpen, setIsFollowersDialogOpen] = useState(false);
   const [isFollowingDialogOpen, setIsFollowingDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<ProfilePost | null>(null);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
   const isGoogleUser = user?.authProvider === "google";
@@ -386,50 +387,29 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen pb-24 bg-gradient-to-b from-muted/30 via-background to-background">
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="p-6 border border-border/70 rounded-[1.5rem] bg-background/90 shadow-sm">
-          <div className="flex items-start gap-8 md:gap-16">
-            {/* Profile Picture */}
-            <div className="relative">
-              <div className="h-20 w-20 md:h-32 md:w-32 rounded-(--radius) bg-primary p-0.5">
-                <div className="h-full w-full rounded-(--radius) bg-background p-1">
-                  {user?.avatar ? (
-                    <Image
-                      src={user.avatar}
-                      alt="Profile"
-                      width={128}
-                      height={128}
-                      className="rounded-(--radius) object-cover w-full h-full"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="h-full w-full rounded-(--radius) bg-muted/40 border border-border flex items-center justify-center">
-                      <UserIcon className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
+    <div className="min-h-screen pb-24 bg-background">
+      <div className="mx-auto max-w-3xl">
+        <section className="border-b border-border/70 px-4 pb-5 pt-5 sm:px-6 sm:pt-7">
+          <div className="flex items-start gap-4 sm:gap-8">
+            <div className="relative shrink-0">
+              <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full border border-border bg-muted/40 overflow-hidden flex items-center justify-center">
+                {user?.avatar ? (
+                  <Image
+                    src={user.avatar}
+                    alt="Profile"
+                    width={112}
+                    height={112}
+                    className="h-full w-full rounded-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <UserIcon className="h-9 w-9 text-muted-foreground" />
+                )}
               </div>
-
-              {/* Pioneer Easter Egg */}
-              {user?.isPioneer && (
-                <div className="absolute -bottom-1 -left-1 md:-bottom-2 md:-left-2">
-                  <div className="relative rounded-(--radius) p-0.5 bg-primary">
-                    <Image
-                      src={pioneerBadge}
-                      alt="Pioneer Badge"
-                      width={32}
-                      height={32}
-                      className="h-8 w-8 md:h-10 md:w-10"
-                      title="Pioneer User"
-                    />
-                  </div>
-                </div>
-              )}
 
               <button
                 type="button"
-                className="absolute -right-2 -bottom-2 h-8 w-8 rounded-full bg-primary text-primary-foreground text-xs font-semibold border border-background cursor-pointer"
+                className="absolute -right-1 -bottom-1 h-8 w-8 rounded-full border border-background bg-primary text-primary-foreground text-[11px] font-semibold cursor-pointer transition-transform hover:scale-105 active:scale-95"
                 onClick={() => avatarFileInputRef.current?.click()}
                 disabled={uploadAvatarMutation.isPending}
               >
@@ -444,27 +424,41 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Profile Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-4 mb-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-light">
-                    {`${user?.firstName?.toLowerCase() || ""} ${user?.lastName?.toLowerCase() || ""}`.trim()}
-                  </h1>
-                  {user?.isPioneer && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-(--radius) text-xs font-medium bg-primary/10 text-primary border border-primary/20 shadow-xs font-mono tracking-tight">
-                      &lt;/&gt;
-                    </span>
-                  )}
+            <div className="flex-1 min-w-0 pt-1">
+              <div className="grid grid-cols-3 gap-1 text-center">
+                <div>
+                  <p className="text-base sm:text-lg font-semibold leading-none">{stats.posts}</p>
+                  <p className="text-xs text-muted-foreground mt-1">posts</p>
                 </div>
-                {user?.username && (
-                  <span className="text-xs text-muted-foreground font-mono">
-                    @{user.username}
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setIsFollowersDialogOpen(true)}
+                  className="cursor-pointer"
+                >
+                  <p className="text-base sm:text-lg font-semibold leading-none">{stats.followers}</p>
+                  <p className="text-xs text-muted-foreground mt-1">followers</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFollowingDialogOpen(true)}
+                  className="cursor-pointer"
+                >
+                  <p className="text-base sm:text-lg font-semibold leading-none">{stats.following}</p>
+                  <p className="text-xs text-muted-foreground mt-1">following</p>
+                </button>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2">
+                <h1 className="truncate text-base sm:text-lg font-semibold">
+                  @{user?.username || "fitcheck_user"}
+                </h1>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
+                  className="h-8 flex-1"
                   onClick={() => setIsEditDialogOpen(true)}
                 >
                   Edit profile
@@ -472,107 +466,151 @@ export default function ProfilePage() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="h-8 w-8 shrink-0"
                   onClick={() => setIsSettingsDialogOpen(true)}
                 >
-                  <Settings2 className="h-5 w-5" />
+                  <Settings2 className="h-4 w-4" />
                 </Button>
-              </div>
-
-              <div className="flex gap-8 mb-4">
-                <div className="text-center md:text-left">
-                  <span className="font-semibold">{stats.posts}</span>{" "}
-                  <span className="text-muted-foreground">posts</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsFollowersDialogOpen(true)}
-                  className="text-center md:text-left cursor-pointer"
-                >
-                  <span className="font-semibold">{stats.followers}</span>{" "}
-                  <span className="text-muted-foreground">followers</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsFollowingDialogOpen(true)}
-                  className="text-center md:text-left cursor-pointer"
-                >
-                  <span className="font-semibold">{stats.following}</span>{" "}
-                  <span className="text-muted-foreground">following</span>
-                </button>
-              </div>
-
-              {/* Bio */}
-              <div className="space-y-1">
-                <p className="font-semibold">
-                  {user?.firstName} {user?.lastName}
-                </p>
-                {user?.fitnessGoal && (
-                  <p className="text-sm">
-                    {formatLabel(user.fitnessGoal)} •{" "}
-                    {user.activityLevel && formatLabel(user.activityLevel)}
-                  </p>
-                )}
-                {(user?.age || user?.weight || user?.height) && (
-                  <p className="text-sm text-muted-foreground">
-                    {user?.age && `${user.age}yo`}
-                    {user?.weight && ` • ${user.weight}kg`}
-                    {user?.height && ` • ${user.height}cm`}
-                  </p>
-                )}
               </div>
             </div>
           </div>
-        </div>
 
-        <Tabs defaultValue="posts" className="w-full mt-5">
-          <TabsList className="w-full justify-center border-t bg-transparent h-auto p-0 rounded-none">
-            <TabsTrigger
-              value="posts"
-              className="flex items-center gap-2 data-[state=active]:border-t-2 data-[state=active]:border-foreground rounded-none px-6 py-3"
-            >
+          <div className="mt-4 space-y-1 text-sm">
+            {Boolean(user?.firstName || user?.lastName) && (
+              <p className="font-semibold">
+                {[user?.firstName, user?.lastName].filter(Boolean).join(" ")}
+              </p>
+            )}
+            {user?.fitnessGoal && (
+              <p className="text-foreground/90">
+                {formatLabel(user.fitnessGoal)}
+                {user.activityLevel ? ` • ${formatLabel(user.activityLevel)}` : ""}
+              </p>
+            )}
+            {(user?.age || user?.weight || user?.height) && (
+              <p className="text-muted-foreground">
+                {user?.age && `${user.age}y`}
+                {user?.weight && ` • ${user.weight}kg`}
+                {user?.height && ` • ${user.height}cm`}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section aria-label="Posts" className="pt-2">
+          <div className="flex items-center justify-center border-b border-border/70 pb-2">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-foreground">
               <Grid3x3 className="h-4 w-4" />
-              <span className="hidden sm:inline">POSTS</span>
-            </TabsTrigger>
-          </TabsList>
+              POSTS
+            </div>
+          </div>
 
-          <TabsContent value="posts" className="mt-0">
-            <div className="space-y-4 mt-3">
-              {myPosts.length === 0 ? (
-                <div className="rounded-[1.25rem] border border-dashed border-border px-5 py-12 text-center">
-                  <h2 className="text-2xl font-light mb-2">No Posts Yet</h2>
-                  <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                    Your feed posts will appear here, including media and post text.
-                  </p>
-                </div>
-              ) : (
-                myPosts.map((post) => (
-                  <article key={post.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 overflow-hidden">
-                    {post.media?.mimeType.startsWith("video/") ? (
-                      <video src={post.media.url} controls className="w-full max-h-[28rem]" />
-                    ) : post.media?.url ? (
-                      <div className="relative w-full aspect-square">
-                        <Image
-                          src={post.media.url}
-                          alt={post.media.fileName || "Post media"}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      </div>
-                    ) : null}
-                    <div className="px-4 py-3 space-y-2">
-                      <p className="text-sm whitespace-pre-wrap break-words">{post.text}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatPostTime(post.createdAt)}
+          {myPosts.length === 0 ? (
+            <div className="px-4 py-14 text-center text-sm text-muted-foreground">
+              No posts yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-0.5 sm:gap-1 p-0.5 sm:p-1">
+              {myPosts.map((post) => (
+                <button
+                  key={post.id}
+                  type="button"
+                  onClick={() => setSelectedPost(post)}
+                  className="relative aspect-square overflow-hidden bg-muted/40 cursor-pointer text-left transition-transform duration-150 hover:scale-[0.99] active:scale-[0.985]"
+                >
+                  {post.media?.mimeType.startsWith("video/") ? (
+                    <video src={post.media.url} className="h-full w-full object-cover" />
+                  ) : post.media?.url ? (
+                    <Image
+                      src={post.media.url}
+                      alt={post.media.fileName || "Post media"}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center p-3 text-center">
+                      <p className="line-clamp-4 text-xs text-foreground/85 whitespace-pre-wrap break-words">
+                        {post.text}
                       </p>
                     </div>
-                  </article>
-                ))
-              )}
+                  )}
+                </button>
+              ))}
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </section>
       </div>
+
+      <Dialog
+        open={Boolean(selectedPost)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedPost(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl p-0 overflow-hidden gap-0">
+          {selectedPost && (
+            <article className="grid md:grid-cols-[minmax(0,1fr)_19rem] bg-background">
+              <div className="relative bg-muted/25 min-h-[18rem] md:min-h-[30rem] flex items-center justify-center">
+                {selectedPost.media?.mimeType.startsWith("video/") ? (
+                  <video
+                    src={selectedPost.media.url}
+                    controls
+                    className="h-full w-full max-h-[70vh] object-contain bg-black/10"
+                  />
+                ) : selectedPost.media?.url ? (
+                  <div className="relative h-full w-full min-h-[18rem] md:min-h-[30rem]">
+                    <Image
+                      src={selectedPost.media.url}
+                      alt={selectedPost.media.fileName || "Post media"}
+                      fill
+                      className="object-contain md:object-cover"
+                      unoptimized
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center p-8">
+                    <p className="max-w-md text-sm leading-relaxed whitespace-pre-wrap break-words">
+                      {selectedPost.text}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t md:border-t-0 md:border-l border-border/70 p-4 md:p-5 flex flex-col gap-4">
+                <div>
+                  <p className="text-sm font-semibold">
+                    @{user?.username || "fitcheck_user"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatPostTime(selectedPost.createdAt)}
+                  </p>
+                </div>
+
+                <div className="inline-flex items-center gap-2 text-sm">
+                  <HeartIcon
+                    className={`h-4 w-4 ${selectedPost.isHeartedByMe ? "fill-current text-red-500" : "text-foreground"}`}
+                  />
+                  <span className="font-medium">{selectedPost.heartCount ?? 0}</span>
+                  <span className="text-muted-foreground">
+                    {(selectedPost.heartCount ?? 0) === 1 ? "heart" : "hearts"}
+                  </span>
+                </div>
+
+                {selectedPost.text ? (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                    {selectedPost.text}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No caption.</p>
+                )}
+              </div>
+            </article>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Profile Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

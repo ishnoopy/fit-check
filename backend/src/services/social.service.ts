@@ -152,6 +152,32 @@ export async function getFollowingByUsername(username: string) {
   );
 }
 
+export async function searchUsers(
+  currentUserId: string,
+  query: string,
+  limit = 8,
+) {
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery) {
+    return [];
+  }
+
+  const users = await userRepository.searchUsersByQuery(normalizedQuery, {
+    excludeUserId: currentUserId,
+    limit,
+  });
+
+  return Promise.all(
+    users.map(async (user) => ({
+      id: user.id as string,
+      username: user.username as string,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatar: await resolveMediaUrl(user.avatar ?? null),
+    })),
+  );
+}
+
 export async function updateMyAvatar(userId: string, uploadId: string) {
   const upload = await fileUploadRepository.findOne({ id: uploadId });
 

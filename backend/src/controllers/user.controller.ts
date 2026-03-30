@@ -47,6 +47,40 @@ const updateAvatarSchema = z.object({
   uploadId: z.string().length(24, "Invalid upload ID"),
 });
 
+const searchUsersQuerySchema = z.object({
+  q: z.string().trim().min(1).max(24),
+  limit: z
+    .string()
+    .transform((value) => {
+      const parsed = Number.parseInt(value, 10);
+      return Number.isNaN(parsed) ? 8 : Math.min(Math.max(parsed, 1), 20);
+    })
+    .optional(),
+});
+
+export async function searchUsers(c: Context) {
+  const user = c.get("user");
+  const query = await searchUsersQuerySchema.safeParseAsync(c.req.query());
+
+  if (!query.success) {
+    throw new BadRequestError(query.error);
+  }
+
+  const data = await socialService.searchUsers(
+    user.id,
+    query.data.q,
+    query.data.limit,
+  );
+
+  return c.json(
+    {
+      success: true,
+      data,
+    },
+    StatusCodes.OK,
+  );
+}
+
 export async function getPublicProfile(c: Context) {
   const user = c.get("user");
   const params = await usernameParamsSchema.safeParseAsync(c.req.param());

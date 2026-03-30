@@ -2,6 +2,10 @@ import type { FilterQuery } from "mongoose";
 import UserModel, { type IUser } from "../models/user.model.js";
 import { toCamelCase, toSnakeCase } from "../utils/transformer.js";
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export async function findAll() {
   const users = await UserModel.find().lean();
   return toCamelCase(users) as IUser[];
@@ -15,6 +19,34 @@ export async function findOne(where: FilterQuery<IUser>) {
 
 export async function findByIds(ids: string[]) {
   const users = await UserModel.find({ _id: { $in: ids } }).lean();
+  return toCamelCase(users) as IUser[];
+}
+
+export async function searchUsersByQuery(
+  query: string,
+  options?: { excludeUserId?: string; limit?: number },
+) {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return [];
+  }
+
+  const limit = options?.limit ?? 8;
+  const searchRegex = new RegExp(escapeRegex(trimmedQuery), "i");
+  const users = await UserModel.find({
+    ...(options?.excludeUserId ? { _id: { $ne: options.excludeUserId } } : {}),
+    username: { $exists: true, $ne: null },
+    $or: [
+      { username: searchRegex },
+      { first_name: searchRegex },
+      { last_name: searchRegex },
+    ],
+  })
+    .select("_id username first_name last_name avatar")
+    .sort({ username: 1 })
+    .limit(limit)
+    .lean();
+
   return toCamelCase(users) as IUser[];
 }
 

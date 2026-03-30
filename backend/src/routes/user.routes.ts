@@ -8,6 +8,7 @@ import {
   getPublicProfile,
   getUser,
   getUsers,
+  searchUsers,
   updateMyAvatar,
   unfollowUser,
   updateUser,
@@ -60,6 +61,7 @@ const router = new Hono()
     generalRateLimiter,
     getUsers,
   )
+  .get("/users/search", authMiddleware, generalRateLimiter, searchUsers)
   .get("/users/:id", authMiddleware, generalRateLimiter, getUser)
   .post("/users", authMiddleware, generalRateLimiter, createUser)
   .put("/users/:id", authMiddleware, generalRateLimiter, updateUser)
