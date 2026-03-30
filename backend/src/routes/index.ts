@@ -5,6 +5,7 @@ import FeedbackRoutes from "./feedback.routes.js";
 import GalleryRoutes from "./gallery.routes.js";
 import LogRoutes from "./log.routes.js";
 import PlanRoutes from "./plan.routes.js";
+import PostRoutes from "./post.routes.js";
 import SettingRoutes from "./setting.routes.js";
 import UploadRoutes from "./upload.route.js";
 import UserRoutes from "./user.routes.js";
@@ -14,6 +15,7 @@ const groupRoutes = [
   UserRoutes,
   AuthRoutes,
   PlanRoutes,
+  PostRoutes,
   WorkoutRoutes,
   ExerciseRoutes,
   LogRoutes,

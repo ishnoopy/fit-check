@@ -10,6 +10,7 @@ import {
   CalendarIcon,
   ChartBarIcon,
   ChevronUpIcon,
+  CompassIcon,
   DumbbellIcon,
   HomeIcon,
   LogOutIcon,
@@ -100,6 +101,7 @@ export default function BottomNav({ className }: { className?: string }) {
 
   const navItems = [
     { href: "/dashboard", icon: HomeIcon, label: "Home" },
+    { href: "/feed", icon: CompassIcon, label: "Feed" },
     {
       href: "/plans",
       icon: DumbbellIcon,

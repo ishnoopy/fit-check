@@ -11,36 +11,62 @@ import { BadRequestError } from "../utils/errors.js";
 const presignSchema = z.object({
   fileName: z.string(),
   fileType: z.string(),
+  fileSize: z.number().positive().optional(),
 });
 
 const createFileUploadSchema = z.object({
   s3Key: z.string(),
   mimeType: z.string(),
   fileName: z.string(),
-  fileSize: z.number().optional(),
+  fileSize: z.number().positive().optional(),
 });
+
+const DEFAULT_POST_MEDIA_MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED_UPLOAD_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/jpg",
+  "image/heic",
+  "image/heif",
+  "image/heics",
+  "image/heifs",
+  "image/tiff",
+  "image/x-tiff",
+  "image/gif",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+];
+
+function getPostMediaMaxBytes() {
+  const fromEnv = Number(process.env.POST_MEDIA_MAX_BYTES);
+  if (Number.isFinite(fromEnv) && fromEnv > 0) {
+    return fromEnv;
+  }
+  return DEFAULT_POST_MEDIA_MAX_BYTES;
+}
 
 /**
  * Generate a presigned URL for uploading a file to S3
  */
 export async function generatePresignedUploadUrl(c: Context) {
-  const { fileName, fileType } = await c.req.json();
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-  const ALLOWED_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/jpg",
-    "image/heic",
-    "image/heif",
-    "image/heics",
-    "image/heifs",
-    "image/tiff",
-    "image/x-tiff",
-  ];
+  const body = await c.req.json();
+  const validation = await presignSchema.safeParseAsync(body);
 
-  if (!ALLOWED_TYPES.includes(fileType)) {
+  if (!validation.success) {
+    throw new BadRequestError(validation.error);
+  }
+
+  const { fileName, fileType, fileSize } = validation.data;
+  const maxFileSize = getPostMediaMaxBytes();
+
+  if (!ALLOWED_UPLOAD_TYPES.includes(fileType)) {
     return c.json({ message: "Invalid file type" }, 400);
+  }
+
+  if (fileSize && fileSize > maxFileSize) {
+    return c.json({ message: "File size exceeds the allowed 5MB limit" }, 400);
   }
 
   const key = `uploads/${crypto.randomUUID()}-${fileName}`;
@@ -49,7 +75,7 @@ export async function generatePresignedUploadUrl(c: Context) {
     Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: key,
     Conditions: [
-      ["content-length-range", 0, MAX_FILE_SIZE],
+      ["content-length-range", 0, maxFileSize],
       ["eq", "$Content-Type", fileType],
     ],
     Fields: {
@@ -141,6 +167,15 @@ export async function createFileUpload(c: Context) {
 
   const userId = c.get("user").id;
   const { s3Key, mimeType, fileName, fileSize } = validation.data;
+  const maxFileSize = getPostMediaMaxBytes();
+
+  if (!ALLOWED_UPLOAD_TYPES.includes(mimeType)) {
+    throw new BadRequestError("Invalid file type");
+  }
+
+  if (fileSize && fileSize > maxFileSize) {
+    throw new BadRequestError("File size exceeds the allowed 5MB limit");
+  }
 
   const fileUpload = await fileUploadRepository.createFileUpload({
     userId,
