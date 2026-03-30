@@ -20,6 +20,13 @@ export async function findByUserId(userId: string) {
   return toCamelCase(fileUploads) as IFileUpload[];
 }
 
+export async function countImagesByUserId(userId: string) {
+  return FileUploadModel.countDocuments({
+    user_id: userId,
+    mime_type: { $regex: /^image\// },
+  });
+}
+
 /**
  * Find a single file upload by query
  */

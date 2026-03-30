@@ -3,6 +3,7 @@ import mongoose, { model } from "mongoose";
 // Interface for the user object
 export interface IUser {
   id?: string;
+  username?: string;
   firstName?: string | undefined | null;
   lastName?: string | undefined | null;
   email: string;
@@ -54,6 +55,7 @@ export interface IUser {
 // Interface for the user model
 export interface IUserModel {
   _id?: string;
+  username?: string;
   first_name?: string | undefined | null;
   last_name?: string | undefined | null;
   email: string;
@@ -105,6 +107,7 @@ export interface IUserModel {
 
 const UserSchema = new mongoose.Schema(
   {
+    username: { type: String, lowercase: true, trim: true, sparse: true },
     first_name: { type: String, default: undefined },
     last_name: { type: String, default: undefined },
     email: { type: String, required: true },
@@ -179,5 +182,6 @@ const UserSchema = new mongoose.Schema(
 
 UserSchema.index({ referral_code: 1 }, { unique: true, sparse: true });
 UserSchema.index({ referred_by_user_id: 1 });
+UserSchema.index({ username: 1 }, { unique: true, sparse: true });
 
 export default model<IUserModel>("User", UserSchema);

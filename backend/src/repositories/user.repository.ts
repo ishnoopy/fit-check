@@ -13,6 +13,11 @@ export async function findOne(where: FilterQuery<IUser>) {
   return user ? (toCamelCase(user) as IUser) : null;
 }
 
+export async function findByIds(ids: string[]) {
+  const users = await UserModel.find({ _id: { $in: ids } }).lean();
+  return toCamelCase(users) as IUser[];
+}
+
 export async function createUser(user: IUser) {
   const payload = toSnakeCase(user);
   const doc = await UserModel.create(payload);

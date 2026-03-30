@@ -8,6 +8,10 @@ import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
 import * as OAuthService from "../services/oauth.service.js";
 import { loginService, registerService } from "../services/user.service.js";
+import {
+  isValidUsername,
+  normalizeUsername,
+} from "../services/username.service.js";
 import { ROLES_LIST } from "../utils/constants/roles.js";
 import {
   BadRequestError,
@@ -302,6 +306,7 @@ export async function completeProfile(c: Context) {
   const paramsSchema = z.object({
     firstName: z.string().min(1),
     lastName: z.string().min(1).optional(),
+    username: z.string().trim().min(3).max(24).optional(),
     password: z.string().min(6).optional(),
     // Optional fitness fields
     age: z.number().min(13).max(120).optional(),
@@ -340,10 +345,29 @@ export async function completeProfile(c: Context) {
     ? normalizedFitnessGoalMap[params.data.fitnessGoal]
     : undefined;
 
+  const normalizedUsername = params.data.username
+    ? normalizeUsername(params.data.username)
+    : undefined;
+
+  if (normalizedUsername && !isValidUsername(normalizedUsername)) {
+    throw new BadRequestError(
+      "Username must be 3-24 characters and only contain lowercase letters, numbers, and underscores",
+    );
+  }
+
+  if (
+    normalizedUsername &&
+    normalizedUsername !== existingUser.username &&
+    (await UserRepository.findOne({ username: normalizedUsername }))
+  ) {
+    throw new BadRequestError("Username is already taken");
+  }
+
   // Prepare update payload
   const updatePayload: Partial<IUser> = {
     firstName: params.data.firstName,
     lastName: params.data.lastName,
+    username: normalizedUsername,
     age: params.data.age,
     gender: params.data.gender,
     weight: params.data.weight,

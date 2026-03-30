@@ -7,6 +7,7 @@ import {
   createUniqueReferralCode,
   resolveReferrerUserIdByCode,
 } from "./coach-access.service.js";
+import { createUniqueUsername } from "./username.service.js";
 import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
 export async function loginService(email: string, password: string) {
@@ -77,6 +78,8 @@ export async function registerService(
     createUniqueReferralCode(),
     resolveReferrerUserIdByCode(options?.referralCode),
   ]);
+  const emailLocalPart = email.split("@")[0] || "user";
+  const username = await createUniqueUsername(emailLocalPart);
 
   // Create user
   const newUser = await createUser({
@@ -84,6 +87,7 @@ export async function registerService(
     password: hashedPassword,
     referralCode: generatedReferralCode,
     referredByUserId,
+    username,
   });
 
   const { password, ...userWithoutPassword } = newUser as IUser;

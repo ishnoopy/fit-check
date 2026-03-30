@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { FollowListUser, FollowUsersDialog } from "@/components/FollowUsersDialog";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,15 @@ import { useUser } from "../../providers";
 const profileFormSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required" }),
   lastName: z.string().optional(),
+  username: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9_]{3,24}$/, {
+      message:
+        "Username must be 3-24 chars using lowercase letters, numbers, or underscores",
+    })
+    .optional()
+    .or(z.literal("")),
   email: z.string().email().optional(),
   password: z.string().min(6).optional().or(z.literal("")),
   age: z.string().optional(),
@@ -94,10 +104,19 @@ interface GalleryImage {
   createdAt: string;
 }
 
+interface ProfileSummary {
+  id: string;
+  username?: string;
+  postsCount: number;
+  followersCount: number;
+  followingCount: number;
+}
+
 const updateProfile = (values: ProfileFormValues) => {
   const transformedValues: Partial<IUser> = {
     firstName: values.firstName.trim(),
     lastName: values.lastName?.trim() || undefined,
+    username: values.username?.trim() || undefined,
     age: values.age && values.age !== "" ? Number(values.age) : undefined,
     weight:
       values.weight && values.weight !== "" ? Number(values.weight) : undefined,
@@ -158,6 +177,15 @@ const uploadImage = async (file: File) => {
 const getGalleryImages = () =>
   api.get<{ data: GalleryImage[] }>("/api/gallery");
 
+const getProfileSummary = (username: string) =>
+  api.get<{ data: ProfileSummary }>(`/api/users/${username}/profile`);
+
+const getFollowers = (username: string) =>
+  api.get<{ data: FollowListUser[] }>(`/api/users/${username}/followers`);
+
+const getFollowing = (username: string) =>
+  api.get<{ data: FollowListUser[] }>(`/api/users/${username}/following`);
+
 const deleteGalleryImage = (imageId: string) =>
   api.delete(`/api/gallery/${imageId}`);
 
@@ -167,6 +195,8 @@ export default function ProfilePage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isFollowersDialogOpen, setIsFollowersDialogOpen] = useState(false);
+  const [isFollowingDialogOpen, setIsFollowingDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -186,11 +216,33 @@ export default function ProfilePage() {
     select: (data) => data.data || [],
   });
 
+  const { data: profileSummary } = useQuery({
+    queryKey: ["profile-summary", user?.username],
+    queryFn: () => getProfileSummary(user!.username as string),
+    enabled: Boolean(user?.username),
+    select: (data) => data.data,
+  });
+
+  const { data: followers = [], isLoading: isFollowersLoading } = useQuery({
+    queryKey: ["followers", user?.username],
+    queryFn: () => getFollowers(user!.username as string),
+    enabled: Boolean(user?.username) && isFollowersDialogOpen,
+    select: (data) => data.data,
+  });
+
+  const { data: following = [], isLoading: isFollowingLoading } = useQuery({
+    queryKey: ["following", user?.username],
+    queryFn: () => getFollowing(user!.username as string),
+    enabled: Boolean(user?.username) && isFollowingDialogOpen,
+    select: (data) => data.data,
+  });
+
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
+      username: user?.username || "",
       email: user?.email || "",
       password: "",
       age: user?.age?.toString() || "",
@@ -218,6 +270,7 @@ export default function ProfilePage() {
       profileForm.reset({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
+        username: user.username || "",
         email: user.email || "",
         password: "",
         age: user.age?.toString() || "",
@@ -228,7 +281,7 @@ export default function ProfilePage() {
         activityLevel: user.activityLevel,
       });
     }
-  }, [user]);
+  }, [profileForm, user]);
 
   useEffect(() => {
     if (settings) {
@@ -313,8 +366,11 @@ export default function ProfilePage() {
   };
 
   const calculateStats = () => {
-    const posts = galleryImages.length;
-    return { posts };
+    return {
+      posts: profileSummary?.postsCount ?? galleryImages.length,
+      followers: profileSummary?.followersCount ?? 0,
+      following: profileSummary?.followingCount ?? 0,
+    };
   };
 
   const stats = calculateStats();
@@ -382,6 +438,11 @@ export default function ProfilePage() {
                     </span>
                   )}
                 </div>
+                {user?.username && (
+                  <span className="text-xs text-muted-foreground font-mono">
+                    @{user.username}
+                  </span>
+                )}
                 <Button
                   variant="secondary"
                   size="sm"
@@ -404,6 +465,22 @@ export default function ProfilePage() {
                   <span className="font-semibold">{stats.posts}</span>{" "}
                   <span className="text-muted-foreground">posts</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setIsFollowersDialogOpen(true)}
+                  className="text-center md:text-left cursor-pointer"
+                >
+                  <span className="font-semibold">{stats.followers}</span>{" "}
+                  <span className="text-muted-foreground">followers</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFollowingDialogOpen(true)}
+                  className="text-center md:text-left cursor-pointer"
+                >
+                  <span className="font-semibold">{stats.following}</span>{" "}
+                  <span className="text-muted-foreground">following</span>
+                </button>
               </div>
 
               {/* Bio */}
@@ -678,6 +755,28 @@ export default function ProfilePage() {
                 />
               )}
 
+              <FormField
+                control={profileForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="your_username"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground">
+                      Lowercase letters, numbers, and underscores only.
+                    </p>
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={profileForm.control}
@@ -835,6 +934,22 @@ export default function ProfilePage() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <FollowUsersDialog
+        open={isFollowersDialogOpen}
+        onOpenChange={setIsFollowersDialogOpen}
+        title="Followers"
+        users={followers}
+        isLoading={isFollowersLoading}
+      />
+
+      <FollowUsersDialog
+        open={isFollowingDialogOpen}
+        onOpenChange={setIsFollowingDialogOpen}
+        title="Following"
+        users={following}
+        isLoading={isFollowingLoading}
+      />
 
       {/* Settings Dialog */}
       <Dialog
