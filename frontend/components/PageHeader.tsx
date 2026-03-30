@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import type React from "react";
 
@@ -7,15 +8,16 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   action?: React.ReactNode;
+  className?: string;
 }
 
-export function PageHeader({ title, subtitle, action }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, action, className }: PageHeaderProps) {
   return (
     <motion.header
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.1, ease: "easeOut" }}
-      className="flex items-start justify-between mb-8"
+      className={cn("flex items-start justify-between mb-8", className)}
     >
       <div className="space-y-1">
         <motion.h1

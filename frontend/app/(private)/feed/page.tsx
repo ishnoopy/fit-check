@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -159,10 +160,10 @@ export default function FeedPage() {
           data: queryValue.data.map((post) =>
             post.id === postId
               ? {
-                  ...post,
-                  heartCount,
-                  isHeartedByMe: isHearted,
-                }
+                ...post,
+                heartCount,
+                isHeartedByMe: isHearted,
+              }
               : post,
           ),
         });
@@ -177,12 +178,8 @@ export default function FeedPage() {
 
   return (
     <div className="relative p-4 md:p-6 pb-28 max-w-2xl mx-auto space-y-4">
-      <header className="rounded-[1.25rem] border border-border/70 bg-gradient-to-br from-muted/50 via-background to-background px-4 py-4">
-        <h1 className="text-lg md:text-xl font-semibold tracking-tight">Feed</h1>
-        <p className="text-xs md:text-sm text-muted-foreground">
-          Explore new lifters or keep up with your circle.
-        </p>
-      </header>
+
+      <PageHeader title="FitCheck" className="justify-center" />
 
       <Tabs
         value={tab}
