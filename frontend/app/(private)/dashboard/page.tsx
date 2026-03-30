@@ -50,13 +50,31 @@ const item = {
 
 const patchNotesDetails = [
   {
-    date: "2026-03-11",
+    date: "2026-03-30",
     element: <p className="text-sm text-muted-foreground">
-      Workout Calendar added to dashboard.
+      You can now create posts and share your progress with the community using the Feed (see navbar).
     </p>,
   },
+  {
+    date: "2026-03-30",
+    element: <p className="text-sm text-muted-foreground">
+      Follow other users and see their posts in the Feed.
+    </p>,
+  },
+  {
+    date: "2026-03-30",
+    element: <p className="text-sm text-muted-foreground">
+      Update Profile Picture to your own.
+    </p>,
+  },
+  {
+    date: "2026-03-30",
+    element: <p className="text-sm text-muted-foreground">
+      Revamped profile page.
+    </p>
+  }
 ];
-const PATCH_NOTE_VERSION = "2026-03-11";
+const PATCH_NOTE_VERSION = "2026-03-30";
 
 export default function DashboardPage() {
   const { user } = useUser();
