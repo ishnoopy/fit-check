@@ -24,6 +24,7 @@ Run commands from the folder shown:
 - Language: TypeScript (ESM, explicit `.js` import extensions in backend runtime imports).
 - Formatting: 2-space indentation, double quotes, trailing commas where supported.
 - Backend file patterns: `*.controller.ts`, `*.service.ts`, `*.repository.ts`, `*.middleware.ts`.
+- Repository-layer data access convention: query Mongo using `snake_case` fields only (for example `post_id`, `user_id`), then transform to `camelCase` via `toCamelCase` before returning to service/domain layers.
 - Keep diffs minimal: avoid unrelated renames/refactors and preserve existing API contracts.
 - Frontend changes should preserve SSR/SEO behavior unless explicitly changing it.
 
