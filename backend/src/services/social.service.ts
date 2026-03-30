@@ -1,6 +1,8 @@
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
 import * as followRepository from "../repositories/follow.repository.js";
+import * as postRepository from "../repositories/post.repository.js";
 import * as userRepository from "../repositories/user.repository.js";
+import { resolveMediaUrl } from "./media-url.service.js";
 import { BadRequestError, NotFoundError } from "../utils/errors.js";
 
 function normalizeUsernameOrThrow(username: string) {
@@ -48,7 +50,7 @@ export async function getPublicProfileByUsername(
 
   const [postsCount, followersCount, followingCount, isFollowing] =
     await Promise.all([
-      fileUploadRepository.countImagesByUserId(targetUserId),
+      postRepository.countByUserId(targetUserId),
       followRepository.countFollowers(targetUserId),
       followRepository.countFollowing(targetUserId),
       currentUserId === targetUserId
@@ -56,12 +58,14 @@ export async function getPublicProfileByUsername(
         : followRepository.isFollowing(currentUserId, targetUserId),
     ]);
 
+  const avatar = await resolveMediaUrl(targetUser.avatar ?? null);
+
   return {
     id: targetUserId,
     username: targetUser.username,
     firstName: targetUser.firstName,
     lastName: targetUser.lastName,
-    avatar: targetUser.avatar,
+    avatar,
     fitnessGoal: targetUser.fitnessGoal,
     activityLevel: targetUser.activityLevel,
     age: targetUser.age,
@@ -117,7 +121,14 @@ export async function getFollowersByUsername(username: string) {
   }
 
   const users = await userRepository.findByIds(followerIds);
-  return orderUsersByIds(users, followerIds);
+  const ordered = orderUsersByIds(users, followerIds);
+
+  return Promise.all(
+    ordered.map(async (user) => ({
+      ...user,
+      avatar: await resolveMediaUrl(user.avatar ?? null),
+    })),
+  );
 }
 
 export async function getFollowingByUsername(username: string) {
@@ -131,5 +142,41 @@ export async function getFollowingByUsername(username: string) {
   }
 
   const users = await userRepository.findByIds(followingIds);
-  return orderUsersByIds(users, followingIds);
+  const ordered = orderUsersByIds(users, followingIds);
+
+  return Promise.all(
+    ordered.map(async (user) => ({
+      ...user,
+      avatar: await resolveMediaUrl(user.avatar ?? null),
+    })),
+  );
+}
+
+export async function updateMyAvatar(userId: string, uploadId: string) {
+  const upload = await fileUploadRepository.findOne({ id: uploadId });
+
+  if (!upload?.id) {
+    throw new NotFoundError("Uploaded file not found");
+  }
+
+  if (upload.userId !== userId) {
+    throw new BadRequestError("You can only use your own uploaded image");
+  }
+
+  if (!upload.mimeType.startsWith("image/")) {
+    throw new BadRequestError("Avatar must be an image");
+  }
+
+  const updatedUser = await userRepository.updateUser(userId, {
+    avatar: upload.s3Key,
+  });
+
+  if (!updatedUser) {
+    throw new NotFoundError("User not found");
+  }
+
+  return {
+    ...updatedUser,
+    avatar: await resolveMediaUrl(updatedUser.avatar ?? null),
+  };
 }

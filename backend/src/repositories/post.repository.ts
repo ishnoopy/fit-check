@@ -12,6 +12,18 @@ export async function findById(id: string) {
   return doc ? (toCamelCase(doc) as IPost) : null;
 }
 
+export async function countByUserId(userId: string) {
+  return PostModel.countDocuments({ user_id: userId });
+}
+
+export async function findByUserId(userId: string, limit = 30) {
+  const docs = await PostModel.find({ user_id: userId })
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .lean();
+  return toCamelCase(docs) as IPost[];
+}
+
 export async function findFeedPosts({
   tab,
   userId,

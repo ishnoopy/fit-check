@@ -8,6 +8,7 @@ import {
   getPublicProfile,
   getUser,
   getUsers,
+  updateMyAvatar,
   unfollowUser,
   updateUser,
 } from "../controllers/user.controller.js";
@@ -45,6 +46,12 @@ const router = new Hono()
     authMiddleware,
     generalRateLimiter,
     getFollowing,
+  )
+  .patch(
+    "/users/me/avatar",
+    authMiddleware,
+    generalRateLimiter,
+    updateMyAvatar,
   )
   .get(
     "/users",

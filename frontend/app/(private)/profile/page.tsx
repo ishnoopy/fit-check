@@ -32,7 +32,7 @@ import { IUser } from "@/types";
 import pioneerBadge from "@/assets/psyduck.gif";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Grid3x3, Settings2, Upload, UserIcon } from "lucide-react";
+import { Grid3x3, Settings2, UserIcon } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -97,10 +97,14 @@ interface Setting {
   updatedAt?: string;
 }
 
-interface GalleryImage {
+interface ProfilePost {
   id: string;
-  url: string;
-  caption?: string;
+  text: string;
+  media?: {
+    url: string;
+    mimeType: string;
+    fileName?: string;
+  } | null;
   createdAt: string;
 }
 
@@ -138,13 +142,14 @@ const getSettings = () => api.get<{ data: Setting }>("/api/settings");
 const updateSettings = (values: SettingsFormValues) =>
   api.put("/api/settings", { settings: values });
 
-const uploadImage = async (file: File) => {
+const uploadFile = async (file: File) => {
   // 1. Generate presigned URL
   const data = await api.post<{
     data: { url: string; fields: Record<string, string>; key: string };
   }>("/api/upload/presign", {
     fileName: file.name,
     fileType: file.type,
+    fileSize: file.size,
   });
 
   const { url, fields, key } = data.data;
@@ -166,7 +171,7 @@ const uploadImage = async (file: File) => {
   }
 
   // 3. Create file upload record
-  return await api.post("/api/upload/files", {
+  return await api.post<{ data: { id: string } }>("/api/upload/files", {
     s3Key: key,
     mimeType: file.type,
     fileName: file.name,
@@ -174,8 +179,10 @@ const uploadImage = async (file: File) => {
   });
 };
 
-const getGalleryImages = () =>
-  api.get<{ data: GalleryImage[] }>("/api/gallery");
+const getMyPosts = () => api.get<{ data: ProfilePost[] }>("/api/posts/me");
+
+const updateMyAvatar = (uploadId: string) =>
+  api.patch("/api/users/me/avatar", { uploadId });
 
 const getProfileSummary = (username: string) =>
   api.get<{ data: ProfileSummary }>(`/api/users/${username}/profile`);
@@ -186,19 +193,14 @@ const getFollowers = (username: string) =>
 const getFollowing = (username: string) =>
   api.get<{ data: FollowListUser[] }>(`/api/users/${username}/following`);
 
-const deleteGalleryImage = (imageId: string) =>
-  api.delete(`/api/gallery/${imageId}`);
-
 export default function ProfilePage() {
   const { user } = useUser();
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isFollowersDialogOpen, setIsFollowersDialogOpen] = useState(false);
   const [isFollowingDialogOpen, setIsFollowingDialogOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
   const isGoogleUser = user?.authProvider === "google";
 
@@ -209,9 +211,9 @@ export default function ProfilePage() {
     select: (data) => data.data,
   });
 
-  const { data: galleryImages = [] } = useQuery({
-    queryKey: ["gallery"],
-    queryFn: getGalleryImages,
+  const { data: myPosts = [] } = useQuery({
+    queryKey: ["my-posts"],
+    queryFn: getMyPosts,
     retry: false,
     select: (data) => data.data || [],
   });
@@ -322,30 +324,23 @@ export default function ProfilePage() {
     },
   });
 
-  const uploadImageMutation = useMutation({
-    mutationFn: uploadImage,
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const upload = await uploadFile(file);
+      const uploadId = upload?.data?.id;
+      if (!uploadId) {
+        throw new Error("Failed to upload avatar image");
+      }
+      await updateMyAvatar(uploadId);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["gallery"] });
-      toast.success("Image uploaded successfully");
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      queryClient.invalidateQueries({ queryKey: ["profile-summary"] });
+      toast.success("Profile photo updated");
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to upload image",
-      );
-    },
-  });
-
-  const deleteImageMutation = useMutation({
-    mutationFn: deleteGalleryImage,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["gallery"] });
-      toast.success("Image deleted successfully");
-      setSelectedImage(null);
-      setIsDeleteConfirmOpen(false);
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete image",
+        error instanceof Error ? error.message : "Failed to update avatar",
       );
     },
   });
@@ -358,16 +353,23 @@ export default function ProfilePage() {
     updateSettingsMutation.mutate(values);
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      uploadImageMutation.mutate(file);
+    if (!file) {
+      return;
     }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+
+    uploadAvatarMutation.mutate(file);
   };
 
   const calculateStats = () => {
     return {
-      posts: profileSummary?.postsCount ?? galleryImages.length,
+      posts: profileSummary?.postsCount ?? myPosts.length,
       followers: profileSummary?.followersCount ?? 0,
       following: profileSummary?.followingCount ?? 0,
     };
@@ -383,10 +385,9 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 bg-gradient-to-b from-muted/30 via-background to-background">
       <div className="p-6 max-w-2xl mx-auto">
-        {/* Instagram-style Header */}
-        <div className="p-6 border-b">
+        <div className="p-6 border border-border/70 rounded-[1.5rem] bg-background/90 shadow-sm">
           <div className="flex items-start gap-8 md:gap-16">
             {/* Profile Picture */}
             <div className="relative">
@@ -399,6 +400,7 @@ export default function ProfilePage() {
                       width={128}
                       height={128}
                       className="rounded-(--radius) object-cover w-full h-full"
+                      unoptimized
                     />
                   ) : (
                     <div className="h-full w-full rounded-(--radius) bg-muted/40 border border-border flex items-center justify-center">
@@ -423,6 +425,22 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
+
+              <button
+                type="button"
+                className="absolute -right-2 -bottom-2 h-8 w-8 rounded-full bg-primary text-primary-foreground text-xs font-semibold border border-background cursor-pointer"
+                onClick={() => avatarFileInputRef.current?.click()}
+                disabled={uploadAvatarMutation.isPending}
+              >
+                {uploadAvatarMutation.isPending ? "..." : "✎"}
+              </button>
+              <input
+                ref={avatarFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarFileSelect}
+              />
             </div>
 
             {/* Profile Info */}
@@ -459,7 +477,6 @@ export default function ProfilePage() {
                 </Button>
               </div>
 
-              {/* Stats */}
               <div className="flex gap-8 mb-4">
                 <div className="text-center md:text-left">
                   <span className="font-semibold">{stats.posts}</span>{" "}
@@ -506,8 +523,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="posts" className="w-full">
+        <Tabs defaultValue="posts" className="w-full mt-5">
           <TabsList className="w-full justify-center border-t bg-transparent h-auto p-0 rounded-none">
             <TabsTrigger
               value="posts"
@@ -519,151 +535,43 @@ export default function ProfilePage() {
           </TabsList>
 
           <TabsContent value="posts" className="mt-0">
-            {/* Gallery Grid */}
-            <div className="p-1">
-              {galleryImages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 px-4">
-                  <div className="rounded-(--radius) border-2 border-border p-6 mb-4">
-                    <Camera className="h-12 w-12" />
-                  </div>
-                  <h2 className="text-2xl font-light mb-2">Share Photos</h2>
-                  <p className="text-muted-foreground mb-6 text-center max-w-sm">
-                    When you share photos, they will appear on your profile.
+            <div className="space-y-4 mt-3">
+              {myPosts.length === 0 ? (
+                <div className="rounded-[1.25rem] border border-dashed border-border px-5 py-12 text-center">
+                  <h2 className="text-2xl font-light mb-2">No Posts Yet</h2>
+                  <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                    Your feed posts will appear here, including media and post text.
                   </p>
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    variant="link"
-                    className="text-primary hover:text-primary/80"
-                  >
-                    Share your first photo
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-1">
-                  {galleryImages.length < 5 && (
-                    <>
-                      {/* Upload Button */}
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="aspect-square bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors group"
-                      >
-                        <Upload className="h-8 w-8 text-muted-foreground group-hover:text-foreground transition-colors" />
-                      </button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleFileSelect}
-                      />
-                    </>
-                  )}
-
-                  {/* Gallery Images */}
-                  {galleryImages.map((image) => (
-                    <button
-                      key={image.id}
-                      onClick={() => setSelectedImage(image)}
-                      className="aspect-square relative overflow-hidden group"
-                    >
-                      <Image
-                        src={image.url}
-                        alt={image.caption || "Gallery image"}
-                        fill
-                        className="object-cover"
-                        loading="eager"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                    </button>
-                  ))}
-                </div>
+                myPosts.map((post) => (
+                  <article key={post.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 overflow-hidden">
+                    {post.media?.mimeType.startsWith("video/") ? (
+                      <video src={post.media.url} controls className="w-full max-h-[28rem]" />
+                    ) : post.media?.url ? (
+                      <div className="relative w-full aspect-square">
+                        <Image
+                          src={post.media.url}
+                          alt={post.media.fileName || "Post media"}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    ) : null}
+                    <div className="px-4 py-3 space-y-2">
+                      <p className="text-sm whitespace-pre-wrap break-words">{post.text}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(post.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </article>
+                ))
               )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Image Viewer Dialog */}
-      <Dialog
-        open={selectedImage !== null}
-        onOpenChange={() => setSelectedImage(null)}
-      >
-        <DialogContent
-          className="max-w-4xl p-0"
-          showCloseButton={true}
-          onOverlayClick={() => setSelectedImage(null)}
-        >
-          <DialogHeader>
-            <DialogTitle></DialogTitle>
-            <DialogDescription></DialogDescription>
-          </DialogHeader>
-          {selectedImage && (
-            <div className="relative">
-              <div className="relative w-full aspect-square">
-                <Image
-                  src={selectedImage.url}
-                  alt={selectedImage.caption || "Gallery image"}
-                  fill
-                  className="object-contain"
-                />
-              </div>
-
-              <div className="p-4 border-t flex justify-between items-center">
-                <p className="text-xs text-muted-foreground">
-                  {new Date(selectedImage.createdAt).toLocaleDateString()}
-                </p>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Image</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this image? This action cannot be
-              undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDeleteConfirmOpen(false)}
-              disabled={deleteImageMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() =>
-                selectedImage && deleteImageMutation.mutate(selectedImage.id)
-              }
-              disabled={deleteImageMutation.isPending}
-            >
-              {deleteImageMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Edit Profile Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -978,27 +886,22 @@ export default function ProfilePage() {
                       <Input
                         {...field}
                         type="number"
-                        min="0"
-                        max="7"
+                        min={0}
+                        max={7}
                         value={field.value ?? ""}
-                        onChange={(e) =>
+                        onChange={(event) =>
                           field.onChange(
-                            e.target.value === ""
+                            event.target.value === ""
                               ? undefined
-                              : Number(e.target.value),
+                              : Number(event.target.value),
                           )
                         }
-                        placeholder="e.g., 2"
                       />
                     </FormControl>
                     <FormMessage />
-                    <p className="text-xs text-muted-foreground">
-                      Number of rest days you prefer between workouts (0-7)
-                    </p>
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={settingsForm.control}
                 name="timezone"
@@ -1008,17 +911,11 @@ export default function ProfilePage() {
                     <FormControl>
                       <Input
                         {...field}
-                        type="text"
-                        value={field.value ?? ""}
-                        readOnly
-                        placeholder="Auto-detected"
+                        placeholder="e.g. Asia/Manila"
+                        autoCapitalize="none"
                       />
                     </FormControl>
                     <FormMessage />
-                    <p className="text-xs text-muted-foreground">
-                      Your timezone is automatically detected for accurate
-                      workout tracking
-                    </p>
                   </FormItem>
                 )}
               />
@@ -1035,7 +932,9 @@ export default function ProfilePage() {
                   type="submit"
                   disabled={updateSettingsMutation.isPending}
                 >
-                  {updateSettingsMutation.isPending ? "Saving..." : "Save"}
+                  {updateSettingsMutation.isPending
+                    ? "Saving..."
+                    : "Save Settings"}
                 </Button>
               </DialogFooter>
             </form>

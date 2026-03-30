@@ -1,9 +1,32 @@
 import PostHeartModel from "../models/post-heart.model.js";
+import { Types } from "mongoose";
+
+function idCandidates(id: string) {
+  const values: Array<string | Types.ObjectId> = [id];
+
+  if (Types.ObjectId.isValid(id)) {
+    values.push(new Types.ObjectId(id));
+  }
+
+  return values;
+}
+
+function objectIdCandidates(ids: string[]) {
+  return ids.flatMap((id) => {
+    if (Types.ObjectId.isValid(id)) {
+      return [new Types.ObjectId(id)];
+    }
+    return [];
+  });
+}
 
 export async function toggleHeart(postId: string, userId: string) {
+  const postIdValues = idCandidates(postId);
+  const userIdValues = idCandidates(userId);
+
   const existing = await PostHeartModel.findOne({
-    post_id: postId,
-    user_id: userId,
+    post_id: { $in: postIdValues },
+    user_id: { $in: userIdValues },
   })
     .select({ _id: 1 })
     .lean();
@@ -21,7 +44,10 @@ export async function toggleHeart(postId: string, userId: string) {
 }
 
 export async function countByPostId(postId: string) {
-  return PostHeartModel.countDocuments({ post_id: postId });
+  const postIdValues = idCandidates(postId);
+  return PostHeartModel.countDocuments({
+    post_id: { $in: postIdValues },
+  });
 }
 
 export async function countByPostIds(postIds: string[]) {
@@ -29,12 +55,25 @@ export async function countByPostIds(postIds: string[]) {
     return new Map<string, number>();
   }
 
+  const objectIds = objectIdCandidates(postIds);
+  const postIdValues = [...postIds, ...objectIds];
   const rows = await PostHeartModel.aggregate<{
     _id: string;
     count: number;
   }>([
-    { $match: { post_id: { $in: postIds } } },
-    { $group: { _id: "$post_id", count: { $sum: 1 } } },
+    {
+      $match: {
+        post_id: { $in: postIdValues },
+      },
+    },
+    {
+      $project: {
+        normalizedPostId: { $toString: "$post_id" },
+      },
+    },
+    {
+      $group: { _id: "$normalizedPostId", count: { $sum: 1 } },
+    },
   ]);
 
   return new Map(rows.map((row) => [row._id.toString(), row.count]));
@@ -48,9 +87,12 @@ export async function findHeartedPostIdsByUser(
     return [];
   }
 
+  const userIdValues = idCandidates(userId);
+  const objectIds = objectIdCandidates(postIds);
+  const postIdValues = [...postIds, ...objectIds];
   const rows = await PostHeartModel.find({
-    user_id: userId,
-    post_id: { $in: postIds },
+    user_id: { $in: userIdValues },
+    post_id: { $in: postIdValues },
   })
     .select({ post_id: 1 })
     .lean();

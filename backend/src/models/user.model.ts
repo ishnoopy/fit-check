@@ -180,8 +180,6 @@ const UserSchema = new mongoose.Schema(
   },
 );
 
-UserSchema.index({ referral_code: 1 }, { unique: true, sparse: true });
 UserSchema.index({ referred_by_user_id: 1 });
-UserSchema.index({ username: 1 }, { unique: true, sparse: true });
 
 export default model<IUserModel>("User", UserSchema);

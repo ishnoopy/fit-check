@@ -6,6 +6,7 @@ import * as jose from "jose";
 import { z } from "zod";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
+import { resolveMediaUrl } from "../services/media-url.service.js";
 import * as OAuthService from "../services/oauth.service.js";
 import { loginService, registerService } from "../services/user.service.js";
 import {
@@ -118,11 +119,15 @@ export async function me(c: Context) {
   }
 
   const { password, ...userWithoutPassword } = userFullData;
+  const avatar = await resolveMediaUrl(userWithoutPassword.avatar ?? null);
 
   return c.json(
     {
       success: true,
-      data: userWithoutPassword,
+      data: {
+        ...userWithoutPassword,
+        avatar,
+      },
     },
     StatusCodes.OK,
   );
@@ -393,11 +398,15 @@ export async function completeProfile(c: Context) {
   }
 
   const { password, ...userWithoutPassword } = updatedUser;
+  const avatar = await resolveMediaUrl(userWithoutPassword.avatar ?? null);
 
   return c.json(
     {
       success: true,
-      data: userWithoutPassword,
+      data: {
+        ...userWithoutPassword,
+        avatar,
+      },
     },
     StatusCodes.OK,
   );
@@ -426,11 +435,15 @@ export async function acknowledgePatchNote(c: Context) {
   }
 
   const { password, ...userWithoutPassword } = updatedUser;
+  const avatar = await resolveMediaUrl(userWithoutPassword.avatar ?? null);
 
   return c.json(
     {
       success: true,
-      data: userWithoutPassword,
+      data: {
+        ...userWithoutPassword,
+        avatar,
+      },
     },
     StatusCodes.OK,
   );

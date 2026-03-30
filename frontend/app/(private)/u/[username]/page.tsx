@@ -30,18 +30,22 @@ interface PublicProfile {
   isOwnProfile: boolean;
 }
 
-interface GalleryImage {
+interface ProfilePost {
   id: string;
-  url: string;
-  caption?: string;
+  text: string;
+  media?: {
+    url: string;
+    mimeType: string;
+    fileName?: string;
+  } | null;
   createdAt: string;
 }
 
 const getPublicProfile = (username: string) =>
   api.get<{ data: PublicProfile }>(`/api/users/${username}/profile`);
 
-const getPublicGallery = (username: string) =>
-  api.get<{ data: GalleryImage[] }>(`/api/gallery/users/${username}`);
+const getPublicPosts = (username: string) =>
+  api.get<{ data: ProfilePost[] }>(`/api/posts/users/${username}`);
 
 const getFollowers = (username: string) =>
   api.get<{ data: FollowListUser[] }>(`/api/users/${username}/followers`);
@@ -69,9 +73,9 @@ export default function PublicProfilePage() {
     retry: false,
   });
 
-  const { data: galleryImages = [] } = useQuery({
-    queryKey: ["public-gallery", username],
-    queryFn: () => getPublicGallery(username),
+  const { data: posts = [] } = useQuery({
+    queryKey: ["public-posts", username],
+    queryFn: () => getPublicPosts(username),
     enabled: Boolean(username),
     select: (data) => data.data || [],
     retry: false,
@@ -135,6 +139,7 @@ export default function PublicProfilePage() {
                     width={128}
                     height={128}
                     className="rounded-(--radius) object-cover w-full h-full"
+                    unoptimized
                   />
                 ) : (
                   <div className="h-full w-full rounded-(--radius) bg-muted/40 border border-border flex items-center justify-center">
@@ -218,22 +223,39 @@ export default function PublicProfilePage() {
           </TabsList>
           <TabsContent value="posts" className="mt-0">
             <div className="p-1">
-              {galleryImages.length === 0 ? (
+              {posts.length === 0 ? (
                 <div className="py-16 px-4 text-center text-muted-foreground">
                   No posts yet.
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-1">
-                  {galleryImages.map((image) => (
-                    <div key={image.id} className="aspect-square relative overflow-hidden">
-                      <Image
-                        src={image.url}
-                        alt={image.caption || "Gallery image"}
-                        fill
-                        className="object-cover"
-                        loading="eager"
-                      />
-                    </div>
+                <div className="space-y-4 p-2">
+                  {posts.map((post) => (
+                    <article
+                      key={post.id}
+                      className="rounded-[1.25rem] border border-border/70 bg-background/95 overflow-hidden"
+                    >
+                      {post.media?.mimeType.startsWith("video/") ? (
+                        <video src={post.media.url} controls className="w-full max-h-[28rem]" />
+                      ) : post.media?.url ? (
+                        <div className="relative w-full aspect-square">
+                          <Image
+                            src={post.media.url}
+                            alt={post.media.fileName || "Post media"}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
+                      ) : null}
+                      <div className="px-4 py-3 space-y-2">
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {post.text}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(post.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </article>
                   ))}
                 </div>
               )}

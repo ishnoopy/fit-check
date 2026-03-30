@@ -43,6 +43,10 @@ const usernameParamsSchema = z.object({
   username: z.string().trim().min(3).max(24).regex(/^[a-z0-9_]+$/),
 });
 
+const updateAvatarSchema = z.object({
+  uploadId: z.string().length(24, "Invalid upload ID"),
+});
+
 export async function getPublicProfile(c: Context) {
   const user = c.get("user");
   const params = await usernameParamsSchema.safeParseAsync(c.req.param());
@@ -134,6 +138,31 @@ export async function getFollowing(c: Context) {
     {
       success: true,
       data: users,
+    },
+    StatusCodes.OK,
+  );
+}
+
+export async function updateMyAvatar(c: Context) {
+  const user = c.get("user");
+  const body = await c.req.json();
+  const validation = await updateAvatarSchema.safeParseAsync(body);
+
+  if (!validation.success) {
+    throw new BadRequestError(validation.error);
+  }
+
+  const updatedUser = await socialService.updateMyAvatar(
+    user.id,
+    validation.data.uploadId,
+  );
+
+  const { password, ...userWithoutPassword } = updatedUser;
+
+  return c.json(
+    {
+      success: true,
+      data: userWithoutPassword,
     },
     StatusCodes.OK,
   );
