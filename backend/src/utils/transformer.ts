@@ -68,8 +68,8 @@ export function toSnakeCase<T extends Record<string, any>>(record: T): any {
   const transformed: Record<string, any> = {};
   for (const [key, value] of Object.entries(record)) {
     let newValue;
-    // Pass Date objects through as-is so Mongoose receives native Date types
-    if (value instanceof Date) {
+    // Pass valid Date objects through as-is so Mongoose receives native Date types
+    if (value instanceof Date && !isNaN(value.getTime())) {
       newValue = value;
     }
     // Handle MongoDB ObjectId - convert to string
