@@ -10,13 +10,13 @@ export async function errorMiddleware(err: Error, c: Context) {
 
   if (err instanceof jose.errors.JWSInvalid) {
     // remove the jwt token from the cookie
-    deleteCookie(c, "access_token");
+    deleteCookie(c, "access_token", { path: "/" });
     return c.json({ message: "Invalid JWT token" }, StatusCodes.UNAUTHORIZED);
   }
 
   if (err instanceof jose.errors.JWTExpired) {
     // remove the jwt token from the cookie
-    deleteCookie(c, "access_token");
+    deleteCookie(c, "access_token", { path: "/" });
     return c.json({ message: "JWT token expired" }, StatusCodes.UNAUTHORIZED);
   }
 
@@ -24,14 +24,14 @@ export async function errorMiddleware(err: Error, c: Context) {
   if (err instanceof CustomError) {
     // if unauthorized, remove the jwt token from the cookie
     if (err.status === StatusCodes.UNAUTHORIZED) {
-      deleteCookie(c, "access_token");
+      deleteCookie(c, "access_token", { path: "/" });
     }
     return c.json({ message: err.message }, err.status as ContentfulStatusCode);
   }
 
   // Default error response for non-custom errors
   return c.json(
-    { message: "Internal Server Error", stack: err.stack },
+    { message: "Internal Server Error" },
     StatusCodes.INTERNAL_SERVER_ERROR,
   );
 }

@@ -7,7 +7,9 @@ function escapeRegex(value: string) {
 }
 
 export async function findAll() {
-  const users = await UserModel.find().lean();
+  const users = await UserModel.find()
+    .select("-password -refresh_token_hash -refresh_token_expires_at")
+    .lean();
   return toCamelCase(users) as IUser[];
 }
 

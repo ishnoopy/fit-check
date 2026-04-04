@@ -66,6 +66,10 @@ const createRedisStore = (prefix: string) => {
   });
 };
 
+// NOTE: x-forwarded-for and x-real-ip are trusted here unconditionally.
+// This is safe only when a trusted reverse proxy (nginx, AWS ALB, Cloudflare, etc.)
+// is always in front of this service. If the backend is ever exposed directly
+// to the internet, clients can spoof these headers to bypass rate limiting.
 const getClientIp = (c: Context): string => {
   const forwardedFor = c.req.header("x-forwarded-for");
 

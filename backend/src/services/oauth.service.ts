@@ -84,12 +84,12 @@ export async function handleGoogleOAuthCallback(code: string) {
       role: userWithoutPassword?.role,
     })
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("7d")
+      .setExpirationTime("30d")
       .sign(new TextEncoder().encode(process.env.JWT_SECRET));
 
     await UserRepository.updateUser(userWithoutPassword.id as string, {
       refreshTokenHash: await hash(refreshToken, 10),
-      refreshTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      refreshTokenExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     });
 
     return { user: userWithoutPassword, token, refreshToken };

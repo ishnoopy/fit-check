@@ -20,14 +20,6 @@ const chatRequestSchema = z.object({
     }),
   intent: z.nativeEnum(COACH_INTENT).optional(),
   conversationId: z.string().length(24, "Invalid conversation ID").optional(),
-  chatHistory: z
-    .array(
-      z.object({
-        role: z.enum(["user", "coach"]),
-        content: z.string(),
-      }),
-    )
-    .optional(),
 });
 
 /**
@@ -56,7 +48,6 @@ export async function chat(c: Context) {
     message,
     intent: body.intent,
     conversationId,
-    chatHistory: body.chatHistory,
   });
   let eventId = 0;
   return streamSSE(c, async (stream) => {

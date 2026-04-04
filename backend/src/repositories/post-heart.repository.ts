@@ -31,16 +31,20 @@ export async function toggleHeart(postId: string, userId: string) {
     .select({ _id: 1 })
     .lean();
 
+  let isHearted: boolean;
   if (existing) {
     await PostHeartModel.deleteOne({ _id: existing._id });
-    return { isHearted: false };
+    isHearted = false;
+  } else {
+    await PostHeartModel.create({
+      post_id: postId,
+      user_id: userId,
+    });
+    isHearted = true;
   }
 
-  await PostHeartModel.create({
-    post_id: postId,
-    user_id: userId,
-  });
-  return { isHearted: true };
+  const heartCount = await countByPostId(postId);
+  return { isHearted, heartCount };
 }
 
 export async function countByPostId(postId: string) {

@@ -21,12 +21,12 @@ export async function authMiddleware(c: Context, next: Next) {
   } catch (error) {
     // If token is expired or invalid, delete the cookie
     if (error instanceof jose.errors.JWTExpired) {
-      deleteCookie(c, "access_token");
+      deleteCookie(c, "access_token", { path: "/" });
       throw new UnauthorizedError("Token expired");
     }
 
     // Handle other JWT errors
-    deleteCookie(c, "access_token");
+    deleteCookie(c, "access_token", { path: "/" });
     throw new UnauthorizedError("Invalid token");
   }
 }

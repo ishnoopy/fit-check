@@ -13,7 +13,6 @@ import {
   isValidUsername,
   normalizeUsername,
 } from "../services/username.service.js";
-import { ROLES_LIST } from "../utils/constants/roles.js";
 import {
   BadRequestError,
   NotFoundError,
@@ -54,8 +53,9 @@ export async function handleGoogleOAuthCallback(c: Context) {
   setCookie(c, "access_token", user?.token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 120 * 1000, // 2 hours
+    maxAge: 60 * 15, // 15 minutes
     sameSite: "lax", // To allow frontend redirect to the dashboard
+    path: "/",
   });
 
   setCookie(c, "refresh_token", user?.refreshToken, {
@@ -63,6 +63,7 @@ export async function handleGoogleOAuthCallback(c: Context) {
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: "lax", // To allow frontend redirect to the dashboard
+    path: "/",
   });
 
   return c.redirect(
@@ -90,8 +91,9 @@ export async function login(c: Context) {
   setCookie(c, "access_token", user.token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 120 * 1000, // 2 hours
+    maxAge: 60 * 15, // 15 minutes
     sameSite: "lax",
+    path: "/",
   });
 
   setCookie(c, "refresh_token", user.refreshToken, {
@@ -99,6 +101,7 @@ export async function login(c: Context) {
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: "lax",
+    path: "/",
   });
 
   return c.json(
@@ -140,12 +143,14 @@ export async function logout(c: Context) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
   });
 
   deleteCookie(c, "refresh_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
   });
 
   await UserRepository.updateUser(user.id, {
@@ -216,8 +221,9 @@ export async function refreshToken(c: Context) {
   setCookie(c, "access_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 120 * 1000, // 2 hours
+    maxAge: 60 * 15, // 15 minutes
     sameSite: "lax",
+    path: "/",
   });
 
   const newRefreshToken = await new jose.SignJWT({
@@ -226,7 +232,7 @@ export async function refreshToken(c: Context) {
     role: user.role,
   })
     .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("7d")
+    .setExpirationTime("30d")
     .sign(new TextEncoder().encode(process.env.JWT_SECRET));
 
   setCookie(c, "refresh_token", newRefreshToken, {
@@ -234,11 +240,12 @@ export async function refreshToken(c: Context) {
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: "lax",
+    path: "/",
   });
 
   await UserRepository.updateUser(user.id as string, {
     refreshTokenHash: await hash(newRefreshToken, 10),
-    refreshTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    refreshTokenExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
   });
 
   return c.json(
@@ -251,7 +258,6 @@ export async function register(c: Context) {
   const paramsSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
-    role: z.enum(ROLES_LIST as [string, ...string[]]).optional(),
     referralCode: z.string().trim().min(1).max(32).optional(),
   });
 
@@ -264,7 +270,7 @@ export async function register(c: Context) {
   const newUser = await registerService({
     email: params.data.email,
     password: params.data.password,
-    role: params.data.role || "user",
+    role: "user",
     profileCompleted: false,
   }, {
     referralCode: params.data.referralCode,
