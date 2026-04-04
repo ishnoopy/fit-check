@@ -28,6 +28,14 @@ export async function countImagesByUserId(userId: string) {
 }
 
 /**
+ * Find multiple file uploads by their IDs in a single query.
+ */
+export async function findByIds(ids: string[]) {
+  const fileUploads = await FileUploadModel.find({ _id: { $in: ids } }).lean();
+  return toCamelCase(fileUploads) as IFileUpload[];
+}
+
+/**
  * Find a single file upload by query
  */
 export async function findOne(where: FilterQuery<IFileUpload>) {

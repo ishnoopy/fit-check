@@ -30,16 +30,7 @@ export class NotFoundError extends CustomError {
 
 export class BadRequestError extends CustomError {
   constructor(message: string | ZodError) {
-    if (message instanceof ZodError) {
-      const formattedMessage = message.errors
-        .map((err) => `${err.path.join(".")}: ${err.message}`)
-        .join(", ");
-
-      super(StatusCodes.BAD_REQUEST, formattedMessage);
-    } else {
-      console.log("MESSAGE: ", message);
-      super(StatusCodes.BAD_REQUEST, message);
-    }
+    super(StatusCodes.BAD_REQUEST, message);
   }
 }
 

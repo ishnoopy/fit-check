@@ -76,7 +76,6 @@ interface PrepareChatSessionInput {
   message: string;
   intent?: CoachIntent;
   conversationId?: string;
-  chatHistory?: ChatHistoryMessage[];
 }
 
 interface PrepareChatSessionResult {
@@ -227,7 +226,7 @@ export async function prepareChatSession(
   let intent = input.intent ?? (await classifyIntent(input.message));
   let chatHistory = input.conversationId
     ? await buildChatHistoryFromConversation(input.conversationId, input.userId)
-    : input.chatHistory;
+    : undefined;
 
   // If there are no logs for exercises done today, fallback from session feedback
   // to past-session feedback with a short continuity hint for better UX.

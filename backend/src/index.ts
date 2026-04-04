@@ -9,6 +9,20 @@ import {
   connectRateLimiterRedis,
 } from "./middlewares/rate-limiter.middleware.js";
 import routes from "./routes/index.js";
+
+const REQUIRED_ENV_VARS = [
+  "JWT_SECRET",
+  "FRONTEND_URL",
+  "AWS_S3_BUCKET_NAME",
+  "DB_URL",
+] as const;
+
+for (const key of REQUIRED_ENV_VARS) {
+  if (!process.env[key]) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+}
+
 export const app = new Hono();
 
 // Connect to the database

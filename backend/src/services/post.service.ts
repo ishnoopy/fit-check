@@ -59,7 +59,7 @@ async function enrichPosts(posts: Awaited<ReturnType<typeof postRepository.findB
 
   const [authors, uploads, heartCounts, heartedPostIds] = await Promise.all([
     userRepository.findByIds(authorIds),
-    Promise.all(uploadIds.map((id) => fileUploadRepository.findOne({ id }))),
+    fileUploadRepository.findByIds(uploadIds),
     postHeartRepository.countByPostIds(postIds),
     postHeartRepository.findHeartedPostIdsByUser(viewerId, postIds),
   ]);
@@ -239,8 +239,7 @@ export async function togglePostHeartService(postId: string, userId: string) {
     throw new NotFoundError("Post not found");
   }
 
-  const { isHearted } = await postHeartRepository.toggleHeart(postId, userId);
-  const heartCount = await postHeartRepository.countByPostId(postId);
+  const { isHearted, heartCount } = await postHeartRepository.toggleHeart(postId, userId);
 
   return {
     postId,
