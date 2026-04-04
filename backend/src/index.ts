@@ -17,12 +17,6 @@ const REQUIRED_ENV_VARS = [
   "DB_URL",
 ] as const;
 
-for (const key of REQUIRED_ENV_VARS) {
-  if (!process.env[key]) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-}
-
 export const app = new Hono();
 
 // Connect to the database
@@ -85,6 +79,11 @@ process.on("SIGTERM", () => {
 });
 
 if (!import.meta.vitest) {
+  for (const key of REQUIRED_ENV_VARS) {
+    if (!process.env[key]) {
+      throw new Error(`Missing required environment variable: ${key}`);
+    }
+  }
   console.log("Starting server...");
   serve({
     fetch: app.fetch,
