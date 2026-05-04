@@ -22,6 +22,7 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export function TimerProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const timerEndTimeRef = useRef<number | null>(null);
   const [countdown, setCountdown] = useState<number>(0);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
   const [timerExerciseId, setTimerExerciseId] = useState<string | null>(null);
@@ -32,6 +33,56 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     audioRef.current = new Audio("/notif-sound.mp3");
   }, []);
+
+  const clearTimerInterval = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  const completeRestTime = () => {
+    clearTimerInterval();
+    timerEndTimeRef.current = null;
+    setIsTimerRunning(false);
+    setCountdown(0);
+    setTimerExerciseId(null);
+    setTimerExerciseName(null);
+    setShowTimerPill(false);
+
+    if (audioRef.current) {
+      audioRef.current.play();
+    }
+    toast.success("Rest time complete! 💪");
+  };
+
+  const syncCountdown = () => {
+    if (timerEndTimeRef.current === null) {
+      return;
+    }
+
+    const remainingSeconds = Math.max(
+      0,
+      Math.ceil((timerEndTimeRef.current - Date.now()) / 1000),
+    );
+
+    setCountdown(remainingSeconds);
+
+    if (remainingSeconds <= 0) {
+      completeRestTime();
+    }
+  };
+
+  const startTicking = () => {
+    clearTimerInterval();
+    syncCountdown();
+
+    if (timerEndTimeRef.current === null) {
+      return;
+    }
+
+    intervalRef.current = setInterval(syncCountdown, 250);
+  };
 
   const startRestTime = (exerciseId: string, exerciseName: string, restTime: number) => {
     // Prevent starting a new timer if one is already running
@@ -45,48 +96,27 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
+    clearTimerInterval();
     setTimerExerciseId(exerciseId);
     setTimerExerciseName(exerciseName);
     setCountdown(restTime);
     setIsTimerRunning(true);
     setShowTimerPill(true);
-
-    let countdownInSeconds = restTime;
-
-    intervalRef.current = setInterval(() => {
-      countdownInSeconds -= 1;
-      setCountdown(countdownInSeconds);
-
-      if (countdownInSeconds <= 0) {
-        setIsTimerRunning(false);
-        setCountdown(0);
-        setTimerExerciseId(null);
-        setTimerExerciseName(null);
-        setShowTimerPill(false);
-
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        if (audioRef.current) {
-          audioRef.current.play();
-        }
-        toast.success("Rest time complete! 💪");
-      }
-    }, 1000);
+    timerEndTimeRef.current = Date.now() + restTime * 1000;
+    startTicking();
   };
 
   const pauseRestTime = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (timerEndTimeRef.current !== null) {
+      const remainingSeconds = Math.max(
+        0,
+        Math.ceil((timerEndTimeRef.current - Date.now()) / 1000),
+      );
+      setCountdown(remainingSeconds);
     }
 
+    clearTimerInterval();
+    timerEndTimeRef.current = null;
     setIsTimerRunning(false);
   };
 
@@ -96,37 +126,13 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }
 
     setIsTimerRunning(true);
-    let countdownInSeconds = countdown;
-
-    intervalRef.current = setInterval(() => {
-      countdownInSeconds -= 1;
-      setCountdown(countdownInSeconds);
-
-      if (countdownInSeconds <= 0) {
-        setIsTimerRunning(false);
-        setCountdown(0);
-        setTimerExerciseId(null);
-        setTimerExerciseName(null);
-        setShowTimerPill(false);
-
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        if (audioRef.current) {
-          audioRef.current.play();
-        }
-        toast.success("Rest time complete! 💪");
-      }
-    }, 1000);
+    timerEndTimeRef.current = Date.now() + countdown * 1000;
+    startTicking();
   };
 
   const stopRestTime = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
+    clearTimerInterval();
+    timerEndTimeRef.current = null;
     setIsTimerRunning(false);
     setCountdown(0);
     setTimerExerciseId(null);
@@ -137,9 +143,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      clearTimerInterval();
     };
   }, []);
 
