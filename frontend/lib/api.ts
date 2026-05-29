@@ -21,23 +21,54 @@ interface FetchOptions extends RequestInit {
 /**
  * Attempts to refresh the authentication token
  */
-async function refreshAuthToken(): Promise<boolean> {
-  try {
-    const refreshRes = await fetch(`${BASE_URL}/api/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+let refreshPromise: Promise<boolean> | null = null;
+let hasRedirectedToLogin = false;
 
-    if (refreshRes.ok) {
-      queryClient.invalidateQueries({ queryKey: ["user"] });
-      return true;
-    }
-    return false;
+async function refreshAuthToken(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const refreshRes = await fetch(`${BASE_URL}/api/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (refreshRes.ok) {
+          queryClient.invalidateQueries({ queryKey: ["user"] });
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+  }
+
+  return refreshPromise;
+}
+
+function redirectToLogin() {
+  if (hasRedirectedToLogin) {
+    return;
+  }
+
+  hasRedirectedToLogin = true;
+  toast.error("Session expired. Please login again.");
+  localStorage.removeItem("logFormDrafts");
+  window.location.href = "/login";
+}
+
+async function readErrorMessage(res: Response) {
+  try {
+    const error = await res.json();
+    return error?.message ?? "An error occurred";
   } catch {
-    return false;
+    return "An error occurred";
   }
 }
 
@@ -63,45 +94,23 @@ export async function apiFetch<T = unknown>(
 
   const res = await fetch(`${BASE_URL}${url}`, config);
 
-  // Handle unauthorized responses
+  // Handle unauthorized responses by refreshing once, regardless of the backend's
+  // exact 401 message ("Unauthorized", "Token expired", "Invalid token", etc.).
   if (res.status === 401) {
-    const error = await res.json();
-    if (error?.message === "Unauthorized") {
-      // Don't retry refresh endpoint itself
-      if (isRefreshEndpoint) {
-        toast.error("Session expired. Please login again.");
-        localStorage.removeItem("logFormDrafts");
-        window.location.href = "/login";
-        throw new Error("Unauthorized");
+    if (!isRefreshEndpoint && retryCount < maxRetries) {
+      const refreshSuccess = await refreshAuthToken();
+
+      if (refreshSuccess) {
+        // Retry the original request after the refresh cookie has been set.
+        return apiFetch<T>(url, {
+          ...options,
+          retryCount: retryCount + 1,
+        });
       }
-
-      // Try to refresh token if we haven't exceeded max retries
-      if (retryCount < maxRetries) {
-        const refreshSuccess = await refreshAuthToken();
-
-        if (refreshSuccess) {
-          // Retry the original request with incremented retry count
-          return apiFetch<T>(url, {
-            ...options,
-            retryCount: retryCount + 1,
-          });
-        }
-        // If refresh failed, increment retry count and check if we should redirect
-        const newRetryCount = retryCount + 1;
-        if (newRetryCount >= maxRetries) {
-          toast.error("Session expired. Please login again.");
-          localStorage.removeItem("logFormDrafts");
-          window.location.href = "/login";
-        }
-      } else {
-        // Max retries exceeded, redirect to login
-        toast.error("Session expired. Please login again.");
-        localStorage.removeItem("logFormDrafts");
-        window.location.href = "/login";
-      }
-
-      throw new Error("Unauthorized");
     }
+
+    redirectToLogin();
+    throw new Error(await readErrorMessage(res));
   }
 
   if (res.status === 429) {
@@ -116,8 +125,7 @@ export async function apiFetch<T = unknown>(
 
   // Handle other errors
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error?.message ?? "An error occurred");
+    throw new Error(await readErrorMessage(res));
   }
 
   return res.json();
