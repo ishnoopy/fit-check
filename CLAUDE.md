@@ -40,16 +40,6 @@ cd backend && pnpm test
 cd backend && pnpm vitest run src/path/to/file.test.ts
 ```
 
-### Database Migrations
-
-```bash
-cd backend
-pnpm migration:create <name>
-pnpm migration:up
-pnpm migration:down
-pnpm migration:status
-```
-
 ### Docker
 
 ```bash
