@@ -44,6 +44,10 @@ interface GetLatestLogsParams {
   exerciseIds: string[];
 }
 
+interface GetRecentLogsParams {
+  limit?: number;
+}
+
 /**
  * Fetches user settings.
  */
@@ -131,6 +135,35 @@ export const useGetLatestLogs = (
 };
 
 /**
+ * Fetches recently logged exercises.
+ */
+const getRecentLogs = async ({ limit = 2 }: GetRecentLogsParams) => {
+  return api.get<{ data: ILog[] }>(
+    `/api/logs?sort_by=created_at&sort_order=desc&page=1&limit=${limit}`,
+  );
+};
+
+/**
+ * Hook to fetch recently logged exercises.
+ */
+export const useGetRecentLogs = (
+  params: GetRecentLogsParams = {},
+  options?: Omit<
+    UseQueryOptions<{ data: ILog[] }, Error, ILog[]>,
+    "queryKey" | "queryFn"
+  >,
+) => {
+  const limit = params.limit ?? 2;
+
+  return useQuery({
+    queryKey: ["recentLogs", limit],
+    queryFn: () => getRecentLogs({ limit }),
+    select: (data) => data.data,
+    ...options,
+  });
+};
+
+/**
  * Fetches exercise history.
  */
 export const getExerciseHistory = async (exerciseId: string) => {
@@ -162,6 +195,7 @@ export const useCreateLog = (
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todayLogs"] });
       queryClient.invalidateQueries({ queryKey: ["latestLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["recentLogs"] });
 
       if (options?.onSuccess) {
         options.onSuccess();

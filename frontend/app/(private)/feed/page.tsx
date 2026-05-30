@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { formatPostTime } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import {
   HeartIcon,
   ImagePlusIcon,
@@ -230,8 +231,8 @@ export default function FeedPage() {
   const trimmedSearchTerm = searchTerm.trim();
 
   return (
-    <div className="relative p-4 md:p-6 pb-28 max-w-2xl mx-auto space-y-4">
-      <PageHeader title="FitCheck" className="justify-center" />
+    <div className="relative p-4 pb-28 max-w-2xl mx-auto space-y-5">
+      <PageHeader title="Feed" subtitle="Training updates from the crew" />
 
       <section className="space-y-2">
         <div className="relative">
@@ -240,13 +241,13 @@ export default function FeedPage() {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Search users by username"
-            className="h-11 rounded-xl border-border/80 bg-card pl-10"
+            className="pl-10"
             aria-label="Search users"
           />
         </div>
 
         {trimmedSearchTerm.length > 0 && (
-          <div className="rounded-xl border border-border/70 bg-card/95 shadow-sm overflow-hidden">
+          <div className="rounded-[28px] border border-border bg-card shadow-sm overflow-hidden">
             {trimmedSearchTerm.length < 2 ? (
               <p className="px-4 py-3 text-sm text-muted-foreground">
                 Type at least 2 characters to search users.
@@ -280,9 +281,9 @@ export default function FeedPage() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium leading-none">@{user.username}</p>
+                      <p className="text-sm font-black leading-none">@{user.username}</p>
                       <p className="mt-1 truncate text-xs text-muted-foreground">
-                        {[user.firstName, user.lastName].filter(Boolean).join(" ") || "FitCheck user"}
+                        {[user.firstName, user.lastName].filter(Boolean).join(" ") || "TUFF user"}
                       </p>
                     </div>
                   </Link>
@@ -306,18 +307,28 @@ export default function FeedPage() {
 
         <TabsContent value={tab} className="mt-4">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading feed...</p>
+            <p className="rounded-[28px] border border-border bg-card p-5 text-sm font-medium text-muted-foreground">
+              Loading feed...
+            </p>
           ) : feed.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No posts yet.</p>
+            <p className="rounded-[28px] border border-border bg-card p-5 text-sm font-medium text-muted-foreground">
+              No posts yet.
+            </p>
           ) : (
             <div className="space-y-4">
-              {feed.map((post) => {
+              {feed.map((post, index) => {
                 const authorUsername = post.author?.username;
 
                 return (
-                  <article
+                  <motion.article
                     key={post.id}
-                    className="overflow-hidden rounded-2xl border border-border/75 bg-card/95 shadow-sm"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.18,
+                      delay: Math.min(index * 0.03, 0.18),
+                    }}
+                    className="overflow-hidden rounded-[28px] border border-border bg-card shadow-sm"
                   >
                     <div className="px-4 pt-4 pb-3 flex items-center justify-between gap-3">
                       {authorUsername ? (
@@ -340,20 +351,20 @@ export default function FeedPage() {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold group-hover:underline">
+                              <p className="truncate text-sm font-black group-hover:underline">
                               @{authorUsername}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
                               {[post.author?.firstName, post.author?.lastName]
                                 .filter(Boolean)
-                                .join(" ") || "FitCheck user"}
+                                .join(" ") || "TUFF user"}
                             </p>
                           </div>
                         </Link>
                       ) : (
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="h-10 w-10 rounded-full border border-border/80 bg-muted" />
-                          <p className="text-sm font-semibold">unknown_user</p>
+                        <p className="text-sm font-black">unknown_user</p>
                         </div>
                       )}
 
@@ -381,14 +392,14 @@ export default function FeedPage() {
                     ) : null}
 
                     <div className="px-4 py-3 space-y-3">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                      <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap break-words">
                         {post.text}
                       </p>
 
                       <button
                         type="button"
                         onClick={() => heartMutation.mutate(post.id)}
-                        className="inline-flex items-center gap-2 rounded-full border border-border/80 px-3 py-1.5 text-sm transition-colors hover:bg-muted/40 cursor-pointer"
+                        className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-muted px-3 py-1.5 text-sm font-black transition-colors hover:bg-muted/70 cursor-pointer"
                       >
                         <HeartIcon
                           className={`h-4 w-4 ${post.isHeartedByMe ? "fill-current text-red-500" : ""}`}
@@ -396,7 +407,7 @@ export default function FeedPage() {
                         <span className="font-medium">{post.heartCount}</span>
                       </button>
                     </div>
-                  </article>
+                  </motion.article>
                 );
               })}
             </div>
@@ -407,7 +418,7 @@ export default function FeedPage() {
       <button
         type="button"
         onClick={() => setIsComposerOpen(true)}
-        className="fixed bottom-24 right-5 md:right-8 z-40 size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/35 hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
+        className="fixed bottom-24 right-5 md:right-8 z-40 size-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
         aria-label="Create post"
       >
         <PlusIcon className="h-6 w-6" />
@@ -416,9 +427,9 @@ export default function FeedPage() {
       <Dialog open={isComposerOpen} onOpenChange={setIsComposerOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Post</DialogTitle>
+            <DialogTitle>Create post</DialogTitle>
             <DialogDescription>
-              Share a short update. Media is optional (max 5MB).
+              Share a short update. Media is optional, up to 5MB.
             </DialogDescription>
           </DialogHeader>
 

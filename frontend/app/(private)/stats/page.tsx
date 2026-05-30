@@ -12,7 +12,7 @@ import {
   CalendarIcon,
   FlameIcon,
   TargetIcon,
-  TrendingUpIcon
+  TrendingUpIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -24,7 +24,6 @@ export default function StatsPage() {
   const totalLogs = statsData?.totalLogs || 0;
   const exercisesThisWeek = statsData?.exercisesThisWeek || 0;
   const datesWithWorkouts = statsData?.datesWithWorkouts || [];
-  console.log("✏️ ~ page.tsx:27 ~ StatsPage ~ datesWithWorkouts:", datesWithWorkouts)
 
   const streak = statsData?.streak || 0;
 
@@ -32,23 +31,17 @@ export default function StatsPage() {
     {
       icon: FlameIcon,
       value: streak,
-      label: "Day Streak",
-      color: "text-red-500",
-      bgColor: "bg-accent/10",
+      label: "day streak",
     },
     {
       icon: TargetIcon,
       value: totalLogs,
-      label: "Total Workouts",
-      color: "text-primary",
-      bgColor: "bg-primary/10",
+      label: "workouts logged",
     },
     {
       icon: TrendingUpIcon,
       value: exercisesThisWeek,
-      label: "This Week",
-      color: "text-green-500",
-      bgColor: "bg-secondary/10",
+      label: "this week",
     },
   ];
 
@@ -70,10 +63,10 @@ export default function StatsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen pb-24">
-        <div className="p-6 max-w-2xl mx-auto">
+        <div className="p-4 max-w-2xl mx-auto space-y-4">
           <PageHeader
             title="Stats"
-            subtitle="Your workout statistics and progress 📊"
+            subtitle="Progress at a glance"
           />
           <LoadingState message="Loading your stats..." />
         </div>
@@ -84,15 +77,15 @@ export default function StatsPage() {
   if (statsData && totalLogs === 0) {
     return (
       <div className="min-h-screen pb-24">
-        <div className="p-6 max-w-2xl mx-auto">
+        <div className="p-4 max-w-2xl mx-auto space-y-4">
           <PageHeader
             title="Stats"
-            subtitle="Your workout statistics and progress 📊"
+            subtitle="Progress at a glance"
           />
           <EmptyState
             icon={CalendarIcon}
             title="No workouts yet"
-            description="Start logging your workouts to see your progress and statistics"
+            description="Log your first workout to light up the grid."
             action={{
               label: "Log a workout",
               onClick: () => router.push("/log"),
@@ -106,7 +99,7 @@ export default function StatsPage() {
   if (error) {
     return (
       <div className="min-h-screen pb-24">
-        <div className="p-6 max-w-2xl mx-auto">
+        <div className="p-4 max-w-2xl mx-auto space-y-4">
           <PageHeader title="Error" subtitle="Failed to load stats" />
           <Card className="border-destructive/50 bg-destructive/10">
             <CardContent className="p-6 flex items-start gap-3">
@@ -125,10 +118,10 @@ export default function StatsPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="p-6 max-w-2xl mx-auto space-y-8">
+      <div className="p-4 max-w-2xl mx-auto space-y-5">
         <PageHeader
           title="Stats"
-          subtitle="Your workout statistics and progress 📊"
+          subtitle="Progress at a glance"
         />
 
         {/* Quick Stats */}
@@ -136,26 +129,30 @@ export default function StatsPage() {
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-3 gap-4"
+          className="grid grid-cols-3 gap-3"
         >
           {stats.map((stat) => (
-            <motion.div key={stat.label} variants={item}>
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 group">
-                <CardContent className="p-6 text-center space-y-3">
-                  <div
-                    className={`inline-flex items-center justify-center rounded-(--radius) ${stat.bgColor} p-3 group-hover:scale-110 transition-transform ${stat.color}`}
-                  >
+            <motion.div key={stat.label} variants={item} className="h-full">
+              <Card className="h-full rounded-[28px] border-secondary bg-secondary py-0 text-secondary-foreground shadow-sm transition-transform duration-150 active:scale-[0.99]">
+                <CardContent className="flex h-full flex-col justify-between p-4 text-left">
+                  <div className="inline-flex items-center justify-start text-primary">
                     {typeof stat.icon === "string" ? (
-                      <Image src={stat.icon} alt="" width={25} height={25} className="size-6 object-contain" />
+                      <Image
+                        src={stat.icon}
+                        alt=""
+                        width={25}
+                        height={25}
+                        className="size-6 object-contain"
+                      />
                     ) : (
-                      <stat.icon className="size-6" />
+                      <stat.icon className="size-5" />
                     )}
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-3xl font-bold text-foreground">
+                  <div className="mt-4 space-y-2">
+                    <p className="text-4xl font-black leading-none text-primary">
                       {stat.value}
                     </p>
-                    <p className="text-xs text-muted-foreground font-medium">
+                    <p className="text-xs font-extrabold leading-tight text-secondary-foreground">
                       {stat.label}
                     </p>
                   </div>
@@ -171,16 +168,16 @@ export default function StatsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden">
+          <Card className="overflow-hidden border-border bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="rounded-(--radius) bg-primary/10 p-2">
-                  <CalendarIcon className="size-6 text-primary" />
+                <div className="flex size-10 items-center justify-center rounded-full border border-sidebar-border bg-secondary p-2 text-primary shadow-sm">
+                  <CalendarIcon className="size-5" />
                 </div>
                 Workout Calendar
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Days with workouts are highlighted
+              <p className="text-sm font-medium text-muted-foreground">
+                Filled days are logged. Today stays soft until you train.
               </p>
             </CardHeader>
             <CardContent className="flex justify-center">
@@ -190,10 +187,13 @@ export default function StatsPage() {
                   return;
                 }}
                 modifiers={{
-                  workout: datesWithWorkouts.map(dateStr => new Date(dateStr + 'T00:00:00')),
+                  workout: datesWithWorkouts.map(
+                    (dateStr) => new Date(`${dateStr}T00:00:00`),
+                  ),
                 }}
                 modifiersClassNames={{
-                  workout: "[&>button]:opacity-100 bg-accent rounded",
+                  workout: "[&>button]:opacity-100 [&>button]:bg-accent [&>button]:rounded-full",
+                  today: "[&>button]:bg-accent/15 [&>button]:text-accent [&>button]:rounded-full [&>button]:ring-1 [&>button]:ring-accent/25",
                 }}
                 className="rounded-(--radius) border-0"
               />
@@ -207,34 +207,33 @@ export default function StatsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card className="bg-linear-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
-            <CardContent className="p-6 relative">
+          <Card className="relative overflow-hidden border-border bg-card">
+            <CardContent className="p-5 relative">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Total Days
+                  <p className="text-sm font-black text-foreground">
+                    Logged days
                   </p>
-                  <p className="text-3xl font-bold">
+                  <p className="text-4xl font-black leading-none text-accent">
                     {datesWithWorkouts.length}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Days with at least one workout
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Days with training
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Average per Week
+                  <p className="text-sm font-black text-foreground">
+                    Weekly pace
                   </p>
-                  <p className="text-3xl font-bold">
+                  <p className="text-4xl font-black leading-none text-accent">
                     {Math.round(
                       totalLogs /
                       Math.max(datesWithWorkouts.length / 7, 1) /
                       10,
                     ) * 10}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Workouts per week average
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Average workouts
                   </p>
                 </div>
               </div>

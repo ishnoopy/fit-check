@@ -70,7 +70,7 @@ export function FollowUsersDialog({
                     <p className="text-xs text-muted-foreground truncate">
                       {[profileUser.firstName, profileUser.lastName]
                         .filter(Boolean)
-                        .join(" ") || "FitCheck user"}
+                        .join(" ") || "TUFF user"}
                     </p>
                   </div>
                 </div>

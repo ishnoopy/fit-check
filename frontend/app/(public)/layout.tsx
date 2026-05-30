@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Fit Check - Sign In",
-  description: "Sign in to your Fit Check account",
+  title: "TUFF - Sign In",
+  description: "Sign in to your TUFF account",
 };
 
 export default async function PublicLayout({

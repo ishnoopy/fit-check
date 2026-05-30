@@ -3,7 +3,6 @@
 import { useUser } from "@/app/providers";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/fit-check-logo.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -163,7 +162,7 @@ export default function BottomNav({ className }: { className?: string }) {
       )}
       style={{ pointerEvents: isVisible ? "auto" : "none" }}
     >
-      <div className="mx-auto max-w-2xl bg-background/90 backdrop-blur border border-border shadow-sm rounded-full">
+      <div className="mx-auto max-w-2xl rounded-full border border-sidebar-border bg-sidebar p-2 shadow-lg">
         <div className="flex justify-around items-center py-2 gap-1 px-1.5">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -175,37 +174,17 @@ export default function BottomNav({ className }: { className?: string }) {
                 whileHover={{ scale: isDisabled ? 1 : 1.05 }}
                 whileTap={{ scale: isDisabled ? 1 : 0.95 }}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-full py-1.5 px-2 transition-colors relative",
+                  "flex flex-col items-center justify-center gap-1 rounded-full py-1.5 px-2 transition-colors relative font-black",
                   isDisabled
-                    ? "opacity-50 cursor-not-allowed"
+                    ? "opacity-50 cursor-not-allowed text-sidebar-foreground/50"
                     : isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:text-sidebar-accent-foreground",
                 )}
               >
                 {/* Icon with relative positioning to show badge */}
                 <div className="relative">
-                  {item.isCenter ? (
-                    <div
-                      className={cn(
-                        "relative z-10 size-8 rounded-full flex items-center justify-center border",
-                        isActive
-                          ? "bg-primary/10 border-primary/30"
-                          : "bg-background/70 border-border",
-                      )}
-                    >
-                      <Image
-                        src={logo}
-                        alt="FitCheck Coach"
-                        width={26}
-                        height={26}
-                        className="size-6 object-contain"
-                        priority
-                      />
-                    </div>
-                  ) : (
-                    <item.icon className="h-4 w-4 relative z-10" />
-                  )}
+                  <item.icon className="h-4 w-4 relative z-10" />
                   {showPulse && (
                     <span className="absolute -top-0.5 -right-0.5 z-20 size-2 bg-primary" />
                   )}
@@ -218,7 +197,7 @@ export default function BottomNav({ className }: { className?: string }) {
                 {isActive && !isDisabled && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full mx-auto w-1/2"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-sidebar-primary-foreground rounded-full mx-auto w-1/2"
                     initial={false}
                     animate={{ opacity: 1 }}
                     transition={{
@@ -267,10 +246,10 @@ export default function BottomNav({ className }: { className?: string }) {
                 whileTap={{ scale: 0.95 }}
                 onClick={triggerPressHapticFeedback}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-2 px-3 transition-colors",
+                  "flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-2 px-3 transition-colors font-black",
                   pathname === "/profile"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    : "text-sidebar-foreground hover:text-sidebar-accent-foreground",
                 )}
               >
                 <div className="relative">
@@ -285,8 +264,8 @@ export default function BottomNav({ className }: { className?: string }) {
                   ) : (
                     <UserIcon className="h-5 w-5" />
                   )}
-                  <span className="absolute -bottom-1 -right-1 z-10 inline-flex size-4 items-center justify-center rounded-full border border-border bg-background">
-                    <ChevronUpIcon className="size-3 text-muted-foreground" />
+                  <span className="absolute -bottom-1 -right-1 z-10 inline-flex size-4 items-center justify-center rounded-full border border-sidebar-border bg-sidebar-primary">
+                    <ChevronUpIcon className="size-3 text-sidebar-primary-foreground" />
                   </span>
                 </div>
                 <span className="text-xs font-medium hidden sm:inline">
@@ -335,7 +314,7 @@ export default function BottomNav({ className }: { className?: string }) {
                 </Link>
               </DropdownMenuItem>
 
-              <DropdownMenuItem
+              {/* <DropdownMenuItem
                 onClick={() => {
                   triggerPressHapticFeedback();
                   setTheme(isDark ? "light" : "dark");
@@ -348,7 +327,7 @@ export default function BottomNav({ className }: { className?: string }) {
                   <MoonIcon className="mr-2 h-4 w-4" />
                 )}
                 {isDark ? "Light mode" : "Dark mode"}
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => {

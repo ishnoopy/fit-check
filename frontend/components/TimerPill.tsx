@@ -115,19 +115,19 @@ export function TimerPill() {
     >
       <div
         className={cn(
-          "flex items-center gap-2 px-3 py-2 rounded-full border shadow-lg backdrop-blur-sm",
+          "flex items-center gap-3 px-4 py-2.5 rounded-full border-2 shadow-lg",
           isTimerRunning
-            ? "bg-primary/10 border-primary/30 text-primary"
-            : "bg-muted/90 border-border text-muted-foreground",
+            ? "bg-sidebar border-sidebar-primary text-sidebar-foreground"
+            : "bg-sidebar border-sidebar-border text-sidebar-foreground/70",
         )}
       >
-        <Timer className="h-4 w-4 shrink-0" />
+        <Timer className="h-4 w-4 shrink-0 text-sidebar-primary" />
         <div className="flex flex-col items-start min-w-[80px]">
-          <span className="text-xs font-mono font-bold tabular-nums">
+          <span className="text-base font-mono font-bold tabular-nums text-sidebar-primary">
             {countdownFormatted}
           </span>
           {timerExerciseName && (
-            <span className="text-[10px] leading-tight opacity-70 truncate max-w-[120px]">
+            <span className="text-[10px] leading-tight text-sidebar-foreground/60 truncate max-w-[120px]">
               {timerExerciseName}
             </span>
           )}
@@ -136,7 +136,7 @@ export function TimerPill() {
           {isTimerRunning ? (
             <button
               onClick={pauseRestTime}
-              className="h-7 w-7 shrink-0 hover:bg-primary/20 rounded-full flex items-center justify-center cursor-pointer transition-colors"
+              className="h-7 w-7 shrink-0 hover:bg-sidebar-primary/20 rounded-full flex items-center justify-center cursor-pointer transition-colors text-sidebar-primary"
               aria-label="Pause timer"
             >
               <Pause className="h-3.5 w-3.5" />
@@ -144,7 +144,7 @@ export function TimerPill() {
           ) : (
             <button
               onClick={resumeRestTime}
-              className="h-7 w-7 shrink-0 hover:bg-primary/20 rounded-full flex items-center justify-center cursor-pointer transition-colors"
+              className="h-7 w-7 shrink-0 hover:bg-sidebar-primary/20 rounded-full flex items-center justify-center cursor-pointer transition-colors text-sidebar-primary"
               aria-label="Resume timer"
             >
               <Play className="h-3.5 w-3.5" />
@@ -152,7 +152,7 @@ export function TimerPill() {
           )}
           <button
             onClick={stopRestTime}
-            className="h-7 w-7 shrink-0 hover:bg-destructive/20 text-destructive rounded-full flex items-center justify-center cursor-pointer transition-colors"
+            className="h-7 w-7 shrink-0 hover:bg-destructive/15 rounded-full flex items-center justify-center cursor-pointer transition-colors text-destructive"
             aria-label="Stop timer"
           >
             <Square className="h-3 w-3 fill-current" />

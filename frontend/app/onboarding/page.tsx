@@ -137,7 +137,7 @@ export default function OnboardingPage() {
     mutationFn: completeOnboarding,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["user"] });
-      toast.success("Welcome to FitCheck.");
+      toast.success("Welcome to TUFF.");
       router.replace("/dashboard");
     },
     onError: (error) => {

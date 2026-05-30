@@ -35,21 +35,21 @@ const categoryOptions: Array<{
       label: "General",
       hint: "Overall thoughts",
       accentClass:
-        "border-blue-300/60 bg-blue-100/70 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-200",
+        "border-primary bg-primary text-primary-foreground",
     },
     {
       value: "bug",
       label: "Bug Report",
       hint: "Something is broken",
       accentClass:
-        "border-rose-300/60 bg-rose-100/70 text-rose-900 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-200",
+        "border-destructive bg-destructive text-destructive-foreground",
     },
     {
       value: "feature",
       label: "Feature Request",
       hint: "New idea or improvement",
       accentClass:
-        "border-emerald-300/60 bg-emerald-100/70 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200",
+        "border-chart-4 bg-chart-4 text-secondary-foreground",
     },
   ];
 
@@ -109,16 +109,16 @@ export default function FeedbackPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="p-6 max-w-3xl mx-auto space-y-6">
+      <div className="p-4 max-w-2xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
           <BackButton href="/dashboard" />
         </div>
 
-        <Card className="overflow-hidden border-border/70 bg-card/80">
+        <Card className="overflow-hidden border-border bg-card">
           <CardHeader className="relative space-y-2 pb-4">
             <div className="absolute inset-0 pointer-events-none" />
-            <CardTitle className="relative text-2xl">Feedback Hub</CardTitle>
-            <p className="relative text-sm text-muted-foreground">
+            <CardTitle className="relative text-3xl">Feedback Hub</CardTitle>
+            <p className="relative text-sm font-medium text-muted-foreground">
               Tell us what works, what breaks, and what should come next.
             </p>
           </CardHeader>
@@ -135,14 +135,14 @@ export default function FeedbackPage() {
                         type="button"
                         onClick={() => setCategory(option.value)}
                         className={cn(
-                          "rounded-lg border px-3 py-2 text-left transition-colors",
+                          "rounded-[20px] border px-3 py-3 text-left transition-colors",
                           isActive
                             ? option.accentClass
-                            : "border-border/70 bg-background hover:bg-muted/50",
+                            : "border-border bg-card hover:bg-muted/50",
                         )}
                       >
-                        <p className="text-sm font-semibold">{option.label}</p>
-                        <p className="text-xs text-muted-foreground">{option.hint}</p>
+                        <p className="text-sm font-black">{option.label}</p>
+                        <p className={cn("text-xs font-medium", isActive ? "opacity-80" : "text-muted-foreground")}>{option.hint}</p>
                       </button>
                     );
                   })}
@@ -156,7 +156,7 @@ export default function FeedbackPage() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Share details so we can act on it quickly..."
-                  className="min-h-40 resize-y border-border/70 bg-background/80"
+                  className="min-h-40 resize-y"
                   minLength={10}
                   maxLength={1000}
                   required
@@ -174,21 +174,21 @@ export default function FeedbackPage() {
                 <Send className="h-4 w-4" />
                 {submitFeedbackMutation.isPending
                   ? "Submitting..."
-                  : "Submit Feedback"}
+                  : "Submit feedback"}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        <Card className="border-border/70 bg-card/80">
+        <Card className="border-border bg-card">
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-xl">Recent Feedback</CardTitle>
-              <span className="inline-flex items-center rounded-full border border-border/70 bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              <CardTitle className="text-2xl">Recent Feedback</CardTitle>
+              <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-black text-muted-foreground">
                 {feedbackData?.data?.length ?? 0} entries
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm font-medium text-muted-foreground">
               {user?.isPioneer
                 ? "Recent feedback from all users."
                 : "Recent feedback entries sent from your account."}
@@ -205,12 +205,12 @@ export default function FeedbackPage() {
                 {feedbackData.data.map((feedback) => (
                   <article
                     key={feedback.id}
-                    className="space-y-3 rounded-xl border border-border/70 bg-background/70 p-4"
+                    className="space-y-3 rounded-[24px] border border-border bg-background p-4"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide",
+                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black uppercase tracking-wide",
                           categoryMeta[feedback.category].accentClass,
                         )}
                       >
@@ -236,7 +236,7 @@ export default function FeedbackPage() {
                 ))}
               </div>
             ) : (
-              <p className="rounded-lg border border-dashed border-border/70 p-6 text-center text-sm text-muted-foreground">
+              <p className="rounded-[24px] border border-dashed border-border p-6 text-center text-sm font-medium text-muted-foreground">
                 You have not submitted feedback yet.
               </p>
             )}
@@ -256,7 +256,7 @@ export default function FeedbackPage() {
             </Link>
             .
           </p>
-          <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/70 bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-900">
+          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-black text-muted-foreground">
             <Coffee className="h-3.5 w-3.5" />
             Show some love • Buy me a coffee • GCash: 09455739860
           </span>

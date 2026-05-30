@@ -404,7 +404,7 @@ export default function LogPage() {
           JSON.stringify(draftDocumentCollection),
         );
       } catch (error) {
-        console.log("Failed to save draft: ", error);
+        console.warn("Failed to save draft: ", error);
       }
     }, DRAFT_SAVE_DELAY_MS);
 
@@ -431,7 +431,7 @@ export default function LogPage() {
           : {};
         return draftDocumentCollection[activeExerciseId] || null;
       } catch (error) {
-        console.log("Failed to load draft: ", error);
+        console.warn("Failed to load draft: ", error);
         return null;
       }
     })();
@@ -550,31 +550,30 @@ export default function LogPage() {
   if (activePlanId === "") {
     return (
       <div className="min-h-screen pb-24">
-        <div className="p-4 max-w-xl mx-auto space-y-6">
+        <div className="p-4 max-w-2xl mx-auto space-y-5">
           <div className="flex items-center justify-between">
-            <PageHeader title="Log" subtitle="Log your workouts" />
+            <PageHeader title="Log" subtitle="Pick a plan before you train" />
           </div>
-          <Card className="border-dashed">
-            <CardContent className="text-center py-8">
-              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mx-auto mb-3">
-                <AlertCircleIcon className="h-5 w-5 text-muted-foreground" />
+          <Card className="border-dashed border-border bg-card">
+            <CardContent className="text-center py-10">
+              <div className="w-14 h-14 bg-secondary text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircleIcon className="h-6 w-6" />
               </div>
-              <h3 className="font-semibold text-base mb-1">No Active Plan</h3>
-              <p className="text-xs text-muted-foreground mb-2 max-w-xs mx-auto">
-                You must set a plan as active to start logging workouts.
+              <h3 className="font-black text-2xl mb-2">No active plan</h3>
+              <p className="text-sm font-medium text-muted-foreground mb-5 max-w-xs mx-auto">
+                Set a plan active so this screen knows what workout to log.
               </p>
-              <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
-                Go to{" "}
+              <p className="text-sm text-muted-foreground mb-5 max-w-xs mx-auto">
                 <Link
                   href="/plans"
-                  className="text-primary underline font-medium"
+                  className="text-accent underline font-black underline-offset-2"
                 >
-                  Plans
+                  Open Plans
                 </Link>{" "}
-                to set an active plan.
+                and choose the routine you are training.
               </p>
-              <Button size="sm" asChild>
-                <Link href="/plans">Go to Plans</Link>
+              <Button asChild>
+                <Link href="/plans">Choose plan</Link>
               </Button>
             </CardContent>
           </Card>
@@ -585,12 +584,12 @@ export default function LogPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="p-4 max-w-xl mx-auto space-y-4">
+      <div className="p-4 max-w-2xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <PageHeader title="Log" subtitle="Log your workouts" />
+          <PageHeader title="Log" subtitle="Finish one exercise at a time" />
           {/* Action Buttons */}
           <div className="flex items-center gap-1.5 absolute right-3 top-3 sm:relative sm:top-0 sm:right-0 z-10">
-            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+            <Button variant="ghost" size="icon-sm" asChild>
               <Link href="/logs/archive">
                 <HistoryIcon className="h-4 w-4" />
               </Link>
@@ -602,7 +601,7 @@ export default function LogPage() {
           onValueChange={handleWorkoutChange}
           value={activeWorkoutId || ""}
         >
-          <SelectTrigger className="h-9 cursor-pointer">
+          <SelectTrigger className="h-11 cursor-pointer rounded-full border-border bg-card px-4 font-black">
             <SelectValue placeholder="Select workout" />
           </SelectTrigger>
           <SelectContent>
@@ -614,10 +613,10 @@ export default function LogPage() {
           </SelectContent>
         </Select>
 
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-muted-foreground">Progress</span>
+        <div className="flex items-center gap-2 rounded-full bg-card px-3 py-2 text-xs">
+          <span className="font-black text-foreground">Progress</span>
           <Progress value={progress} className="flex-1 h-1.5" />
-          <span className="text-muted-foreground font-medium min-w-10 text-right">
+          <span className="text-muted-foreground font-black min-w-10 text-right">
             {progress}%
           </span>
         </div>
@@ -673,12 +672,12 @@ export default function LogPage() {
                       <AccordionItem
                         value={exercise.id}
                         className={cn(
-                          "border-b! last:border-b! border-zinc-300 dark:border-zinc-700 bg-card/40 backdrop-blur-[1px]",
-                          isDragging && "bg-muted/40",
+                          "mb-2 overflow-hidden rounded-[24px] border-2 border-border bg-card shadow-sm",
+                          isDragging && "bg-muted",
                         )}
                       >
                         <AccordionTrigger
-                          className={`cursor-pointer py-2.5 px-3 hover:no-underline transition-colors ${isLogged ? "bg-muted/30" : "hover:bg-muted/20"
+                          className={`cursor-pointer py-3 px-3 hover:no-underline transition-colors ${isLogged ? "bg-muted/40" : "hover:bg-muted/30"
                             }`}
                         >
                           <div className="flex items-center gap-2 w-full">
@@ -686,18 +685,18 @@ export default function LogPage() {
                               <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                             )}
                             {!isLogged && (
-                              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-zinc-300/80 dark:border-zinc-700/80 text-[9px] font-medium text-muted-foreground/90">
+                              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-[10px] font-black text-muted-foreground">
                                 {index + 1}
                               </span>
                             )}
                             <span
                               className={`flex-1 text-left text-sm ${isLogged ? "font-medium" : ""
-                                } ${isActiveExercise ? "font-bold text-primary" : ""}`}
+                                } ${isActiveExercise ? "font-black text-accent" : ""}`}
                             >
                               {exercise.name}
                             </span>
                             {isLogged && (
-                              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                              <span className="rounded-full bg-chart-4/15 px-2 py-0.5 text-[10px] font-black text-chart-4">
                                 Done
                               </span>
                             )}
@@ -721,10 +720,10 @@ export default function LogPage() {
                                 }}
                                 disabled={isTimerRunning}
                                 className={cn(
-                                  "flex items-center gap-1.5 px-2 py-1 rounded-md border transition-colors shrink-0",
+                                  "flex items-center gap-1.5 px-2 py-1 rounded-full border transition-colors shrink-0",
                                   isTimerRunning
                                     ? "bg-muted/20 border-border/30 text-muted-foreground/50 cursor-not-allowed"
-                                    : "bg-muted/30 border-border/50 text-muted-foreground hover:bg-muted/50 hover:border-primary/30 hover:text-primary cursor-pointer",
+                                    : "bg-secondary border-secondary text-primary hover:bg-secondary/90 cursor-pointer",
                                 )}
                                 aria-label={`Start ${formatSecondsToMinutesSeconds(exerciseItem.restTime ?? 0)} timer for ${exercise.name}`}
                               >
@@ -792,10 +791,10 @@ export default function LogPage() {
                         <AccordionContent className="px-3 py-3 space-y-2.5">
                           {/* Last Performance */}
                           {latestExerciseLog && !isLogged && (
-                            <div className="text-[11px] text-muted-foreground space-y-1 pb-2 border-b">
+                            <div className="text-[11px] space-y-1 pb-2 border-b rounded-md p-2">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <HistoryIcon className="h-3 w-3 shrink-0 opacity-60" />
-                                <span className="font-medium">
+                                <HistoryIcon className="h-3 w-3 shrink-0 " />
+                                <span className="font-medium ">
                                   {formatInTimeZone(
                                     new Date(latestExerciseLog.createdAt),
                                     userTimezone,
@@ -812,7 +811,7 @@ export default function LogPage() {
                                     ) => (
                                       <span
                                         key={idx}
-                                        className="inline-flex px-1 py-0.5 rounded bg-muted text-foreground font-medium"
+                                        className="inline-flex px-1 py-0.5 rounded bg-chart-4/15 text-chart-4 font-medium"
                                       >
                                         {s.reps}×{s.weight}kg
                                       </span>
@@ -826,7 +825,7 @@ export default function LogPage() {
                                   )}
                               </div>
                               {latestExerciseLog.notes && (
-                                <p className="text-[11px] text-muted-foreground/70 italic truncate pl-4">
+                                <p className="text-[11px] italic truncate pl-4">
                                   &ldquo;{latestExerciseLog.notes}&rdquo;
                                 </p>
                               )}

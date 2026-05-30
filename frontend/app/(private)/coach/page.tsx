@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@/app/providers";
-import coachImage from "@/assets/coach.jpeg";
+import coachImage from "@/assets/hero-profile.jpeg";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import UnavailableFeature from "@/components/Unavailable";
@@ -101,20 +101,17 @@ export default function CoachPage() {
 
 
   if (!user?.isPioneer) {
-    return <UnavailableFeature description="Currently, this feature is only available to pioneers." title="Pioneer Only" />;
+    return <UnavailableFeature description="Coach is currently available to pioneers." title="Pioneer only" />;
   }
 
   return (
     <div className="min-h-screen pb-24 flex flex-col">
       {/* Header */}
-      <div className="border-b border-border bg-background/70 backdrop-blur">
+      <div className="border-b border-border bg-background">
         <div className="max-w-2xl mx-auto px-4 pt-6 pb-4 flex items-center justify-between">
           <div>
-            <h1 className="font-display tracking-normal text-xl">Coach </h1>
-            <p className="text-sm text-muted-foreground">
-              Chat with your coach and get quick feedback.
-            </p>
-            <div className="mt-2 text-xs text-muted-foreground">
+            <h1 className="font-display tracking-normal text-4xl leading-none font-black">Coach Tuff</h1>
+            <div className="mt-2 text-xs font-black text-muted-foreground">
               {isLoadingQuota
                 ? "Loading weekly quota..."
                 : quota
@@ -165,7 +162,7 @@ export default function CoachPage() {
       <div ref={listRef} className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
           {quota && (
-            <div className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            <div className="rounded-[24px] border border-border bg-card px-4 py-3 text-xs font-medium text-muted-foreground">
               <p>
                 Invite up to {quota.maxReferrals} people and earn{" "}
                 {quota.bonusPerSuccessfulReferral} extra requests each when they
@@ -198,10 +195,10 @@ export default function CoachPage() {
                 >
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed border shadow-xs",
+                      "max-w-[85%] rounded-[24px] px-3 py-2 text-sm font-medium leading-relaxed border shadow-xs",
                       isUser
-                        ? "bg-primary text-primary-foreground border-primary/30"
-                        : "bg-background/80 text-foreground border-border",
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-foreground border-border",
                     )}
                   >
                     {m.content ? (
@@ -250,7 +247,7 @@ export default function CoachPage() {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-border bg-background/80 backdrop-blur">
+      <div className="border-t border-border bg-background">
         <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
           {/* Quick Prompts Section */}
           {showQuickPrompts && (
@@ -263,7 +260,7 @@ export default function CoachPage() {
                   size="sm"
                   disabled={isLoading}
                   onClick={() => handleQuickPrompt(prompt)}
-                  className="h-7 text-xs px-2.5 py-0"
+                  className="h-8 text-xs px-2.5 py-0"
                 >
                   {prompt.text}
                 </Button>
@@ -294,7 +291,7 @@ export default function CoachPage() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type a message…"
+                placeholder="Type a message..."
                 className={cn(
                   "min-h-12 pr-16",
                   isOverLimit && "border-destructive",
@@ -343,9 +340,9 @@ function ChatHead({
   avatarUrl?: string;
 }) {
   return (
-    <div className="mt-0.5 size-9 shrink-0 overflow-hidden rounded-full border border-border bg-muted/40 flex items-center justify-center">
+    <div className="mt-0.5 size-9 shrink-0 overflow-hidden rounded-full border border-secondary bg-muted flex items-center justify-center">
       {role === "coach" ? (
-        <Image src={coachImage} alt="FitCheck Coach" width={36} height={36} className="h-full w-full object-cover" />
+        <Image src={coachImage} alt="TUFF Coach" width={36} height={36} className="h-full w-full object-cover" />
       ) : avatarUrl ? (
         <Image
           src={avatarUrl}
@@ -414,10 +411,10 @@ function ConversationPanel({
   onClose: () => void;
 }) {
   return (
-    <div className="border-b border-border bg-background/95 backdrop-blur">
+    <div className="border-b border-border bg-background">
       <div className="max-w-2xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-muted-foreground">
+          <span className="text-sm font-black text-muted-foreground">
             Conversations
           </span>
           <Button
@@ -452,10 +449,10 @@ function ConversationPanel({
                 <div
                   key={conv.id}
                   className={cn(
-                    "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors",
+                    "flex items-center justify-between gap-2 rounded-[18px] px-3 py-2 text-sm cursor-pointer transition-colors",
                     isActive
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-accent/50",
+                      ? "bg-secondary text-secondary-foreground"
+                      : "hover:bg-muted",
                   )}
                   onClick={() => onSelect(conv.id)}
                   role="button"

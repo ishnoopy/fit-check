@@ -16,15 +16,15 @@ export function PageHeader({ title, subtitle, action, className }: PageHeaderPro
     <motion.header
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.1, ease: "easeOut" }}
-      className={cn("flex items-start justify-between mb-8", className)}
+      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+      className={cn("flex items-start justify-between mb-6", className)}
     >
       <div className="space-y-1">
         <motion.h1
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.1, delay: 0.1 }}
-          className="text-3xl font-bold tracking-tight text-foreground font-serif"
+          transition={{ duration: 0.18, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
+          className="text-4xl font-black leading-none tracking-normal text-foreground font-serif"
         >
           {title}
         </motion.h1>
@@ -32,8 +32,8 @@ export function PageHeader({ title, subtitle, action, className }: PageHeaderPro
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.1, delay: 0.1 }}
-            className="text-sm text-muted-foreground"
+            transition={{ duration: 0.18, delay: 0.06 }}
+            className="max-w-[34rem] text-sm font-medium leading-snug text-muted-foreground"
           >
             {subtitle}
           </motion.p>
@@ -43,7 +43,7 @@ export function PageHeader({ title, subtitle, action, className }: PageHeaderPro
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.1, delay: 0.1 }}
+          transition={{ duration: 0.16, delay: 0.06 }}
         >
           {action}
         </motion.div>

@@ -50,7 +50,7 @@ export const addWorkoutFormSchema = z.object({
         order: z.number().int().positive().optional(),
       }),
     )
-    .min(1, { message: "At least one exercise is required" }),
+    .default([]),
 });
 
 export const editWorkoutFormSchema = z.object({
@@ -195,7 +195,7 @@ export const useCreateWorkout = ({
 }: {
   planId: string;
   enableToast?: boolean;
-  onSuccess?: () => void;
+  onSuccess?: (workout: IWorkout) => void;
   onError?: (error: Error) => void;
   queryKey: string[];
 }) => {
@@ -212,14 +212,14 @@ export const useCreateWorkout = ({
 
   const { mutate, isPending, error } = useMutation({
     mutationFn: createWorkout,
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({
         queryKey: queryKey ?? ["workouts", planId],
       });
       if (enableToast) {
         toast.success("Workout created successfully");
       }
-      onSuccess?.();
+      onSuccess?.(response.data);
     },
     onError: (error: Error) => {
       if (enableToast) {

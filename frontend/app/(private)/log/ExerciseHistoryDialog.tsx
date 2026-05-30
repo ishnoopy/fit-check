@@ -434,7 +434,7 @@ export default function ExerciseHistoryDialog({
             )}
 
             <div
-              className="relative w-full max-w-4xl h-[80vh] mx-4"
+              className="relative w-full max-w-2xl h-[80vh] mx-4"
               onClick={(e) => e.stopPropagation()}
             >
               <Image

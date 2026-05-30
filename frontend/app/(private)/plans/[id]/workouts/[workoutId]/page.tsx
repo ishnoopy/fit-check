@@ -74,7 +74,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -93,9 +93,12 @@ const container = {
 export default function WorkoutDetailPage() {
   const { id, workoutId } = useParams<{ id: string; workoutId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(
+    () => searchParams.get("addExercise") === "1",
+  );
   const [addMode, setAddMode] = useState<"existing" | "new">("existing");
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>("");
   const [selectedExerciseRestTime, setSelectedExerciseRestTime] =
@@ -417,11 +420,17 @@ export default function WorkoutDetailPage() {
     setIsAddDialogOpen(true);
   };
 
+  useEffect(() => {
+    if (!workoutData || searchParams.get("addExercise") !== "1") return;
+
+    router.replace(`/plans/${id}/workouts/${workoutId}`, { scroll: false });
+  }, [workoutData, searchParams, router, id, workoutId]);
+
   // Loading State
   if (isLoading) {
     return (
       <div className="min-h-screen pb-24">
-        <div className="p-6 max-w-2xl mx-auto">
+        <div className="p-4 max-w-2xl mx-auto">
           <BackButton href={`/plans/${id}`} />
           <PageHeader title="Loading..." subtitle="Loading workout details" />
           <LoadingState message="Loading workout..." />
@@ -434,7 +443,7 @@ export default function WorkoutDetailPage() {
   if (error) {
     return (
       <div className="min-h-screen pb-24">
-        <div className="p-6 max-w-2xl mx-auto">
+        <div className="p-4 max-w-2xl mx-auto">
           <BackButton href={`/plans/${id}`} />
           <PageHeader title="Error" subtitle="Failed to load workout" />
           <motion.div
@@ -461,7 +470,7 @@ export default function WorkoutDetailPage() {
   if (!workoutData) {
     return (
       <div className="min-h-screen pb-24">
-        <div className="p-6 max-w-2xl mx-auto">
+        <div className="p-4 max-w-2xl mx-auto">
           <BackButton href={`/plans/${id}`} />
           <EmptyState
             icon={AlertCircle}
@@ -478,12 +487,12 @@ export default function WorkoutDetailPage() {
   }
   return (
     <div className="min-h-screen pb-24">
-      <div className="p-6 max-w-2xl mx-auto space-y-8">
+      <div className="p-4 max-w-2xl mx-auto space-y-5">
         <BackButton href={`/plans/${id}`} />
 
         <PageHeader
           title={workoutData.title}
-          subtitle="Workout exercises and details"
+          subtitle="Exercises and rest timing"
           action={
             <Button
               size="lg"
@@ -491,7 +500,7 @@ export default function WorkoutDetailPage() {
               className=" gap-2"
             >
               <Plus className="h-4 w-4" />
-              Add Exercise
+              Add exercise
             </Button>
           }
         />
@@ -501,21 +510,20 @@ export default function WorkoutDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="bg-linear-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5  blur-3xl" />
+          <Card className="overflow-hidden border-border bg-card">
             <CardHeader className="relative">
               <CardTitle className="flex items-center gap-3 text-2xl">
-                <div className=" bg-primary/10 p-3">
-                  <Dumbbell className="h-6 w-6 text-primary" />
+                <div className="flex size-11 items-center justify-center rounded-full bg-secondary text-primary">
+                  <Dumbbell className="h-5 w-5" />
                 </div>
                 Workout Details
               </CardTitle>
             </CardHeader>
             <CardContent className="relative">
-              <p className="text-base text-muted-foreground">
+              <p className="text-base font-medium text-muted-foreground">
                 {workoutData.description || (
                   <span className="italic opacity-70">
-                    No description provided
+                    No description yet
                   </span>
                 )}
               </p>
@@ -526,11 +534,13 @@ export default function WorkoutDetailPage() {
         {/* Exercises Section */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold flex items-center gap-3">
-              <Dumbbell className="h-6 w-6 text-primary" />
+            <h3 className="text-3xl font-black flex items-center gap-3">
+              <span className="flex size-10 items-center justify-center rounded-full bg-secondary text-primary">
+                <Dumbbell className="h-5 w-5" />
+              </span>
               Exercises
               {workoutData.exercises && workoutData.exercises.length > 0 && (
-                <span className="text-lg font-normal text-muted-foreground">
+                <span className="text-lg font-black text-muted-foreground">
                   ({workoutData.exercises.length})
                 </span>
               )}
@@ -547,13 +557,13 @@ export default function WorkoutDetailPage() {
               {workoutData.exercises.map((exercise, index) => (
                 <Card
                   key={exercise.exercise.id}
-                  className="group relative overflow-hidden bg-card/40 backdrop-blur-sm border-border/40 hover:border-border/60 hover:shadow-md transition-all duration-200"
+                  className="group relative overflow-hidden border-border bg-card transition-transform duration-150 active:scale-[0.99]"
                 >
                   {/*Active Indicator */}
                   {exercise.isActive && (
                     <div className="absolute top-3 right-3 pointer-events-none z-10">
-                      <div className="flex items-center gap-1.5  border border-primary/20 bg-primary/10 px-2 py-0.5 backdrop-blur-md">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                      <div className="flex items-center gap-1.5 rounded-full border border-chart-4/20 bg-chart-4/15 px-2 py-0.5">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-chart-4">
                           Active
                         </span>
                       </div>
@@ -561,14 +571,14 @@ export default function WorkoutDetailPage() {
                   )}
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-primary/10 text-primary text-sm font-semibold shrink-0">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-full bg-secondary text-primary text-sm font-black shrink-0">
                         {index + 1}
                       </div>
                       <div className="flex-1 space-y-1.5 min-w-0">
-                        <h4 className="text-base font-semibold text-foreground">
+                        <h4 className="text-lg font-black text-foreground">
                           {exercise.exercise.name}
                         </h4>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5 text-xs font-black text-muted-foreground">
                           <Clock className="h-3.5 w-3.5" />
                           <span>
                             {exercise.restTime ? `${exercise.restTime}s` : "0s"}{" "}
@@ -578,7 +588,7 @@ export default function WorkoutDetailPage() {
                         {exercise.exercise.description && (
                           <div className="space-y-2">
                             <p
-                              className={`text-sm text-muted-foreground/80 leading-relaxed whitespace-pre-wrap ${
+                              className={`text-sm font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap ${
                                 !expandedDescriptions.has(
                                   exercise.exercise.id,
                                 ) && exercise.exercise.description.length > 150

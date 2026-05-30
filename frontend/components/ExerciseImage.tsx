@@ -55,7 +55,7 @@ export default function ExerciseImage({
         open={expandedImageDialogOpen}
         onOpenChange={setExpandedImageDialogOpen}
       >
-        <DialogContent className="max-w-[95vw] sm:max-w-3xl p-2 ">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-2 ">
           <DialogHeader className="sr-only">
             <DialogTitle>{alt}</DialogTitle>
             <DialogDescription>Full size exercise image</DialogDescription>

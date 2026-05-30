@@ -388,11 +388,11 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen pb-24 bg-background">
-      <div className="mx-auto max-w-3xl">
-        <section className="border-b border-border/70 px-4 pb-5 pt-5 sm:px-6 sm:pt-7">
+      <div className="mx-auto max-w-2xl space-y-4 p-4">
+        <section className="rounded-[32px] border border-border bg-card px-4 pb-5 pt-5 shadow-sm sm:px-6 sm:pt-6">
           <div className="flex items-start gap-4 sm:gap-8">
             <div className="relative shrink-0">
-              <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full border border-border bg-muted/40 overflow-hidden flex items-center justify-center">
+              <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full border-4 border-secondary bg-muted overflow-hidden flex items-center justify-center">
                 {user?.avatar ? (
                   <Image
                     src={user.avatar}
@@ -409,7 +409,7 @@ export default function ProfilePage() {
 
               <button
                 type="button"
-                className="absolute -right-1 -bottom-1 h-8 w-8 rounded-full border border-background bg-primary text-primary-foreground text-[11px] font-semibold cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                className="absolute -right-1 -bottom-1 h-9 w-9 rounded-full border border-background bg-primary text-primary-foreground text-[11px] font-black cursor-pointer transition-transform hover:scale-105 active:scale-95"
                 onClick={() => avatarFileInputRef.current?.click()}
                 disabled={uploadAvatarMutation.isPending}
               >
@@ -427,30 +427,30 @@ export default function ProfilePage() {
             <div className="flex-1 min-w-0 pt-1">
               <div className="grid grid-cols-3 gap-1 text-center">
                 <div>
-                  <p className="text-base sm:text-lg font-semibold leading-none">{stats.posts}</p>
-                  <p className="text-xs text-muted-foreground mt-1">posts</p>
+                  <p className="text-xl sm:text-2xl font-black leading-none text-accent">{stats.posts}</p>
+                  <p className="text-xs font-black text-muted-foreground mt-1">posts</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsFollowersDialogOpen(true)}
                   className="cursor-pointer"
                 >
-                  <p className="text-base sm:text-lg font-semibold leading-none">{stats.followers}</p>
-                  <p className="text-xs text-muted-foreground mt-1">followers</p>
+                  <p className="text-xl sm:text-2xl font-black leading-none text-accent">{stats.followers}</p>
+                  <p className="text-xs font-black text-muted-foreground mt-1">followers</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsFollowingDialogOpen(true)}
                   className="cursor-pointer"
                 >
-                  <p className="text-base sm:text-lg font-semibold leading-none">{stats.following}</p>
-                  <p className="text-xs text-muted-foreground mt-1">following</p>
+                  <p className="text-xl sm:text-2xl font-black leading-none text-accent">{stats.following}</p>
+                  <p className="text-xs font-black text-muted-foreground mt-1">following</p>
                 </button>
               </div>
 
               <div className="mt-4 flex items-center gap-2">
-                <h1 className="truncate text-base sm:text-lg font-semibold">
-                  @{user?.username || "fitcheck_user"}
+                <h1 className="truncate text-lg sm:text-xl font-black">
+                  @{user?.username || "tuff_user"}
                 </h1>
               </div>
 
@@ -458,7 +458,7 @@ export default function ProfilePage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="h-8 flex-1"
+                  className="flex-1"
                   onClick={() => setIsEditDialogOpen(true)}
                 >
                   Edit profile
@@ -466,7 +466,7 @@ export default function ProfilePage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 shrink-0"
+                  className="shrink-0"
                   onClick={() => setIsSettingsDialogOpen(true)}
                 >
                   <Settings2 className="h-4 w-4" />
@@ -475,9 +475,9 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="mt-4 space-y-1 text-sm">
+          <div className="mt-5 space-y-1 text-sm font-medium">
             {Boolean(user?.firstName || user?.lastName) && (
-              <p className="font-semibold">
+              <p className="font-black">
                 {[user?.firstName, user?.lastName].filter(Boolean).join(" ")}
               </p>
             )}
@@ -497,16 +497,16 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <section aria-label="Posts" className="pt-2">
-          <div className="flex items-center justify-center border-b border-border/70 pb-2">
-            <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-foreground">
+        <section aria-label="Posts" className="overflow-hidden rounded-[32px] border border-border bg-card">
+          <div className="flex items-center justify-center border-b border-border pb-3 pt-4">
+            <div className="inline-flex items-center gap-2 text-xs font-black tracking-wide text-foreground">
               <Grid3x3 className="h-4 w-4" />
               POSTS
             </div>
           </div>
 
           {myPosts.length === 0 ? (
-            <div className="px-4 py-14 text-center text-sm text-muted-foreground">
+            <div className="px-4 py-14 text-center text-sm font-medium text-muted-foreground">
               No posts yet.
             </div>
           ) : (
@@ -529,8 +529,8 @@ export default function ProfilePage() {
                       unoptimized
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center p-3 text-center">
-                      <p className="line-clamp-4 text-xs text-foreground/85 whitespace-pre-wrap break-words">
+                    <div className="flex h-full w-full items-center justify-center bg-muted p-3 text-center">
+                      <p className="line-clamp-4 text-xs font-medium text-foreground whitespace-pre-wrap break-words">
                         {post.text}
                       </p>
                     </div>
@@ -550,7 +550,7 @@ export default function ProfilePage() {
           }
         }}
       >
-        <DialogContent className="max-w-3xl p-0 overflow-hidden gap-0">
+        <DialogContent className="max-w-2xl p-0 overflow-hidden gap-0">
           {selectedPost && (
             <article className="grid md:grid-cols-[minmax(0,1fr)_19rem] bg-background">
               <div className="relative bg-muted/25 min-h-[18rem] md:min-h-[30rem] flex items-center justify-center">
@@ -582,7 +582,7 @@ export default function ProfilePage() {
               <div className="border-t md:border-t-0 md:border-l border-border/70 p-4 md:p-5 flex flex-col gap-4">
                 <div>
                   <p className="text-sm font-semibold">
-                    @{user?.username || "fitcheck_user"}
+                    @{user?.username || "tuff_user"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {formatPostTime(selectedPost.createdAt)}

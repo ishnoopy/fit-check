@@ -23,7 +23,7 @@ export function LoadingState({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex flex-col items-center justify-center py-12 space-y-4"
+      className="flex flex-col items-center justify-center rounded-[32px] border border-border bg-card py-12 space-y-4"
     >
       <motion.div
         animate={{ rotate: 360 }}

@@ -231,7 +231,7 @@ export default function PlansPage() {
           <div className="flex items-start justify-between gap-3">
             <PageHeader
               title="Plans"
-              subtitle="Create and manage your workout routines 💪"
+              subtitle="Build the routine before you log the work"
             />
             <div className="shrink-0 mt-1">
               <AppGuide />
@@ -240,7 +240,7 @@ export default function PlansPage() {
           <EmptyState
             icon={Dumbbell}
             title="No workout plans yet"
-            description="Create your first workout plan to organize your exercises and track your progress"
+            description="Create one plan, add workouts, then set it active for logging."
             action={{
               label: "Create your first plan",
               onClick: () => setCreateDialogOpen(true),
@@ -259,9 +259,9 @@ export default function PlansPage() {
           >
             <DialogContent className="max-w-lg">
               <DialogHeader>
-                <DialogTitle>Create New Plan</DialogTitle>
+                <DialogTitle>Create plan</DialogTitle>
                 <DialogDescription>
-                  Create a new workout plan to organize your training routine 💪
+                  Name the routine you want to train from.
                 </DialogDescription>
               </DialogHeader>
               <Form {...createPlanForm}>
@@ -314,7 +314,7 @@ export default function PlansPage() {
                       Cancel
                     </Button>
                     <Button type="submit" disabled={isCreatePlanPending}>
-                      {isCreatePlanPending ? "Creating..." : "Create Plan"}
+                      {isCreatePlanPending ? "Creating..." : "Create plan"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -329,11 +329,11 @@ export default function PlansPage() {
   //* Plans State
   return (
     <div className="min-h-screen pb-24">
-      <div className="p-6 max-w-2xl mx-auto space-y-8">
+      <div className="p-4 max-w-2xl mx-auto space-y-5">
         <div className="flex items-start justify-between gap-3">
           <PageHeader
             title="Plans"
-            subtitle="Create and manage your workout routines 💪"
+            subtitle="Build the routine before you log the work"
           />
           <div className="flex items-center gap-2 shrink-0 mt-1">
             <AppGuide />
@@ -343,7 +343,7 @@ export default function PlansPage() {
               onClick={() => setCreateDialogOpen(true)}
             >
               <Plus className="h-5 w-5" />
-              New Plan
+              New plan
             </Button>
           </div>
         </div>
@@ -352,7 +352,7 @@ export default function PlansPage() {
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2"
         >
           {plans?.data?.map((plan: Plan) => {
             const isActive = activePlanId === plan.id;
@@ -360,26 +360,25 @@ export default function PlansPage() {
             return (
               <motion.div key={plan.id} variants={item}>
                 <Card
-                  className={`group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-sm transition-colors duration-200 h-full flex flex-col ${isActive
-                      ? "border-primary/50 shadow-sm ring-1 ring-primary/20"
+                  className={`group relative overflow-hidden border-border bg-card transition-transform duration-150 active:scale-[0.99] h-full flex flex-col ${isActive
+                      ? "border-secondary shadow-sm ring-2 ring-primary"
                       : ""
                     }`}
                 >
-                  {isActive && (
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl" />
-                  )}
-
                   <CardHeader className="pb-4 relative">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 space-y-1">
-                        <CardTitle className="text-xl font-bold line-clamp-2">
+                        <CardTitle className="text-2xl font-black line-clamp-2">
                           {plan.title}
                         </CardTitle>
                         {isActive && (
-                          <div className="flex items-center gap-1.5 text-primary">
+                          <div className="flex flex-wrap items-center gap-1.5 text-accent">
+                            <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-primary-foreground">
+                              Active
+                            </span>
                             <Star className="h-4 w-4 fill-current" />
-                            <span className="text-xs font-semibold">
-                              Active Plan
+                            <span className="text-xs font-black">
+                              Ready to log
                             </span>
                           </div>
                         )}
@@ -387,8 +386,8 @@ export default function PlansPage() {
 
                       {/* Plan Actions */}
                       <div className="flex items-center gap-2">
-                        <div className="bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors">
-                          <Dumbbell className="h-5 w-5 text-primary" />
+                        <div className="flex size-10 items-center justify-center rounded-full bg-secondary text-primary transition-colors">
+                          <Dumbbell className="h-5 w-5" />
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -423,10 +422,10 @@ export default function PlansPage() {
                   </CardHeader>
 
                   <CardContent className="flex-1 pb-4 relative">
-                    <p className="text-sm text-muted-foreground line-clamp-3">
+                    <p className="text-sm font-medium leading-relaxed text-muted-foreground line-clamp-3">
                       {plan.description || (
                         <span className="italic opacity-70">
-                          No description provided
+                          No description yet
                         </span>
                       )}
                     </p>
@@ -444,7 +443,7 @@ export default function PlansPage() {
                         className="flex items-center justify-center gap-2"
                       >
                         <Eye className="h-4 w-4" />
-                        View Details
+                        Open plan
                       </Link>
                     </Button>
 
@@ -453,7 +452,7 @@ export default function PlansPage() {
                       type="button"
                       variant={isActive ? "secondary" : "outline"}
                       className={`w-full  ${isActive
-                          ? "bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
+                          ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
                           : ""
                         }`}
                       onClick={() => handleToggleActivePlan(plan.id)}
@@ -461,12 +460,12 @@ export default function PlansPage() {
                       {isActive ? (
                         <>
                           <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Active Plan
+                          Active plan
                         </>
                       ) : (
                         <>
                           <Star className="h-4 w-4 mr-2" />
-                          Set as Active
+                          Set active
                         </>
                       )}
                     </Button>
@@ -481,9 +480,9 @@ export default function PlansPage() {
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Edit Plan</DialogTitle>
+              <DialogTitle>Edit plan</DialogTitle>
               <DialogDescription>
-                Update your workout plan details
+                Keep the plan name and notes current.
               </DialogDescription>
             </DialogHeader>
             <Form {...editPlanForm}>
@@ -540,7 +539,7 @@ export default function PlansPage() {
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isUpdatePlanPending}>
-                    {isUpdatePlanPending ? "Updating..." : "Update Plan"}
+                    {isUpdatePlanPending ? "Updating..." : "Update plan"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -552,7 +551,7 @@ export default function PlansPage() {
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete Plan</DialogTitle>
+              <DialogTitle>Delete plan</DialogTitle>
               <DialogDescription>
                 Are you sure you want to delete &quot;{planToDelete?.title}
                 &quot;? This action cannot be undone and will also delete all
@@ -572,7 +571,7 @@ export default function PlansPage() {
                 onClick={handleConfirmDelete}
                 disabled={isDeletePlanPending}
               >
-                {isDeletePlanPending ? "Deleting..." : "Delete Plan"}
+                {isDeletePlanPending ? "Deleting..." : "Delete plan"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -590,9 +589,9 @@ export default function PlansPage() {
         >
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Create New Plan</DialogTitle>
+              <DialogTitle>Create plan</DialogTitle>
               <DialogDescription>
-                Create a new workout plan to organize your training routine 💪
+                Name the routine you want to train from.
               </DialogDescription>
             </DialogHeader>
             <Form {...createPlanForm}>
@@ -645,7 +644,7 @@ export default function PlansPage() {
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isCreatePlanPending}>
-                    {isCreatePlanPending ? "Creating..." : "Create Plan"}
+                    {isCreatePlanPending ? "Creating..." : "Create plan"}
                   </Button>
                 </DialogFooter>
               </form>

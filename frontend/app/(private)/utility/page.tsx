@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +22,7 @@ import {
   VolumeX,
   X,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type TimerMode = "stopwatch" | "countdown";
@@ -44,7 +46,7 @@ export default function UtilityPage() {
         .then(() => {
           setIsRinging(true);
         })
-        .catch((e) => console.log("Audio play failed:", e));
+        .catch((e) => console.warn("Audio play failed:", e));
     }
   }, [soundEnabled]);
 
@@ -165,17 +167,22 @@ export default function UtilityPage() {
     circumference - (getProgress() / 100) * circumference;
 
   return (
-    <div className="min-h-screen flex items-center justify-center pb-24 px-4">
+    <div className="min-h-screen pb-24">
       {/* Hidden audio element */}
       <audio ref={audioRef} src="/alarm.mp3" />
 
-      <div className="w-full max-w-md space-y-8">
+      <div className="mx-auto w-full max-w-2xl space-y-5 p-4">
+        <PageHeader title="Utility" subtitle="Rest timer and stopwatch" />
+
         {/* Mode Toggle */}
-        <div className="flex gap-2 justify-center">
+        <div className="grid grid-cols-2 gap-2 rounded-full bg-secondary p-1">
           <Button
             variant={mode === "countdown" ? "default" : "ghost"}
             size="sm"
-            className="gap-2"
+            className={cn(
+              "gap-2",
+              mode !== "countdown" && "text-secondary-foreground hover:bg-sidebar-accent hover:text-primary",
+            )}
             onClick={() => handleModeChange("countdown")}
           >
             <Timer className="h-4 w-4" />
@@ -184,7 +191,10 @@ export default function UtilityPage() {
           <Button
             variant={mode === "stopwatch" ? "default" : "ghost"}
             size="sm"
-            className="gap-2"
+            className={cn(
+              "gap-2",
+              mode !== "stopwatch" && "text-secondary-foreground hover:bg-sidebar-accent hover:text-primary",
+            )}
             onClick={() => handleModeChange("stopwatch")}
           >
             <Clock className="h-4 w-4" />
@@ -193,8 +203,8 @@ export default function UtilityPage() {
         </div>
 
         {/* Circular Timer */}
-        <div className="flex items-center justify-center">
-          <div className="relative">
+        <div className="rounded-[36px] border border-border bg-card p-5 shadow-sm">
+          <div className="relative mx-auto w-[280px] max-w-full">
             {/* SVG Circle */}
             <svg width="280" height="280" className="transform -rotate-90">
               {/* Background circle */}
@@ -205,7 +215,7 @@ export default function UtilityPage() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="8"
-                className="text-muted/20"
+                className="text-muted"
               />
               {/* Progress circle */}
               {mode === "countdown" && (
@@ -219,7 +229,7 @@ export default function UtilityPage() {
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
                   strokeLinecap="round"
-                  className="text-primary transition-all duration-1000 ease-linear"
+                  className="text-accent transition-all duration-1000 ease-linear"
                 />
               )}
             </svg>
@@ -227,9 +237,12 @@ export default function UtilityPage() {
             {/* Center content */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className="text-5xl font-mono font-bold tracking-tight">
+                <div className="text-6xl font-black leading-none tracking-normal tabular-nums text-foreground">
                   {formatTime(time)}
                 </div>
+                <p className="mt-2 text-xs font-black uppercase tracking-[0.25em] text-muted-foreground">
+                  {mode}
+                </p>
               </div>
             </div>
           </div>
@@ -237,13 +250,13 @@ export default function UtilityPage() {
 
         {/* Time adjustment buttons (countdown only) */}
         {mode === "countdown" && !isRunning && (
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-3 justify-center">
+          <div className="flex flex-col gap-3 rounded-[28px] border border-border bg-card p-3">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 variant="outline"
                 size="lg"
                 onClick={() => addTime(10)}
-                className="flex-1"
+                className="w-full"
               >
                 +10s
               </Button>
@@ -251,7 +264,7 @@ export default function UtilityPage() {
                 variant="outline"
                 size="lg"
                 onClick={() => addTime(30)}
-                className="flex-1"
+                className="w-full"
               >
                 +30s
               </Button>
@@ -259,17 +272,17 @@ export default function UtilityPage() {
                 variant="outline"
                 size="lg"
                 onClick={() => setCustomDialogOpen(true)}
-                className="flex-1"
+                className="w-full"
               >
                 Custom
               </Button>
             </div>
-            <div className="flex gap-3 justify-center">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
                 size="lg"
                 onClick={() => subtractTime(5)}
-                className="flex-1"
+                className="w-full"
                 disabled={time < 5}
               >
                 -5s
@@ -278,7 +291,7 @@ export default function UtilityPage() {
                 variant="outline"
                 size="lg"
                 onClick={() => subtractTime(10)}
-                className="flex-1"
+                className="w-full"
                 disabled={time < 10}
               >
                 -10s
@@ -288,7 +301,7 @@ export default function UtilityPage() {
         )}
 
         {/* Main controls */}
-        <div className="flex gap-3 justify-center items-center">
+        <div className="flex gap-2 justify-center items-center">
           <Button
             onClick={handleStartPause}
             size="lg"
@@ -311,7 +324,7 @@ export default function UtilityPage() {
             onClick={handleReset}
             size="lg"
             variant="outline"
-            className="h-14 px-6"
+            className="h-14 px-5"
           >
             <RotateCcw className="h-5 w-5" />
           </Button>
@@ -320,7 +333,7 @@ export default function UtilityPage() {
               onClick={handleClear}
               size="lg"
               variant="outline"
-              className="h-14 px-6"
+              className="h-14 px-5"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -329,7 +342,7 @@ export default function UtilityPage() {
             onClick={() => setSoundEnabled(!soundEnabled)}
             size="lg"
             variant="ghost"
-            className="h-14 px-6"
+            className="h-14 px-5"
           >
             {soundEnabled ? (
               <Volume2 className="h-5 w-5" />
@@ -341,7 +354,7 @@ export default function UtilityPage() {
 
         {/* Hint text */}
         {!isRunning && time === 0 && mode === "countdown" && (
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-sm font-medium text-muted-foreground">
             Set a time to start the countdown
           </p>
         )}
@@ -385,11 +398,11 @@ export default function UtilityPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-center gap-2">
-              <Bell className="h-6 w-6 animate-bounce text-primary" />
-              Timer Complete!
+              <Bell className="h-6 w-6 text-primary" />
+              Timer complete
             </DialogTitle>
             <DialogDescription className="text-center">
-              Your countdown has finished
+              Your countdown is done.
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center py-6">

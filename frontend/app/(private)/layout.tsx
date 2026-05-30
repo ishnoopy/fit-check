@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "Fit Check",
+  title: "TUFF",
   description: "Gym performance tracking and analysis",
 };
 

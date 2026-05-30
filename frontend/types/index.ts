@@ -100,6 +100,10 @@ export interface ILogStats {
   exercisesToday: number;
   exercisesThisWeek: number;
   datesWithWorkouts: string[];
+  dailyExerciseCounts?: {
+    date: string;
+    exerciseCount: number;
+  }[];
   streak: number;
   bufferDaysUsed?: number;
   restDaysBuffer?: number;

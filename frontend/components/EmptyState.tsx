@@ -29,15 +29,15 @@ export function EmptyState({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.1 }}
-      className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-4"
+      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+      className="flex flex-col items-center justify-center rounded-[32px] border border-border bg-card px-5 py-14 text-center space-y-4"
     >
       {hasVisual && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-          className="bg-muted/50 p-6"
+          transition={{ delay: 0.05, duration: 0.18 }}
+          className="flex size-20 items-center justify-center rounded-full bg-secondary text-primary"
         >
           {image ? (
             <Image
@@ -48,7 +48,7 @@ export function EmptyState({
               className="h-12 w-12 object-contain text-muted-foreground/50"
             />
           ) : Icon ? (
-            <Icon className="h-12 w-12 text-muted-foreground/50" />
+            <Icon className="h-10 w-10" />
           ) : null}
         </motion.div>
       )}
@@ -57,7 +57,7 @@ export function EmptyState({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-xl font-semibold text-foreground"
+          className="text-2xl font-black leading-tight text-foreground"
         >
           {title}
         </motion.h3>

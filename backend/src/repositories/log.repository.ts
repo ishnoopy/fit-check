@@ -155,6 +155,26 @@ export async function getLogStats(userId: string) {
     formatDateString(date, userTimezone),
   );
 
+  const exercisesByDate = logs.reduce<Record<string, Set<string>>>(
+    (acc, log) => {
+      const dateKey = formatDateString(
+        normalizeDate(log.created_at, userTimezone),
+        userTimezone,
+      );
+      acc[dateKey] ??= new Set<string>();
+      acc[dateKey].add(log.exercise_id.toString());
+      return acc;
+    },
+    {},
+  );
+
+  const dailyExerciseCounts = Object.entries(exercisesByDate).map(
+    ([date, exercises]) => ({
+      date,
+      exerciseCount: exercises.size,
+    }),
+  );
+
   const logsToday = logs.filter(
     (log) =>
       log.created_at >= today &&
@@ -181,6 +201,7 @@ export async function getLogStats(userId: string) {
       exercisesToday,
       exercisesThisWeek,
       datesWithWorkouts,
+      dailyExerciseCounts,
       streak: 0,
       bufferDaysUsed: 0,
       restDaysBuffer,
@@ -229,6 +250,7 @@ export async function getLogStats(userId: string) {
     exercisesToday,
     exercisesThisWeek,
     datesWithWorkouts,
+    dailyExerciseCounts,
     streak: isStreakActive ? streak : 0,
     bufferDaysUsed,
     restDaysBuffer,

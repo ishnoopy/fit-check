@@ -122,27 +122,27 @@ export default function PublicProfilePage() {
   };
 
   if (isLoading || !profile) {
-    return <div className="p-6 text-sm text-muted-foreground">Loading profile...</div>;
+    return <div className="mx-auto max-w-2xl p-4 text-sm font-medium text-muted-foreground">Loading profile...</div>;
   }
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="p-6 border-b">
-          <div className="flex items-start gap-8 md:gap-16">
-            <div className="h-20 w-20 md:h-32 md:w-32 rounded-(--radius) bg-primary p-0.5">
-              <div className="h-full w-full rounded-(--radius) bg-background p-1">
+      <div className="p-4 max-w-2xl mx-auto space-y-4">
+        <div className="rounded-[32px] border border-border bg-card p-4 shadow-sm sm:p-6">
+          <div className="flex items-start gap-4 sm:gap-8">
+            <div className="h-24 w-24 md:h-32 md:w-32 rounded-full bg-secondary p-1 shrink-0">
+              <div className="h-full w-full rounded-full bg-background p-1">
                 {profile.avatar ? (
                   <Image
                     src={profile.avatar}
                     alt={`${profile.username} avatar`}
                     width={128}
                     height={128}
-                    className="rounded-(--radius) object-cover w-full h-full"
+                    className="rounded-full object-cover w-full h-full"
                     unoptimized
                   />
                 ) : (
-                  <div className="h-full w-full rounded-(--radius) bg-muted/40 border border-border flex items-center justify-center">
+                  <div className="h-full w-full rounded-full bg-muted border border-border flex items-center justify-center">
                     <UserIcon className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
                   </div>
                 )}
@@ -151,7 +151,7 @@ export default function PublicProfilePage() {
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-4 mb-4 flex-wrap">
-                <h1 className="text-xl font-light">{profile.username}</h1>
+                <h1 className="text-2xl font-black">@{profile.username}</h1>
                 <Button
                   variant={profile.isFollowing ? "secondary" : "default"}
                   size="sm"
@@ -166,35 +166,35 @@ export default function PublicProfilePage() {
                 </Button>
               </div>
 
-              <div className="flex gap-8 mb-4">
+              <div className="flex gap-5 mb-4">
                 <div className="text-center md:text-left">
-                  <span className="font-semibold">{profile.postsCount}</span>{" "}
-                  <span className="text-muted-foreground">posts</span>
+                  <span className="font-black text-accent">{profile.postsCount}</span>{" "}
+                  <span className="text-xs font-black text-muted-foreground">posts</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsFollowersDialogOpen(true)}
                   className="text-center md:text-left cursor-pointer"
                 >
-                  <span className="font-semibold">{profile.followersCount}</span>{" "}
-                  <span className="text-muted-foreground">followers</span>
+                  <span className="font-black text-accent">{profile.followersCount}</span>{" "}
+                  <span className="text-xs font-black text-muted-foreground">followers</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsFollowingDialogOpen(true)}
                   className="text-center md:text-left cursor-pointer"
                 >
-                  <span className="font-semibold">{profile.followingCount}</span>{" "}
-                  <span className="text-muted-foreground">following</span>
+                  <span className="font-black text-accent">{profile.followingCount}</span>{" "}
+                  <span className="text-xs font-black text-muted-foreground">following</span>
                 </button>
               </div>
 
               <div className="space-y-1">
-                <p className="font-semibold">
+                <p className="font-black">
                   {profile.firstName} {profile.lastName}
                 </p>
                 {profile.fitnessGoal && (
-                  <p className="text-sm">
+                  <p className="text-sm font-medium">
                     {formatLabel(profile.fitnessGoal)} •{" "}
                     {profile.activityLevel && formatLabel(profile.activityLevel)}
                   </p>
@@ -211,11 +211,11 @@ export default function PublicProfilePage() {
           </div>
         </div>
 
-        <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="w-full justify-center border-t bg-transparent h-auto p-0 rounded-none">
+        <Tabs defaultValue="posts" className="w-full rounded-[32px] border border-border bg-card p-3">
+          <TabsList className="w-full justify-center">
             <TabsTrigger
               value="posts"
-              className="flex items-center gap-2 data-[state=active]:border-t-2 data-[state=active]:border-foreground rounded-none px-6 py-3"
+              className="flex items-center gap-2 px-6 py-3"
             >
               <Grid3x3 className="h-4 w-4" />
               <span className="hidden sm:inline">POSTS</span>
@@ -232,7 +232,7 @@ export default function PublicProfilePage() {
                   {posts.map((post) => (
                     <article
                       key={post.id}
-                      className="rounded-[1.25rem] border border-border/70 bg-background/95 overflow-hidden"
+                    className="rounded-[24px] border border-border bg-background overflow-hidden"
                     >
                       {post.media?.mimeType.startsWith("video/") ? (
                         <video src={post.media.url} controls className="w-full max-h-[28rem]" />
@@ -248,7 +248,7 @@ export default function PublicProfilePage() {
                         </div>
                       ) : null}
                       <div className="px-4 py-3 space-y-2">
-                        <p className="text-sm whitespace-pre-wrap break-words">
+                        <p className="text-sm font-medium whitespace-pre-wrap break-words">
                           {post.text}
                         </p>
                         <p className="text-xs text-muted-foreground">

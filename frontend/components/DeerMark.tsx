@@ -1,12 +1,12 @@
 import Image from "next/image";
 
 import { cn } from "@/lib/utils";
-import logo from "@/assets/fit-check-logo.png";
+import logo from "@/assets/tuff-logo.png";
 
 export function DeerMark({
   className,
   imgClassName,
-  alt = "FitCheck",
+  alt = "TUFF",
   ...props
 }: {
   className?: string;
