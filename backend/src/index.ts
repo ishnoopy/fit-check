@@ -70,7 +70,7 @@ for (const route of routes) {
 
 app.get("/api/health", (c) => c.json({ message: "API is running" }));
 
-const port = process.env.PORT || 4000;
+const port = process.env.BACKEND_PORT || 4000;
 console.log(`Server is running on http://localhost:${port}`);
 
 const shutdown = async () => {
