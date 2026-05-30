@@ -1,13 +1,11 @@
-import { RedisStore } from "@hono-rate-limiter/redis";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import type { Context } from "hono";
 import { rateLimiter } from "hono-rate-limiter";
 import { StatusCodes } from "http-status-codes";
 import { createClient } from "redis";
 
-
 const redisClient = createClient({
-  url: process.env.REDIS_URL || "redis://localhost:6380",
+  url: process.env.REDIS_URL || "redis://localhost:6379",
 });
 
 let redisConnectionPromise: Promise<void> | null = null;
@@ -34,20 +32,17 @@ const ensureRedisConnection = async () => {
 };
 
 const redisStoreClient = {
-  scriptLoad: async (script: string) => {
+  pTTL: async (key: string) => {
     await ensureRedisConnection();
-    return redisClient.scriptLoad(script);
+    return redisClient.pTTL(key);
   },
-  evalsha: async <TArgs extends unknown[], TData = unknown>(
-    sha1: string,
-    keys: string[],
-    args: TArgs,
-  ) => {
+  pExpire: async (key: string, milliseconds: number) => {
     await ensureRedisConnection();
-    return redisClient.evalSha(sha1, {
-      keys,
-      arguments: args.map((value) => String(value)),
-    }) as Promise<TData>;
+    return redisClient.pExpire(key, milliseconds);
+  },
+  incr: async (key: string) => {
+    await ensureRedisConnection();
+    return redisClient.incr(key);
   },
   decr: async (key: string) => {
     await ensureRedisConnection();
@@ -57,13 +52,63 @@ const redisStoreClient = {
     await ensureRedisConnection();
     return redisClient.del(key);
   },
+  get: async (key: string) => {
+    await ensureRedisConnection();
+    return redisClient.get(key);
+  },
 };
 
 const createRedisStore = (prefix: string) => {
-  return new RedisStore({
-    client: redisStoreClient,
-    prefix: `rate-limit:${prefix}:`,
-  });
+  let windowMs = 15 * 60 * 1000;
+  const redisPrefix = `rate-limit:${prefix}:`;
+
+  const prefixKey = (key: string) => `${redisPrefix}${key}`;
+
+  return {
+    init: (options: { windowMs: number }) => {
+      windowMs = options.windowMs;
+    },
+    increment: async (key: string) => {
+      const redisKey = prefixKey(key);
+      const totalHits = await redisStoreClient.incr(redisKey);
+      const timeToExpire = await redisStoreClient.pTTL(redisKey);
+
+      if (timeToExpire <= 0) {
+        await redisStoreClient.pExpire(redisKey, windowMs);
+        return {
+          totalHits,
+          resetTime: new Date(Date.now() + windowMs),
+        };
+      }
+
+      return {
+        totalHits,
+        resetTime: new Date(Date.now() + timeToExpire),
+      };
+    },
+    decrement: async (key: string) => {
+      await redisStoreClient.decr(prefixKey(key));
+    },
+    resetKey: async (key: string) => {
+      await redisStoreClient.del(prefixKey(key));
+    },
+    get: async (key: string) => {
+      const redisKey = prefixKey(key);
+      const [totalHits, timeToExpire] = await Promise.all([
+        redisStoreClient.get(redisKey),
+        redisStoreClient.pTTL(redisKey),
+      ]);
+
+      if (!totalHits || timeToExpire <= 0) {
+        return undefined;
+      }
+
+      return {
+        totalHits: Number.parseInt(totalHits, 10),
+        resetTime: new Date(Date.now() + timeToExpire),
+      };
+    },
+  };
 };
 
 // NOTE: x-forwarded-for and x-real-ip are trusted here unconditionally.
