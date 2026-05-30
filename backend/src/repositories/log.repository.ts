@@ -1,5 +1,6 @@
 import _ from "lodash";
 import type { FilterQuery, SortOrder } from "mongoose";
+import mongoose from "mongoose";
 import { Types } from "mongoose";
 import LogModel, { type ILog } from "../models/log.model.js";
 import { getDaysDifference } from "../utils/index.js";
@@ -10,6 +11,23 @@ import {
   toSnakeCase,
 } from "../utils/transformer.js";
 import * as SettingRepository from "./setting.repository.js";
+
+function trustCreatedAtRange(query: Record<string, unknown>) {
+  const createdAt = query.created_at;
+
+  if (
+    createdAt &&
+    typeof createdAt === "object" &&
+    ("$gte" in createdAt || "$lte" in createdAt)
+  ) {
+    return {
+      ...query,
+      created_at: mongoose.trusted(createdAt),
+    };
+  }
+
+  return query;
+}
 
 export async function findAll(where: FilterQuery<ILog> = {}) {
   const query = toSnakeCase(where);
@@ -69,10 +87,10 @@ export async function findByDateRange(
 ) {
   const logs = await LogModel.find({
     user_id: userId,
-    created_at: {
+    created_at: mongoose.trusted({
       $gte: startDate,
       $lte: endDate,
-    },
+    }),
   })
     .populate("plan_id")
     .populate("workout_id")
@@ -102,7 +120,7 @@ export async function findByQuery(
   options?: { limit?: number; skip?: number; sort?: Record<string, SortOrder> },
 ) {
   const sort = toSnakeCase(options?.sort || { createdAt: -1 });
-  const snakeQuery = toSnakeCase(query);
+  const snakeQuery = trustCreatedAtRange(toSnakeCase(query));
   const queryBuilder = LogModel.find({ user_id: userId, ...snakeQuery })
     .populate("plan_id")
     .populate("workout_id")
@@ -125,7 +143,7 @@ export async function countByQuery(
   userId: string,
   query: Record<string, unknown>,
 ) {
-  const snakeQuery = toSnakeCase(query);
+  const snakeQuery = trustCreatedAtRange(toSnakeCase(query));
   return await LogModel.countDocuments({ user_id: userId, ...snakeQuery });
 }
 

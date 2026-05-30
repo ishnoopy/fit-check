@@ -6,7 +6,13 @@ export async function getSettingByUserIdService(userId: string) {
   const setting = await settingRepository.findByUserId(userId);
 
   if (!setting) {
-    throw new NotFoundError("Setting not found");
+    return await settingRepository.updateSettingByUserId(userId, {
+      userId,
+      settings: {
+        restDays: 0,
+        timezone: "UTC",
+      },
+    });
   }
 
   // Verify ownership

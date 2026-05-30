@@ -8,6 +8,7 @@ process.env.NODE_ENV !== "production"
   : dotenv.config();
 
 const DB_URL = process.env.DB_URL || "";
+mongoose.set("sanitizeFilter", true);
 
 async function connect() {
   try {
@@ -16,7 +17,6 @@ async function connect() {
     });
     console.log("Database connected");
   } catch (error) {
-    console.log("DB_URL", DB_URL);
     console.error(error);
     console.log("Database connection failed");
   }

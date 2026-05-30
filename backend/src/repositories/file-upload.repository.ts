@@ -1,4 +1,5 @@
 import type { FilterQuery } from "mongoose";
+import mongoose from "mongoose";
 import FileUploadModel, {
   type IFileUpload,
 } from "../models/file-upload.model.js";
@@ -23,7 +24,7 @@ export async function findByUserId(userId: string) {
 export async function countImagesByUserId(userId: string) {
   return FileUploadModel.countDocuments({
     user_id: userId,
-    mime_type: { $regex: /^image\// },
+    mime_type: mongoose.trusted({ $regex: /^image\// }),
   });
 }
 
@@ -31,7 +32,9 @@ export async function countImagesByUserId(userId: string) {
  * Find multiple file uploads by their IDs in a single query.
  */
 export async function findByIds(ids: string[]) {
-  const fileUploads = await FileUploadModel.find({ _id: { $in: ids } }).lean();
+  const fileUploads = await FileUploadModel.find({
+    _id: mongoose.trusted({ $in: ids }),
+  }).lean();
   return toCamelCase(fileUploads) as IFileUpload[];
 }
 

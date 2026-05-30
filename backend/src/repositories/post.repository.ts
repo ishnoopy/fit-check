@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import PostModel, { type IPost } from "../models/post.model.js";
 import { toCamelCase, toSnakeCase } from "../utils/transformer.js";
 
@@ -39,8 +40,8 @@ export async function findFeedPosts({
 }) {
   const query =
     tab === "following"
-      ? { user_id: { $in: followeeIds } }
-      : { user_id: { $nin: [userId, ...followeeIds] } };
+      ? { user_id: mongoose.trusted({ $in: followeeIds }) }
+      : { user_id: mongoose.trusted({ $nin: [userId, ...followeeIds] }) };
 
   const skip = (page - 1) * limit;
   const docs = await PostModel.find(query)

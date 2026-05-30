@@ -6,7 +6,11 @@ import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
-import { BadRequestError } from "../utils/errors.js";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from "../utils/errors.js";
 
 const presignSchema = z.object({
   fileName: z.string(),
@@ -39,6 +43,39 @@ const ALLOWED_UPLOAD_TYPES = [
   "video/quicktime",
 ];
 
+function sanitizeFileName(fileName: string) {
+  return (
+    fileName
+      .split(/[\\/]/)
+      .pop()
+      ?.replace(/[^a-zA-Z0-9._-]/g, "_")
+      .slice(0, 120) || "upload"
+  );
+}
+
+function getUserUploadPrefix(userId: string) {
+  return `uploads/${userId}/`;
+}
+
+async function getOwnedUploadByKey(userId: string, key: string) {
+  const decodedKey = decodeURIComponent(key);
+
+  if (!decodedKey.startsWith(getUserUploadPrefix(userId))) {
+    throw new ForbiddenError("You do not have access to this file");
+  }
+
+  const upload = await fileUploadRepository.findOne({ s3Key: decodedKey });
+  if (!upload?.id) {
+    throw new NotFoundError("Uploaded file not found");
+  }
+
+  if (upload.userId !== userId) {
+    throw new ForbiddenError("You do not have access to this file");
+  }
+
+  return upload;
+}
+
 function getPostMediaMaxBytes() {
   const fromEnv = Number(process.env.POST_MEDIA_MAX_BYTES);
   if (Number.isFinite(fromEnv) && fromEnv > 0) {
@@ -58,6 +95,7 @@ export async function generatePresignedUploadUrl(c: Context) {
     throw new BadRequestError(validation.error);
   }
 
+  const userId = c.get("user").id;
   const { fileName, fileType, fileSize } = validation.data;
   const maxFileSize = getPostMediaMaxBytes();
 
@@ -69,7 +107,8 @@ export async function generatePresignedUploadUrl(c: Context) {
     return c.json({ message: "File size exceeds the allowed 5MB limit" }, 400);
   }
 
-  const key = `uploads/${crypto.randomUUID()}-${fileName}`;
+  const safeFileName = sanitizeFileName(fileName);
+  const key = `${getUserUploadPrefix(userId)}${crypto.randomUUID()}-${safeFileName}`;
 
   const presignedPost = await createPresignedPost(s3, {
     Bucket: process.env.AWS_S3_BUCKET_NAME!,
@@ -101,15 +140,18 @@ export async function generatePresignedUploadUrl(c: Context) {
  * Generate a presigned URL for downloading a file from S3
  */
 export async function generatePresignedDownloadUrl(c: Context) {
+  const userId = c.get("user").id;
   const key = c.req.param("key");
 
   if (!key) {
     throw new BadRequestError("Missing required parameter: key");
   }
 
+  const upload = await getOwnedUploadByKey(userId, key);
+
   const command = new GetObjectCommand({
     Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: key,
+    Key: upload.s3Key,
   });
 
   const downloadUrl = await getSignedUrl(s3, command, {
@@ -131,19 +173,22 @@ export async function generatePresignedDownloadUrl(c: Context) {
  * Delete a file from S3 and remove its metadata from the database
  */
 export async function deleteFile(c: Context) {
+  const userId = c.get("user").id;
   const key = c.req.param("key");
 
   if (!key) {
     throw new BadRequestError("Missing required parameter: key");
   }
 
+  const upload = await getOwnedUploadByKey(userId, key);
+
   const command = new DeleteObjectCommand({
     Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: key,
+    Key: upload.s3Key,
   });
 
   await s3.send(command);
-  await fileUploadRepository.deleteByS3Key(key);
+  await fileUploadRepository.deleteByS3Key(upload.s3Key);
 
   return c.json(
     {
@@ -168,6 +213,13 @@ export async function createFileUpload(c: Context) {
   const userId = c.get("user").id;
   const { s3Key, mimeType, fileName, fileSize } = validation.data;
   const maxFileSize = getPostMediaMaxBytes();
+  const decodedS3Key = decodeURIComponent(s3Key);
+
+  if (!decodedS3Key.startsWith(getUserUploadPrefix(userId))) {
+    throw new ForbiddenError(
+      "You can only register files from your own upload scope",
+    );
+  }
 
   if (!ALLOWED_UPLOAD_TYPES.includes(mimeType)) {
     throw new BadRequestError("Invalid file type");
@@ -179,7 +231,7 @@ export async function createFileUpload(c: Context) {
 
   const fileUpload = await fileUploadRepository.createFileUpload({
     userId,
-    s3Key,
+    s3Key: decodedS3Key,
     fileName,
     mimeType,
     fileSize,

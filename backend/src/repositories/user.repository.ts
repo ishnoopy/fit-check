@@ -1,4 +1,5 @@
 import type { FilterQuery } from "mongoose";
+import mongoose from "mongoose";
 import UserModel, { type IUser } from "../models/user.model.js";
 import { toCamelCase, toSnakeCase } from "../utils/transformer.js";
 
@@ -20,7 +21,9 @@ export async function findOne(where: FilterQuery<IUser>) {
 }
 
 export async function findByIds(ids: string[]) {
-  const users = await UserModel.find({ _id: { $in: ids } }).lean();
+  const users = await UserModel.find({
+    _id: mongoose.trusted({ $in: ids }),
+  }).lean();
   return toCamelCase(users) as IUser[];
 }
 
@@ -36,8 +39,10 @@ export async function searchUsersByQuery(
   const limit = options?.limit ?? 8;
   const searchRegex = new RegExp(escapeRegex(trimmedQuery), "i");
   const users = await UserModel.find({
-    ...(options?.excludeUserId ? { _id: { $ne: options.excludeUserId } } : {}),
-    username: { $exists: true, $ne: null },
+    ...(options?.excludeUserId
+      ? { _id: mongoose.trusted({ $ne: options.excludeUserId }) }
+      : {}),
+    username: mongoose.trusted({ $exists: true, $ne: null }),
     $or: [
       { username: searchRegex },
       { first_name: searchRegex },
@@ -74,7 +79,7 @@ export async function incrementSuccessfulReferralCountIfBelow(
   const doc = await UserModel.findOneAndUpdate(
     {
       _id: id,
-      successful_referral_count: { $lt: max },
+      successful_referral_count: mongoose.trusted({ $lt: max }),
     },
     { $inc: { successful_referral_count: 1 } },
     { new: true, lean: true },
@@ -87,7 +92,7 @@ export async function markFirstWorkoutLoggedIfUnset(id: string, at: Date) {
     {
       _id: id,
       $or: [
-        { first_workout_logged_at: { $exists: false } },
+        { first_workout_logged_at: mongoose.trusted({ $exists: false }) },
         { first_workout_logged_at: null },
       ],
     },
@@ -102,7 +107,7 @@ export async function markReferralRewardGrantedIfUnset(id: string, at: Date) {
     {
       _id: id,
       $or: [
-        { referral_reward_granted_at: { $exists: false } },
+        { referral_reward_granted_at: mongoose.trusted({ $exists: false }) },
         { referral_reward_granted_at: null },
       ],
     },

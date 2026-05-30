@@ -173,7 +173,11 @@ export async function refreshToken(c: Context) {
   let decodedToken: jose.JWTPayload;
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jose.jwtVerify(refreshToken, secret);
+    const { payload } = await jose.jwtVerify(refreshToken, secret, {
+      algorithms: ["HS256"],
+      issuer: process.env.JWT_ISSUER,
+      audience: process.env.JWT_AUDIENCE,
+    });
     decodedToken = payload;
   } catch (error) {
     throw new UnauthorizedError("Unauthorized");
@@ -248,10 +252,7 @@ export async function refreshToken(c: Context) {
     refreshTokenExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
   });
 
-  return c.json(
-    { success: true, data: { token, refreshToken: newRefreshToken } },
-    StatusCodes.OK,
-  );
+  return c.json({ success: true }, StatusCodes.OK);
 }
 
 export async function register(c: Context) {
@@ -267,14 +268,17 @@ export async function register(c: Context) {
     throw new BadRequestError(params.error);
   }
 
-  const newUser = await registerService({
-    email: params.data.email,
-    password: params.data.password,
-    role: "user",
-    profileCompleted: false,
-  }, {
-    referralCode: params.data.referralCode,
-  });
+  const newUser = await registerService(
+    {
+      email: params.data.email,
+      password: params.data.password,
+      role: "user",
+      profileCompleted: false,
+    },
+    {
+      referralCode: params.data.referralCode,
+    },
+  );
 
   return c.json(
     {

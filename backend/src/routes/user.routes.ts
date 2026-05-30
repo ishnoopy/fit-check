@@ -48,12 +48,7 @@ const router = new Hono()
     generalRateLimiter,
     getFollowing,
   )
-  .patch(
-    "/users/me/avatar",
-    authMiddleware,
-    generalRateLimiter,
-    updateMyAvatar,
-  )
+  .patch("/users/me/avatar", authMiddleware, generalRateLimiter, updateMyAvatar)
   .get(
     "/users",
     authMiddleware,
@@ -62,9 +57,33 @@ const router = new Hono()
     getUsers,
   )
   .get("/users/search", authMiddleware, generalRateLimiter, searchUsers)
-  .get("/users/:id", authMiddleware, generalRateLimiter, getUser)
-  .post("/users", authMiddleware, generalRateLimiter, createUser)
-  .put("/users/:id", authMiddleware, generalRateLimiter, updateUser)
-  .delete("/users/:id", authMiddleware, generalRateLimiter, deleteUser);
+  .get(
+    "/users/:id",
+    authMiddleware,
+    guardMiddleware(["admin"]),
+    generalRateLimiter,
+    getUser,
+  )
+  .post(
+    "/users",
+    authMiddleware,
+    guardMiddleware(["admin"]),
+    generalRateLimiter,
+    createUser,
+  )
+  .put(
+    "/users/:id",
+    authMiddleware,
+    guardMiddleware(["admin"]),
+    generalRateLimiter,
+    updateUser,
+  )
+  .delete(
+    "/users/:id",
+    authMiddleware,
+    guardMiddleware(["admin"]),
+    generalRateLimiter,
+    deleteUser,
+  );
 
 export default router;

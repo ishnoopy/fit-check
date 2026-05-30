@@ -29,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   cn,
   formatSecondsToMinutesSeconds,
-  getItemFromLocalStorage
+  getItemFromLocalStorage,
 } from "@/lib/utils";
 import { ILog } from "@/types";
 import {
@@ -57,7 +57,7 @@ import {
   InfoIcon,
   PlusIcon,
   Timer,
-  XIcon
+  XIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -132,7 +132,6 @@ const DEFAULT_SETS = [
     notes: "",
   },
 ];
-
 
 function SortableExerciseItem({
   id,
@@ -256,6 +255,11 @@ export default function LogPage() {
     });
   }, [workoutData?.exercises]);
 
+  const activeExerciseIds = useMemo(
+    () => activeExercisesList.map((exercise) => exercise.exercise.id),
+    [activeExercisesList],
+  );
+
   const [orderedExerciseIds, setOrderedExerciseIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -331,12 +335,27 @@ export default function LogPage() {
   });
 
   const { data: latestLogs } = useGetLatestLogs({
-    exerciseIds: activeExercisesList.map((exercise) => exercise.exercise.id),
+    exerciseIds: activeExerciseIds,
   });
 
-  const progress = todayLogs
-    ? Math.round((todayLogs.length / activeExercisesList.length) * 100)
-    : 0;
+  const progress = useMemo(() => {
+    if (!todayLogs || activeExerciseIds.length === 0) {
+      return 0;
+    }
+
+    const activeExerciseIdSet = new Set(activeExerciseIds);
+    const completedExerciseIds = new Set(
+      todayLogs
+        .map((log) => log.exerciseId?.id)
+        .filter((exerciseId): exerciseId is string => Boolean(exerciseId))
+        .filter((exerciseId) => activeExerciseIdSet.has(exerciseId)),
+    );
+
+    return Math.min(
+      100,
+      Math.round((completedExerciseIds.size / activeExerciseIds.length) * 100),
+    );
+  }, [todayLogs, activeExerciseIds]);
 
   const createLogMutation = useCreateLog({
     onSuccess: () => {
@@ -659,7 +678,9 @@ export default function LogPage() {
                 );
 
                 const isActiveExercise = activeExerciseId === exercise.id;
-                const hasRestTime = exerciseItem.restTime !== undefined && exerciseItem.restTime > 0;
+                const hasRestTime =
+                  exerciseItem.restTime !== undefined &&
+                  exerciseItem.restTime > 0;
 
                 return (
                   <SortableExerciseItem key={exercise.id} id={exercise.id}>
@@ -677,8 +698,9 @@ export default function LogPage() {
                         )}
                       >
                         <AccordionTrigger
-                          className={`cursor-pointer py-3 px-3 hover:no-underline transition-colors ${isLogged ? "bg-muted/40" : "hover:bg-muted/30"
-                            }`}
+                          className={`cursor-pointer py-3 px-3 hover:no-underline transition-colors ${
+                            isLogged ? "bg-muted/40" : "hover:bg-muted/30"
+                          }`}
                         >
                           <div className="flex items-center gap-2 w-full">
                             {isLogged && (
@@ -690,8 +712,9 @@ export default function LogPage() {
                               </span>
                             )}
                             <span
-                              className={`flex-1 text-left text-sm ${isLogged ? "font-medium" : ""
-                                } ${isActiveExercise ? "font-black text-accent" : ""}`}
+                              className={`flex-1 text-left text-sm ${
+                                isLogged ? "font-medium" : ""
+                              } ${isActiveExercise ? "font-black text-accent" : ""}`}
                             >
                               {exercise.name}
                             </span>
@@ -711,28 +734,6 @@ export default function LogPage() {
                               <GripVertical className="h-3.5 w-3.5" />
                             </span>
 
-                            {/* Rest Timer Button */}
-                            {hasRestTime && !isLogged && isActiveExercise && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startRestTime(exercise.id, exercise.name, exerciseItem.restTime || 0);
-                                }}
-                                disabled={isTimerRunning}
-                                className={cn(
-                                  "flex items-center gap-1.5 px-2 py-1 rounded-full border transition-colors shrink-0",
-                                  isTimerRunning
-                                    ? "bg-muted/20 border-border/30 text-muted-foreground/50 cursor-not-allowed"
-                                    : "bg-secondary border-secondary text-primary hover:bg-secondary/90 cursor-pointer",
-                                )}
-                                aria-label={`Start ${formatSecondsToMinutesSeconds(exerciseItem.restTime ?? 0)} timer for ${exercise.name}`}
-                              >
-                                <Timer className="h-3.5 w-3.5 shrink-0" />
-                                <span className="text-xs font-mono font-semibold tabular-nums">
-                                  {formatSecondsToMinutesSeconds(exerciseItem.restTime ?? 0)}
-                                </span>
-                              </button>
-                            )}
                             <Dialog
                               onOpenChange={(open) => {
                                 if (
@@ -789,6 +790,32 @@ export default function LogPage() {
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className="px-3 py-3 space-y-2.5">
+                          {hasRestTime && !isLogged && isActiveExercise && (
+                            <button
+                              onClick={() => {
+                                startRestTime(
+                                  exercise.id,
+                                  exercise.name,
+                                  exerciseItem.restTime || 0,
+                                );
+                              }}
+                              disabled={isTimerRunning}
+                              className={cn(
+                                "flex items-center gap-1.5 px-2 py-1 rounded-full border transition-colors shrink-0",
+                                isTimerRunning
+                                  ? "bg-muted/20 border-border/30 text-muted-foreground/50 cursor-not-allowed"
+                                  : "bg-secondary border-secondary text-primary hover:bg-secondary/90 cursor-pointer",
+                              )}
+                              aria-label={`Start ${formatSecondsToMinutesSeconds(exerciseItem.restTime ?? 0)} timer for ${exercise.name}`}
+                            >
+                              <Timer className="h-3.5 w-3.5 shrink-0" />
+                              <span className="text-xs font-mono font-semibold tabular-nums">
+                                {formatSecondsToMinutesSeconds(
+                                  exerciseItem.restTime ?? 0,
+                                )}
+                              </span>
+                            </button>
+                          )}
                           {/* Last Performance */}
                           {latestExerciseLog && !isLogged && (
                             <div className="text-[11px] space-y-1 pb-2 border-b rounded-md p-2">
@@ -875,7 +902,10 @@ export default function LogPage() {
                             </div>
                           ) : (
                             <Form {...form} key={exercise.id}>
-                              <fieldset disabled={isLogged} className="space-y-2.5">
+                              <fieldset
+                                disabled={isLogged}
+                                className="space-y-2.5"
+                              >
                                 <form
                                   onSubmit={form.handleSubmit(
                                     onSubmit,
@@ -908,12 +938,15 @@ export default function LogPage() {
                                                     min={0}
                                                     onChange={(e) => {
                                                       const sets =
-                                                        field.value?.slice() || [];
+                                                        field.value?.slice() ||
+                                                        [];
                                                       sets[idx] = {
                                                         ...sets[idx],
                                                         setNumber: idx + 1,
                                                         reps:
-                                                          Number(e.target.value) || 0,
+                                                          Number(
+                                                            e.target.value,
+                                                          ) || 0,
                                                       };
                                                       field.onChange(sets);
                                                     }}
@@ -929,7 +962,9 @@ export default function LogPage() {
                                                     placeholder="W"
                                                     value={set.weight ?? ""}
                                                     onFocus={(e) => {
-                                                      if (e.target.value === "0") {
+                                                      if (
+                                                        e.target.value === "0"
+                                                      ) {
                                                         e.target.value = "";
                                                       }
                                                     }}
@@ -940,17 +975,22 @@ export default function LogPage() {
                                                           /^0+/,
                                                           "",
                                                         );
-                                                      if (e.target.value === "") {
+                                                      if (
+                                                        e.target.value === ""
+                                                      ) {
                                                         e.target.value = "0";
                                                       }
                                                     }}
                                                     onChange={(e) => {
                                                       const sets =
-                                                        field.value?.slice() || [];
+                                                        field.value?.slice() ||
+                                                        [];
                                                       sets[idx] = {
                                                         ...sets[idx],
                                                         weight:
-                                                          Number(e.target.value) || 0,
+                                                          Number(
+                                                            e.target.value,
+                                                          ) || 0,
                                                       };
                                                       field.onChange(sets);
                                                     }}
@@ -964,7 +1004,8 @@ export default function LogPage() {
                                                     value={set.notes || ""}
                                                     onChange={(e) => {
                                                       const sets =
-                                                        field.value?.slice() || [];
+                                                        field.value?.slice() ||
+                                                        [];
                                                       sets[idx] = {
                                                         ...sets[idx],
                                                         notes: e.target.value,
@@ -980,7 +1021,8 @@ export default function LogPage() {
                                                     className="h-7 w-7 shrink-0"
                                                     onClick={() => {
                                                       const sets =
-                                                        field.value?.slice() || [];
+                                                        field.value?.slice() ||
+                                                        [];
                                                       sets.splice(idx, 1);
                                                       sets.forEach((s, i) => {
                                                         s.setNumber = i + 1;
@@ -1023,16 +1065,18 @@ export default function LogPage() {
                                                     size="sm"
                                                     className="flex-1 h-8 text-xs border-dashed"
                                                     onClick={() => {
-                                                      const currentSets = Array.isArray(
-                                                        field.value,
-                                                      )
-                                                        ? field.value.slice()
-                                                        : [];
+                                                      const currentSets =
+                                                        Array.isArray(
+                                                          field.value,
+                                                        )
+                                                          ? field.value.slice()
+                                                          : [];
                                                       field.onChange([
                                                         ...currentSets,
                                                         {
                                                           setNumber:
-                                                            currentSets.length + 1,
+                                                            currentSets.length +
+                                                            1,
                                                           reps: 0,
                                                           weight: 0,
                                                           notes: "",
@@ -1065,15 +1109,17 @@ export default function LogPage() {
                                                           activeExerciseId,
                                                       );
                                                     const numberOfSetsToResetTo =
-                                                      previousLogForExercise?.sets
-                                                        ?.length ||
+                                                      previousLogForExercise
+                                                        ?.sets?.length ||
                                                       DEFAULT_NUMBER_OF_SETS;
 
                                                     const createEmptySets = (
                                                       numberOfSets: number = DEFAULT_NUMBER_OF_SETS,
                                                     ) => {
                                                       return Array.from(
-                                                        { length: numberOfSets },
+                                                        {
+                                                          length: numberOfSets,
+                                                        },
                                                         (_, index) => ({
                                                           setNumber: index + 1,
                                                           reps: 0,
@@ -1101,10 +1147,10 @@ export default function LogPage() {
                                                         "logFormDrafts",
                                                       )
                                                         ? JSON.parse(
-                                                          getItemFromLocalStorage(
-                                                            "logFormDrafts",
-                                                          ) || "",
-                                                        )
+                                                            getItemFromLocalStorage(
+                                                              "logFormDrafts",
+                                                            ) || "",
+                                                          )
                                                         : {};
                                                     delete draftDocumentCollection[
                                                       activeExerciseId

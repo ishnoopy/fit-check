@@ -14,6 +14,11 @@ export async function authMiddleware(c: Context, next: Next) {
     const { payload } = await jose.jwtVerify(
       token,
       new TextEncoder().encode(process.env.JWT_SECRET),
+      {
+        algorithms: ["HS256"],
+        issuer: process.env.JWT_ISSUER,
+        audience: process.env.JWT_AUDIENCE,
+      },
     );
 
     c.set("user", payload);

@@ -1,5 +1,5 @@
 import PostHeartModel from "../models/post-heart.model.js";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 function idCandidates(id: string) {
   const values: Array<string | Types.ObjectId> = [id];
@@ -25,8 +25,8 @@ export async function toggleHeart(postId: string, userId: string) {
   const userIdValues = idCandidates(userId);
 
   const existing = await PostHeartModel.findOne({
-    post_id: { $in: postIdValues },
-    user_id: { $in: userIdValues },
+    post_id: mongoose.trusted({ $in: postIdValues }),
+    user_id: mongoose.trusted({ $in: userIdValues }),
   })
     .select({ _id: 1 })
     .lean();
@@ -50,7 +50,7 @@ export async function toggleHeart(postId: string, userId: string) {
 export async function countByPostId(postId: string) {
   const postIdValues = idCandidates(postId);
   return PostHeartModel.countDocuments({
-    post_id: { $in: postIdValues },
+    post_id: mongoose.trusted({ $in: postIdValues }),
   });
 }
 
@@ -95,8 +95,8 @@ export async function findHeartedPostIdsByUser(
   const objectIds = objectIdCandidates(postIds);
   const postIdValues = [...postIds, ...objectIds];
   const rows = await PostHeartModel.find({
-    user_id: { $in: userIdValues },
-    post_id: { $in: postIdValues },
+    user_id: mongoose.trusted({ $in: userIdValues }),
+    post_id: mongoose.trusted({ $in: postIdValues }),
   })
     .select({ post_id: 1 })
     .lean();

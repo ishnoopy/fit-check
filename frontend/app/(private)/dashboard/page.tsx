@@ -26,12 +26,7 @@ import { api } from "@/lib/api";
 import { queryClient } from "@/lib/query-client";
 import { getDayName } from "@/lib/store";
 import { motion } from "framer-motion";
-import {
-  AlertCircleIcon,
-  FlameIcon,
-  Shield,
-  TargetIcon,
-} from "lucide-react";
+import { AlertCircleIcon, FlameIcon, Shield, TargetIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -250,7 +245,9 @@ export default function DashboardPage() {
           }
         : null;
     },
-  ).filter((label): label is { month: string; column: number } => Boolean(label));
+  ).filter((label): label is { month: string; column: number } =>
+    Boolean(label),
+  );
   const activityGridStyle = {
     gridTemplateColumns: `repeat(${activityColumnCount}, ${ACTIVITY_TILE_SIZE}px)`,
     columnGap: `${ACTIVITY_TILE_GAP}px`,
@@ -296,7 +293,7 @@ export default function DashboardPage() {
       color: "text-primary",
       classNames: "",
     },
-    ];
+  ];
 
   if (!statsData) {
     // or use isLoading from useGetStats
@@ -320,8 +317,7 @@ export default function DashboardPage() {
         >
           <DialogHeader className="space-y-2">
             <DialogTitle className="text-2xl font-semibold text-center">
-              <AlertCircleIcon className="size-6" /> What&apos;s new in
-              TUFF?
+              <AlertCircleIcon className="size-6" /> What&apos;s new in TUFF?
             </DialogTitle>
             <DialogDescription className="text-center">
               Effective March 11, 2026:
@@ -329,11 +325,7 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
             {patchNotesDetails.map((patchNote, index) => (
-              <div key={`${patchNote.date}-${index}`}>
-                <p className="text-sm text-muted-foreground">
-                  {patchNote.element}
-                </p>
-              </div>
+              <div key={`${patchNote.date}-${index}`}>{patchNote.element}</div>
             ))}
           </div>
           <div className="rounded-md bg-emerald-50 dark:bg-emerald-900/10 px-4 py-3 mt-4 text-sm text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700 flex items-center gap-2">
@@ -341,8 +333,8 @@ export default function DashboardPage() {
               🙏
             </span>
             <span>
-              Thank you for being a part of the TUFF community. Your
-              support, feedback, and dedication means a lot to us!
+              Thank you for being a part of the TUFF community. Your support,
+              feedback, and dedication means a lot to us!
             </span>
           </div>
           <DialogFooter>
@@ -406,11 +398,7 @@ export default function DashboardPage() {
                   <p className="mt-2 text-xs font-semibold leading-snug text-accent-foreground/90 sm:text-sm">
                     {heroMessage}
                   </p>
-                  <Button
-                    asChild
-                    size="sm"
-                    className="mt-3"
-                  >
+                  <Button asChild size="sm" className="mt-3">
                     <Link href="/log">Log today</Link>
                   </Button>
                 </div>
@@ -571,7 +559,10 @@ export default function DashboardPage() {
                       style={activityRowsStyle}
                     >
                       {WEEKDAY_LABELS.map((day) => (
-                        <div key={day} className="flex items-center leading-none">
+                        <div
+                          key={day}
+                          className="flex items-center leading-none"
+                        >
                           {day === "Mon" || day === "Wed" || day === "Fri"
                             ? day
                             : ""}
@@ -599,11 +590,14 @@ export default function DashboardPage() {
                         return (
                           <div
                             key={activity.dateKey}
-                            title={`${activity.date.toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}: ${activity.exerciseCount} exercise${activity.exerciseCount === 1 ? "" : "s"}`}
+                            title={`${activity.date.toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
+                            )}: ${activity.exerciseCount} exercise${activity.exerciseCount === 1 ? "" : "s"}`}
                             aria-label={`${activity.dateKey}: ${activity.exerciseCount} exercise${activity.exerciseCount === 1 ? "" : "s"}`}
                             className={`shrink-0 rounded-[3px] border border-black ${getActivityTileClass(
                               activity.exerciseCount,

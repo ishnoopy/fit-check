@@ -17,6 +17,14 @@ const REQUIRED_ENV_VARS = [
   "DB_URL",
 ] as const;
 
+function validateRuntimeConfig() {
+  for (const key of REQUIRED_ENV_VARS) {
+    if (!process.env[key]) {
+      throw new Error(`Missing required environment variable: ${key}`);
+    }
+  }
+}
+
 export const app = new Hono();
 
 // Connect to the database
@@ -78,12 +86,8 @@ process.on("SIGTERM", () => {
   void shutdown();
 });
 
-if (!import.meta.vitest) {
-  for (const key of REQUIRED_ENV_VARS) {
-    if (!process.env[key]) {
-      throw new Error(`Missing required environment variable: ${key}`);
-    }
-  }
+if (process.env.NODE_ENV !== "test" && !import.meta.vitest) {
+  validateRuntimeConfig();
   console.log("Starting server...");
   serve({
     fetch: app.fetch,
