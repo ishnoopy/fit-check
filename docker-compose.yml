@@ -3,7 +3,8 @@ services:
     image: ishnoopy/fit-check-frontend:latest
     container_name: frontend
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - 'NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}'
+      - 'API_URL=http://backend:4000'
     expose:
       - "3000"
     depends_on:
