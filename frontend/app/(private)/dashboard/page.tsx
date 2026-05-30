@@ -31,6 +31,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUser } from "../../providers";
+import hero from "@/assets/hero.png"
 
 const container = {
   hidden: { opacity: 0 },
@@ -375,7 +376,7 @@ export default function DashboardPage() {
               </div>
               <div className="absolute -bottom-10 -left-8 z-20 h-[240px] w-[48%] sm:-bottom-12 sm:-left-8 sm:h-[260px]">
                 <Image
-                  src="/hero.png"
+                  src={hero}
                   alt="TUFF coach mascot"
                   width={420}
                   height={560}
