@@ -1,4 +1,5 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { config } from "../config.js";
 import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
 import { BadRequestError, NotFoundError } from "../utils/errors.js";
@@ -22,7 +23,7 @@ export async function deleteGalleryImageService(
 
   // delete image from s3
   const command = new DeleteObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Bucket: config.AWS_S3_BUCKET_NAME,
     Key: fileUpload?.s3Key,
   });
 

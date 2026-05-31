@@ -1,26 +1,10 @@
-const parsePositiveInt = (value: string | undefined, fallback: number): number => {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
-  return parsed;
-};
+import { config } from "../../config.js";
 
-export const COACH_BASE_WEEKLY_REQUESTS = parsePositiveInt(
-  process.env.COACH_BASE_WEEKLY_REQUESTS,
-  5,
-);
+export const COACH_BASE_WEEKLY_REQUESTS = config.COACH_BASE_WEEKLY_REQUESTS;
 
-export const COACH_REFERRAL_BONUS_REQUESTS = parsePositiveInt(
-  process.env.COACH_REFERRAL_BONUS_REQUESTS,
-  10,
-);
+export const COACH_REFERRAL_BONUS_REQUESTS =
+  config.COACH_REFERRAL_BONUS_REQUESTS;
 
-export const COACH_MAX_REFERRALS = parsePositiveInt(
-  process.env.COACH_MAX_REFERRALS,
-  5,
-);
+export const COACH_MAX_REFERRALS = config.COACH_MAX_REFERRALS;
 
-export const DEFAULT_REFERRAL_CODE_LENGTH = parsePositiveInt(
-  process.env.REFERRAL_CODE_LENGTH,
-  8,
-);
+export const DEFAULT_REFERRAL_CODE_LENGTH = config.REFERRAL_CODE_LENGTH;

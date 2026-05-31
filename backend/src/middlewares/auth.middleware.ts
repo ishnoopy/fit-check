@@ -2,6 +2,7 @@
 import type { Context, Next } from "hono";
 import { deleteCookie, getCookie } from "hono/cookie";
 import * as jose from "jose";
+import { config } from "../config.js";
 import { UnauthorizedError } from "../utils/errors.js";
 
 export async function authMiddleware(c: Context, next: Next) {
@@ -13,11 +14,11 @@ export async function authMiddleware(c: Context, next: Next) {
   try {
     const { payload } = await jose.jwtVerify(
       token,
-      new TextEncoder().encode(process.env.JWT_SECRET),
+      new TextEncoder().encode(config.JWT_SECRET),
       {
         algorithms: ["HS256"],
-        issuer: process.env.JWT_ISSUER,
-        audience: process.env.JWT_AUDIENCE,
+        issuer: config.JWT_ISSUER,
+        audience: config.JWT_AUDIENCE,
       },
     );
 

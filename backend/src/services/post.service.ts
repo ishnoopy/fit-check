@@ -1,5 +1,6 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { config } from "../config.js";
 import { s3 } from "../lib/s3.js";
 import type { IPost } from "../models/post.model.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
@@ -23,7 +24,7 @@ const ALLOWED_POST_MEDIA_TYPES = new Set([
 ]);
 
 function getPostMediaMaxBytes() {
-  const fromEnv = Number(process.env.POST_MEDIA_MAX_BYTES);
+  const fromEnv = Number(config.POST_MEDIA_MAX_BYTES);
   if (Number.isFinite(fromEnv) && fromEnv > 0) {
     return fromEnv;
   }
@@ -42,7 +43,7 @@ function toMediaKind(mimeType: string): "image" | "gif" | "video" {
 
 async function buildMediaUrl(s3Key: string) {
   const command = new GetObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Bucket: config.AWS_S3_BUCKET_NAME,
     Key: s3Key,
   });
   return getSignedUrl(s3, command, { expiresIn: 3600 });

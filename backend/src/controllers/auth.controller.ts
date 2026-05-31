@@ -4,6 +4,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { StatusCodes } from "http-status-codes";
 import * as jose from "jose";
 import { z } from "zod";
+import { config } from "../config.js";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
 import { resolveMediaUrl } from "../services/media-url.service.js";
@@ -36,14 +37,14 @@ export async function handleGoogleOAuthCallback(c: Context) {
 
   if (error) {
     return c.redirect(
-      `${process.env.FRONTEND_URL}/login?error=${error}`,
+      `${config.FRONTEND_URL}/login?error=${error}`,
       StatusCodes.TEMPORARY_REDIRECT,
     );
   }
 
   if (!code) {
     return c.redirect(
-      `${process.env.FRONTEND_URL}/login?error=Code is required`,
+      `${config.FRONTEND_URL}/login?error=Code is required`,
       StatusCodes.TEMPORARY_REDIRECT,
     );
   }
@@ -52,7 +53,7 @@ export async function handleGoogleOAuthCallback(c: Context) {
 
   setCookie(c, "access_token", user?.token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: config.NODE_ENV === "production",
     maxAge: 60 * 15, // 15 minutes
     sameSite: "lax", // To allow frontend redirect to the dashboard
     path: "/",
@@ -60,14 +61,14 @@ export async function handleGoogleOAuthCallback(c: Context) {
 
   setCookie(c, "refresh_token", user?.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: config.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: "lax", // To allow frontend redirect to the dashboard
     path: "/",
   });
 
   return c.redirect(
-    `${process.env.FRONTEND_URL}/dashboard`,
+    `${config.FRONTEND_URL}/dashboard`,
     StatusCodes.TEMPORARY_REDIRECT,
   );
 }
@@ -90,7 +91,7 @@ export async function login(c: Context) {
 
   setCookie(c, "access_token", user.token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: config.NODE_ENV === "production",
     maxAge: 60 * 15, // 15 minutes
     sameSite: "lax",
     path: "/",
@@ -98,7 +99,7 @@ export async function login(c: Context) {
 
   setCookie(c, "refresh_token", user.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: config.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: "lax",
     path: "/",
@@ -141,14 +142,14 @@ export async function logout(c: Context) {
 
   deleteCookie(c, "access_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: config.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
   });
 
   deleteCookie(c, "refresh_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: config.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
   });
@@ -172,11 +173,11 @@ export async function refreshToken(c: Context) {
 
   let decodedToken: jose.JWTPayload;
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const secret = new TextEncoder().encode(config.JWT_SECRET);
     const { payload } = await jose.jwtVerify(refreshToken, secret, {
       algorithms: ["HS256"],
-      issuer: process.env.JWT_ISSUER,
-      audience: process.env.JWT_AUDIENCE,
+      issuer: config.JWT_ISSUER,
+      audience: config.JWT_AUDIENCE,
     });
     decodedToken = payload;
   } catch (error) {
@@ -220,11 +221,11 @@ export async function refreshToken(c: Context) {
   })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("15m")
-    .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+    .sign(new TextEncoder().encode(config.JWT_SECRET));
 
   setCookie(c, "access_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: config.NODE_ENV === "production",
     maxAge: 60 * 15, // 15 minutes
     sameSite: "lax",
     path: "/",
@@ -237,11 +238,11 @@ export async function refreshToken(c: Context) {
   })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("30d")
-    .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+    .sign(new TextEncoder().encode(config.JWT_SECRET));
 
   setCookie(c, "refresh_token", newRefreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: config.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: "lax",
     path: "/",

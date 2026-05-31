@@ -3,10 +3,14 @@ import type { Context } from "hono";
 import { rateLimiter } from "hono-rate-limiter";
 import { StatusCodes } from "http-status-codes";
 import { createClient } from "redis";
+import { config } from "../config.js";
 
 const redisClient = createClient({
-  url: process.env.REDIS_URL || "redis://localhost:6379",
+  url: config.REDIS_URL,
 });
+
+console.log("REDIS URL:", config.REDIS_URL);
+console.log("DB URL:", config.DB_URL);
 
 let redisConnectionPromise: Promise<void> | null = null;
 

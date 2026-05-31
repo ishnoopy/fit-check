@@ -1,18 +1,11 @@
-import dotenv from "dotenv";
 import mongoose from "mongoose";
-import path from "path";
+import { config } from "../config.js";
 
-//DOCS: Load environment variables based on the environment
-process.env.NODE_ENV !== "production"
-  ? dotenv.config({ path: path.resolve(process.cwd(), ".env") })
-  : dotenv.config();
-
-const DB_URL = process.env.DB_URL || "";
 mongoose.set("sanitizeFilter", true);
 
 async function connect() {
   try {
-    await mongoose.connect(DB_URL, {
+    await mongoose.connect(config.DB_URL, {
       serverSelectionTimeoutMS: 30000, // 30s timeout
     });
     console.log("Database connected");

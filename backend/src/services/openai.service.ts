@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions.js";
+import { config } from "../config.js";
 import {
   COACH_INTENT,
   VALID_INTENTS,
@@ -19,11 +20,7 @@ let openaiClient: OpenAI | null = null;
 /** Lazily initialize the OpenAI client */
 function getClient(): OpenAI {
   if (!openaiClient) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY environment variable is not set");
-    }
-    openaiClient = new OpenAI({ apiKey });
+    openaiClient = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   }
   return openaiClient;
 }

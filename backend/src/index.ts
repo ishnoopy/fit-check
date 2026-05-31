@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { config } from "./config.js";
 import dbConnect from "./lib/database.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import { loggerMiddleware } from "./middlewares/logger.middleware.js";
@@ -9,21 +10,6 @@ import {
   connectRateLimiterRedis,
 } from "./middlewares/rate-limiter.middleware.js";
 import routes from "./routes/index.js";
-
-const REQUIRED_ENV_VARS = [
-  "JWT_SECRET",
-  "FRONTEND_URL",
-  "AWS_S3_BUCKET_NAME",
-  "DB_URL",
-] as const;
-
-function validateRuntimeConfig() {
-  for (const key of REQUIRED_ENV_VARS) {
-    if (!process.env[key]) {
-      throw new Error(`Missing required environment variable: ${key}`);
-    }
-  }
-}
 
 export const app = new Hono();
 
@@ -36,7 +22,7 @@ void connectRateLimiterRedis().catch((error) => {
 const allowedOrigins = [
   "http://localhost:3000",
   "http://192.168.1.2:3000",
-  process.env.FRONTEND_URL,
+  config.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
 // CORS middleware
@@ -70,7 +56,7 @@ for (const route of routes) {
 
 app.get("/api/health", (c) => c.json({ message: "API is running" }));
 
-const port = process.env.BACKEND_PORT || 4000;
+const port = config.BACKEND_PORT;
 console.log(`Server is running on http://localhost:${port}`);
 
 const shutdown = async () => {
@@ -86,11 +72,10 @@ process.on("SIGTERM", () => {
   void shutdown();
 });
 
-if (process.env.NODE_ENV !== "test" && !import.meta.vitest) {
-  validateRuntimeConfig();
+if (config.NODE_ENV !== "test" && !import.meta.vitest) {
   console.log("Starting server...");
   serve({
     fetch: app.fetch,
-    port: parseInt(port as string),
+    port,
   });
 }

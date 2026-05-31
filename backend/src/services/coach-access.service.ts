@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { config } from "../config.js";
 import type { IUser } from "../models/user.model.js";
 import * as conversationRepository from "../repositories/conversation.repository.js";
 import * as userRepository from "../repositories/user.repository.js";
@@ -173,12 +174,7 @@ export async function applyReferralRewardOnFirstWorkout(
 }
 
 export function buildInvitationLink(referralCode: string): string {
-  const base = process.env.FRONTEND_URL || "";
-  if (!base) {
-    return `/register?ref=${encodeURIComponent(referralCode)}`;
-  }
-
-  return `${base.replace(/\/$/, "")}/register?ref=${encodeURIComponent(referralCode)}`;
+  return `${config.FRONTEND_URL.replace(/\/$/, "")}/register?ref=${encodeURIComponent(referralCode)}`;
 }
 
 export function canUseCoach(quota: CoachQuota): boolean {

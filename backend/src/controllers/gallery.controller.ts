@@ -3,6 +3,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
+import { config } from "../config.js";
 import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
 import * as userRepository from "../repositories/user.repository.js";
@@ -22,7 +23,7 @@ export async function getGalleryImages(c: Context) {
       .filter((upload) => upload.mimeType.startsWith("image/"))
       .map(async (upload) => {
         const command = new GetObjectCommand({
-          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Bucket: config.AWS_S3_BUCKET_NAME,
           Key: upload.s3Key,
         });
 
@@ -81,7 +82,7 @@ export async function getGalleryImagesByUsername(c: Context) {
       .filter((upload) => upload.mimeType.startsWith("image/"))
       .map(async (upload) => {
         const command = new GetObjectCommand({
-          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Bucket: config.AWS_S3_BUCKET_NAME,
           Key: upload.s3Key,
         });
 

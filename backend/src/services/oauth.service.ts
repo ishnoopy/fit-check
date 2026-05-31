@@ -1,6 +1,7 @@
 import { hash } from "bcrypt";
 import { google } from "googleapis";
 import * as jose from "jose";
+import { config } from "../config.js";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
 import { createUniqueReferralCode } from "./coach-access.service.js";
@@ -8,9 +9,9 @@ import { createUniqueUsername } from "./username.service.js";
 import { BadRequestError } from "../utils/errors.js";
 
 const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI,
+  config.GOOGLE_CLIENT_ID,
+  config.GOOGLE_CLIENT_SECRET,
+  config.GOOGLE_REDIRECT_URI,
 );
 
 export async function getGoogleOAuthUrl() {
@@ -76,7 +77,7 @@ export async function handleGoogleOAuthCallback(code: string) {
     })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("15m")
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+      .sign(new TextEncoder().encode(config.JWT_SECRET));
 
     const refreshToken = await new jose.SignJWT({
       id: userWithoutPassword.id,
@@ -85,7 +86,7 @@ export async function handleGoogleOAuthCallback(code: string) {
     })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("30d")
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+      .sign(new TextEncoder().encode(config.JWT_SECRET));
 
     await UserRepository.updateUser(userWithoutPassword.id as string, {
       refreshTokenHash: await hash(refreshToken, 10),

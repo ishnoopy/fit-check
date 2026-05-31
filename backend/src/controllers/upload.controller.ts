@@ -4,6 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
+import { config } from "../config.js";
 import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
 import {
@@ -77,7 +78,7 @@ async function getOwnedUploadByKey(userId: string, key: string) {
 }
 
 function getPostMediaMaxBytes() {
-  const fromEnv = Number(process.env.POST_MEDIA_MAX_BYTES);
+  const fromEnv = Number(config.POST_MEDIA_MAX_BYTES);
   if (Number.isFinite(fromEnv) && fromEnv > 0) {
     return fromEnv;
   }
@@ -111,7 +112,7 @@ export async function generatePresignedUploadUrl(c: Context) {
   const key = `${getUserUploadPrefix(userId)}${crypto.randomUUID()}-${safeFileName}`;
 
   const presignedPost = await createPresignedPost(s3, {
-    Bucket: process.env.AWS_S3_BUCKET_NAME!,
+    Bucket: config.AWS_S3_BUCKET_NAME,
     Key: key,
     Conditions: [
       ["content-length-range", 0, maxFileSize],
@@ -150,7 +151,7 @@ export async function generatePresignedDownloadUrl(c: Context) {
   const upload = await getOwnedUploadByKey(userId, key);
 
   const command = new GetObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Bucket: config.AWS_S3_BUCKET_NAME,
     Key: upload.s3Key,
   });
 
@@ -183,7 +184,7 @@ export async function deleteFile(c: Context) {
   const upload = await getOwnedUploadByKey(userId, key);
 
   const command = new DeleteObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Bucket: config.AWS_S3_BUCKET_NAME,
     Key: upload.s3Key,
   });
 

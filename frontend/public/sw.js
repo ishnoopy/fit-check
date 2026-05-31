@@ -1,9 +1,6 @@
-const CACHE_NAME = "tuff-shell-v1";
+const CACHE_NAME = "tuff-shell-v2";
 const STATIC_ASSETS = [
   "/",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/apple-touch-icon.png",
 ];
 
 self.addEventListener("install", (event) => {

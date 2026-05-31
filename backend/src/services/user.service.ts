@@ -1,5 +1,6 @@
 import { compare, hash } from "bcrypt";
 import * as jose from "jose";
+import { config } from "../config.js";
 import type { IUser } from "../models/user.model.js";
 import * as UserRepository from "../repositories/user.repository.js";
 import { createUser, findOne } from "../repositories/user.repository.js";
@@ -40,7 +41,7 @@ export async function loginService(email: string, password: string) {
   })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("15m")
-    .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+    .sign(new TextEncoder().encode(config.JWT_SECRET));
 
   const refreshToken = await new jose.SignJWT({
     id: userWithoutPassword.id,
@@ -49,7 +50,7 @@ export async function loginService(email: string, password: string) {
   })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("30d")
-    .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+    .sign(new TextEncoder().encode(config.JWT_SECRET));
 
   await UserRepository.updateUser(userWithoutPassword.id as string, {
     refreshTokenHash: await hash(refreshToken, 10),
