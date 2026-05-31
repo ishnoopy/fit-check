@@ -1,7 +1,5 @@
 const CACHE_NAME = "tuff-shell-v2";
-const STATIC_ASSETS = [
-  "/",
-];
+const STATIC_ASSETS = ["/"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

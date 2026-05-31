@@ -1,8 +1,6 @@
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
-  const faviconUrl = "/favicon.ico?v=tuff-20260531";
-
   return {
     name: "TUFF",
     short_name: "TUFF",
@@ -15,14 +13,19 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait",
     icons: [
       {
-        src: faviconUrl,
-        sizes: "any",
-        type: "image/x-icon",
+        src: "/icons/icon-192.png?v=tuff-20260531",
+        sizes: "192x192",
+        type: "image/png",
       },
       {
-        src: faviconUrl,
-        sizes: "any",
-        type: "image/x-icon",
+        src: "/icons/icon-512.png?v=tuff-20260531",
+        sizes: "512x512",
+        type: "image/png",
+      },
+      {
+        src: "/icons/icon-512.png?v=tuff-20260531",
+        sizes: "512x512",
+        type: "image/png",
         purpose: "maskable",
       },
     ],

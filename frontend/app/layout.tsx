@@ -14,7 +14,8 @@ const inter = Inter({
   display: "swap",
 });
 
-const faviconUrl = "/favicon.ico?v=tuff-20260531";
+const faviconPngUrl = "/favicon.png?v=tuff-20260531";
+const faviconIcoUrl = "/favicon.ico?v=tuff-20260531";
 
 export const metadata: Metadata = {
   applicationName: "TUFF",
@@ -30,9 +31,17 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: [{ url: faviconUrl, type: "image/x-icon" }],
-    shortcut: [{ url: faviconUrl, type: "image/x-icon" }],
-    apple: [{ url: faviconUrl }],
+    icon: [
+      { url: faviconPngUrl, sizes: "1024x1024", type: "image/png" },
+      {
+        url: "/icons/icon-192.png?v=tuff-20260531",
+        sizes: "192x192",
+        type: "image/png",
+      },
+      { url: faviconIcoUrl, type: "image/x-icon" },
+    ],
+    shortcut: [{ url: faviconIcoUrl, type: "image/x-icon" }],
+    apple: [{ url: "/apple-touch-icon.png?v=tuff-20260531", sizes: "180x180" }],
   },
 };
 
@@ -47,9 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
-      <body
-        className="antialiased font-sans bg-background text-foreground overflow-x-hidden"
-      >
+      <body className="antialiased font-sans bg-background text-foreground overflow-x-hidden">
         <ServiceWorkerRegister />
         <DotBackground />
         <Toaster position="top-right" />
