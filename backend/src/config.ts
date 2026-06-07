@@ -38,6 +38,7 @@ const envSchema = z.object({
     .url("GOOGLE_REDIRECT_URI must be a valid URL"),
   AWS_REGION: z.string().min(1).default("ap-southeast-1"),
   AWS_S3_BUCKET_NAME: z.string().min(1, "AWS_S3_BUCKET_NAME is required"),
+  MINIO_ENDPOINT: z.string().url().optional(),
   OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required"),
   REDIS_URL: z.string().url().default("redis://localhost:6379"),
   POST_MEDIA_MAX_BYTES: z.coerce

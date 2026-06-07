@@ -1,3 +1,18 @@
+# Dev stage
+FROM node:20-alpine AS dev
+
+WORKDIR /app
+
+RUN corepack enable && \
+    corepack prepare pnpm@9.15.0 --activate
+
+RUN apk add --no-cache python3 make g++
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+CMD ["pnpm", "dev"]
+
 # Builder stage
 FROM node:20-alpine AS builder
 

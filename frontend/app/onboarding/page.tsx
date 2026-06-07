@@ -1,14 +1,23 @@
 "use client";
 
 import { useUser } from "@/app/providers";
+import heroOnboarding from "@/assets/hero-onboarding.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Dumbbell,
+  Home,
+  Loader2,
+} from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -33,8 +42,12 @@ const onboardingSchema = z.object({
     .string()
     .min(3, { message: "Add a short reminder for your future self." })
     .max(280),
-  fitnessGoal: z.enum(fitnessGoalValues),
-  hasGymAccess: z.boolean(),
+  fitnessGoal: z.enum(fitnessGoalValues, {
+    error: "Choose a main goal.",
+  }),
+  hasGymAccess: z.boolean({
+    error: "Choose gym or home training.",
+  }),
   age: z
     .string()
     .min(1, { message: "Age is required." })
@@ -61,28 +74,26 @@ const onboardingSchema = z.object({
 type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 
 const stepFields: Array<(keyof OnboardingFormValues)[]> = [
-  ["firstName", "lastName"],
-  ["selfMotivationNote"],
-  ["fitnessGoal"],
-  ["hasGymAccess"],
-  ["age"],
-  ["weight"],
-  ["height"],
+  ["onboardingPromiseAccepted"],
+  ["firstName", "lastName", "selfMotivationNote"],
+  ["fitnessGoal", "hasGymAccess"],
+  ["age", "weight", "height"],
 ];
 
 const goalLabels: Record<(typeof fitnessGoalValues)[number], string> = {
   strength: "Strength",
-  hypertrophy: "Hypertrophy",
+  hypertrophy: "Muscle",
   fat_loss: "Fat loss",
   endurance: "Endurance",
   general_fitness: "General fitness",
 };
 
-const stepCardMotion = {
-  initial: { opacity: 0, y: 20, scale: 0.985 },
-  animate: { opacity: 1, y: 0, scale: 1 },
-  exit: { opacity: 0, y: -20, scale: 0.985 },
-  transition: { duration: 0.28, ease: "easeOut" as const },
+const goalDescriptions: Record<(typeof fitnessGoalValues)[number], string> = {
+  strength: "Get stronger at the big lifts.",
+  hypertrophy: "Build visible muscle and shape.",
+  fat_loss: "Lean down with structure.",
+  endurance: "Last longer and recover better.",
+  general_fitness: "Move better, feel better.",
 };
 
 const completeOnboarding = async (values: OnboardingFormValues) => {
@@ -133,6 +144,10 @@ export default function OnboardingPage() {
     }
   }, [isLoading, router, user]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [step]);
+
   const finishMutation = useMutation({
     mutationFn: completeOnboarding,
     onSuccess: async () => {
@@ -147,336 +162,351 @@ export default function OnboardingPage() {
     },
   });
 
-  const totalSteps = stepFields.length + 3;
-  const isLastStep = step === totalSteps - 1;
   const selectedGoal = useWatch({ control: form.control, name: "fitnessGoal" });
   const hasGymAccess = useWatch({ control: form.control, name: "hasGymAccess" });
   const selfMotivationNote = useWatch({
     control: form.control,
     name: "selfMotivationNote",
   });
-  const progressLabel = useMemo(() => `${step + 1} / ${totalSteps}`, [step, totalSteps]);
-
-  const submitOnboarding = () => {
-    form.handleSubmit((values) => finishMutation.mutate(values))();
-  };
+  const progress = useMemo(
+    () => Math.round(((step + 1) / stepFields.length) * 100),
+    [step],
+  );
 
   const goNext = async () => {
-    if (step <= 1) {
-      setStep((current) => Math.min(current + 1, totalSteps - 1));
+    if (step === 0) {
+      form.setValue("onboardingPromiseAccepted", true, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setStep(1);
       return;
     }
 
-    const fieldIndex = step - 2;
-    const isValid = await form.trigger(stepFields[fieldIndex]);
+    const isValid = await form.trigger(stepFields[step]);
     if (!isValid) return;
 
-    setStep((current) => Math.min(current + 1, totalSteps - 1));
+    setStep((current) => Math.min(current + 1, stepFields.length - 1));
   };
 
   const goBack = () => {
     setStep((current) => Math.max(current - 1, 0));
   };
 
+  const submitOnboarding = () => {
+    form.handleSubmit((values) => finishMutation.mutate(values))();
+  };
+
   if (isLoading || !user || user.profileCompleted) {
     return (
-      <div className="min-h-screen grid place-items-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="grid min-h-dvh place-items-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  return (
-    <main className="min-h-screen px-5 py-10 sm:px-8">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-2xl flex-col">
-        <motion.div
-          key={`progress-${step}`}
-          className="mb-8 flex items-center justify-between"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <div className="flex items-center gap-2">
-            {Array.from({ length: totalSteps }).map((_, index) => (
-              <motion.span
-                key={`dot-${index}`}
-                className={`h-2.5 w-2.5 rounded-full ${
-                  index === step
-                    ? "bg-primary"
-                    : index < step
-                      ? "bg-primary/70"
-                      : "bg-border"
-                }`}
-                animate={{ scale: index === step ? 1.15 : 1, opacity: index <= step ? 1 : 0.6 }}
-                transition={{ duration: 0.2 }}
-              />
-            ))}
-          </div>
-          <span className="text-sm font-medium text-muted-foreground">{progressLabel}</span>
-        </motion.div>
+  const isLastStep = step === stepFields.length - 1;
 
-        <section className="flex flex-1 flex-col justify-center">
-          <AnimatePresence mode="wait">
-            <motion.div key={`step-${step}`} {...stepCardMotion} className="space-y-6">
+  return (
+    <main className="relative flex min-h-dvh px-4 py-4 pb-44 sm:px-6 sm:py-6 sm:pb-52 lg:pb-8">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 h-40 bg-primary/45 sm:h-48 lg:h-24" />
+      <div className="pointer-events-none fixed bottom-0 left-1/2 z-20 size-44 -translate-x-1/2 sm:size-56 lg:left-auto lg:right-12 lg:size-72 lg:translate-x-0">
+        <Image
+          src={heroOnboarding}
+          alt="TUFF onboarding mascot"
+          fill
+          priority
+          sizes="(min-width: 1024px) 288px, (min-width: 640px) 224px, 176px"
+          className="object-contain object-bottom drop-shadow-2xl"
+        />
+      </div>
+
+      <section className="relative z-10 mx-auto flex min-h-[calc(100dvh-13rem)] w-full max-w-3xl flex-col justify-center sm:min-h-[calc(100dvh-15rem)] lg:min-h-[calc(100dvh-3rem)] lg:pr-64">
+        <div className="rounded-[2rem] border bg-card p-5 shadow-xl sm:p-8">
+          <header className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-extrabold text-muted-foreground">
+                  Step {step + 1} of {stepFields.length}
+                </p>
+                <h1 className="mt-1 text-3xl font-extrabold text-balance sm:text-4xl">
+                  {step === 0 && "Ready to start?"}
+                  {step === 1 && "What should I call you?"}
+                  {step === 2 && "What are we training for?"}
+                  {step === 3 && "What are your stats today?"}
+                </h1>
+              </div>
+              <p className="shrink-0 rounded-full bg-primary px-3 py-1 text-sm font-extrabold text-primary-foreground tabular-nums">
+                {progress}%
+              </p>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </header>
+
+          <div className="pt-8">
               {step === 0 && (
-                <div className="space-y-6">
-                  <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.1, duration: 0.35 }}
-                      className="block"
-                    >
-                      Yesterday, you said tomorrow...
-                    </motion.span>
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 1.0, duration: 0.35 }}
-                      className="mt-3 block"
-                    >
-                      Now&apos;s the time to prove something to yourself.
-                    </motion.span>
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 1.9, duration: 0.35 }}
-                      className="mt-3 block text-primary"
-                    >
-                      Lock in. Let&apos;s build your new baseline.
-                    </motion.span>
-                  </h1>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 2.4, duration: 0.3 }}
+                <div className="max-w-2xl space-y-8">
+                  <div className="space-y-4">
+                    <p className="inline-flex items-center rounded-full bg-primary px-4 py-2 text-sm font-extrabold text-primary-foreground">
+                      2 minutes to set up
+                    </p>
+                    <h2 className="text-4xl font-extrabold text-balance sm:text-5xl">
+                      I just need four quick answers.
+                    </h2>
+                    <p className="max-w-xl text-lg font-medium text-muted-foreground text-pretty">
+                      Name, promise, training setup, and starting numbers. Then
+                      you are in.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="h-14 px-7 text-base"
+                    onClick={goNext}
                   >
-                    <Button size="lg" className="h-12 px-8 text-base font-semibold" onClick={goNext}>
-                      I&apos;m ready
-                    </Button>
-                  </motion.div>
+                    I&apos;m ready
+                    <ArrowRight className="size-5" />
+                  </Button>
                 </div>
               )}
 
               {step === 1 && (
-                <div className="space-y-6">
-                  <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                    Do you wish to be 1% better every day?
-                  </h1>
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                    <Button
-                      size="lg"
-                      className="h-12 px-8 text-base font-semibold"
-                      onClick={() => {
-                        form.setValue("onboardingPromiseAccepted", true);
-                        setStep(2);
-                      }}
-                    >
-                      YES
-                    </Button>
-                  </motion.div>
+                <div className="grid gap-5">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FieldError message={form.formState.errors.firstName?.message}>
+                      <Input
+                        placeholder="First name"
+                        aria-invalid={!!form.formState.errors.firstName}
+                        {...form.register("firstName")}
+                      />
+                    </FieldError>
+                    {showLastNameField ? (
+                      <Input
+                        placeholder="Last name (optional)"
+                        {...form.register("lastName")}
+                      />
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 justify-start px-4 text-muted-foreground"
+                        onClick={() => setShowLastNameField(true)}
+                      >
+                        Add last name
+                      </Button>
+                    )}
+                  </div>
+                  <FieldError
+                    message={form.formState.errors.selfMotivationNote?.message}
+                  >
+                    <Textarea
+                      rows={4}
+                      maxLength={280}
+                      placeholder="Write one short promise to future you."
+                      aria-invalid={
+                        !!form.formState.errors.selfMotivationNote
+                      }
+                      {...form.register("selfMotivationNote")}
+                    />
+                  </FieldError>
+                  <div className="flex justify-end text-xs font-bold text-muted-foreground tabular-nums">
+                    {(selfMotivationNote || "").length}/280
+                  </div>
                 </div>
               )}
 
               {step === 2 && (
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                    Hi, what should I call you?
-                  </h2>
-                  <Input placeholder="First name" className="h-12 text-base" {...form.register("firstName")} />
-                  {form.formState.errors.firstName && (
-                    <p className="text-sm text-destructive">{form.formState.errors.firstName.message}</p>
-                  )}
-                  {showLastNameField ? (
-                    <Input
-                      placeholder="Last name (optional)"
-                      className="h-12 text-base"
-                      {...form.register("lastName")}
-                    />
-                  ) : (
-                    <Button type="button" variant="ghost" className="px-0 text-muted-foreground" onClick={() => setShowLastNameField(true)}>
-                      Add last name (optional)
-                    </Button>
-                  )}
+                <div className="space-y-8">
+                  <div>
+                    <p className="mb-3 text-sm font-extrabold text-muted-foreground">
+                      Main goal
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {fitnessGoalValues.map((goal) => {
+                        const selected = selectedGoal === goal;
+                        return (
+                          <button
+                            key={goal}
+                            type="button"
+                            className={cn(
+                              "rounded-3xl border bg-card p-4 text-left shadow-xs transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.99]",
+                              selected &&
+                                "border-primary bg-primary text-primary-foreground shadow-md",
+                            )}
+                            onClick={() =>
+                              form.setValue("fitnessGoal", goal, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              })
+                            }
+                          >
+                            <span className="flex items-center justify-between gap-3">
+                              <span className="text-base font-extrabold">
+                                {goalLabels[goal]}
+                              </span>
+                              {selected && <Check className="size-5" />}
+                            </span>
+                            <span
+                              className={cn(
+                                "mt-2 block text-sm font-medium text-muted-foreground text-pretty",
+                                selected && "text-primary-foreground/75",
+                              )}
+                            >
+                              {goalDescriptions[goal]}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <InlineError message={form.formState.errors.fitnessGoal?.message} />
+                  </div>
+
+                  <div>
+                    <p className="mb-3 text-sm font-extrabold text-muted-foreground">
+                      Training access
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Button
+                        type="button"
+                        size="lg"
+                        variant={hasGymAccess === true ? "default" : "outline"}
+                        className="h-16 justify-start rounded-3xl px-5 text-base"
+                        onClick={() =>
+                          form.setValue("hasGymAccess", true, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
+                      >
+                        <Dumbbell className="size-5" />
+                        Gym access
+                      </Button>
+                      <Button
+                        type="button"
+                        size="lg"
+                        variant={hasGymAccess === false ? "default" : "outline"}
+                        className="h-16 justify-start rounded-3xl px-5 text-base"
+                        onClick={() =>
+                          form.setValue("hasGymAccess", false, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
+                      >
+                        <Home className="size-5" />
+                        Home workouts
+                      </Button>
+                    </div>
+                    <InlineError message={form.formState.errors.hasGymAccess?.message} />
+                  </div>
                 </div>
               )}
 
               {step === 3 && (
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                    Remember when you said you&apos;d lock in? well, make a promise right here to yourself.
-                  </h2>
-                  <Textarea
-                    rows={5}
-                    maxLength={280}
-                    placeholder="A short reminder for future you..."
-                    className="text-base"
-                    {...form.register("selfMotivationNote")}
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{form.formState.errors.selfMotivationNote?.message}</span>
-                    <span>{(selfMotivationNote || "").length}/280</span>
-                  </div>
-                </div>
-              )}
-
-              {step === 4 && (
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">What are your main goals?</h2>
-                  <div className="grid gap-3">
-                    {fitnessGoalValues.map((goal) => {
-                      const selected = selectedGoal === goal;
-                      return (
-                        <Button
-                          key={goal}
-                          type="button"
-                          variant={selected ? "default" : "outline"}
-                          className="h-11 justify-start text-base"
-                          onClick={() => form.setValue("fitnessGoal", goal)}
-                        >
-                          {goalLabels[goal]}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  {form.formState.errors.fitnessGoal && (
-                    <p className="text-sm text-destructive">{form.formState.errors.fitnessGoal.message}</p>
-                  )}
-                </div>
-              )}
-
-              {step === 5 && (
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Do you have access to a gym?</h2>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Button
-                      type="button"
-                      size="lg"
-                      variant={hasGymAccess === true ? "default" : "outline"}
-                      onClick={() => form.setValue("hasGymAccess", true)}
-                    >
-                      Yes
-                    </Button>
-                    <Button
-                      type="button"
-                      size="lg"
-                      variant={hasGymAccess === false ? "default" : "outline"}
-                      onClick={() => form.setValue("hasGymAccess", false)}
-                    >
-                      No
-                    </Button>
-                  </div>
-                  {form.formState.errors.hasGymAccess && (
-                    <p className="text-sm text-destructive">{form.formState.errors.hasGymAccess.message}</p>
-                  )}
-                </div>
-              )}
-
-              {step === 6 && (
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">How old are you?</h2>
-                  <Input type="number" inputMode="numeric" placeholder="Age" className="h-12 text-base" {...form.register("age")} />
-                  {form.formState.errors.age && (
-                    <p className="text-sm text-destructive">{form.formState.errors.age.message}</p>
-                  )}
-                </div>
-              )}
-
-              {step === 7 && (
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">What&apos;s your current weight (kg)?</h2>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.1"
-                    placeholder="Weight in kg"
-                    className="h-12 text-base"
-                    {...form.register("weight")}
-                  />
-                  {form.formState.errors.weight && (
-                    <p className="text-sm text-destructive">{form.formState.errors.weight.message}</p>
-                  )}
-                </div>
-              )}
-
-              {step === 8 && (
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">What&apos;s your height (cm)?</h2>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="Height in cm"
-                    className="h-12 text-base"
-                    {...form.register("height")}
-                  />
-                  {form.formState.errors.height && (
-                    <p className="text-sm text-destructive">{form.formState.errors.height.message}</p>
-                  )}
-                </div>
-              )}
-
-              {step === 9 && (
                 <div className="space-y-6">
-                  <motion.h2
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35 }}
-                    className="text-3xl font-semibold tracking-tight sm:text-4xl"
-                  >
-                    You don&apos;t have to have it all figure out today, you just have to start...
-                  </motion.h2>
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.28, duration: 0.3 }}
-                    className="text-sm text-muted-foreground"
-                  >
-                    Start now. Momentum will handle the rest.
-                  </motion.p>
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.55, duration: 0.25 }}
-                  >
-                    <Button
-                      type="button"
-                      size="lg"
-                      className="h-12 px-8 text-base font-semibold"
-                      onClick={submitOnboarding}
-                      disabled={finishMutation.isPending}
-                    >
-                      {finishMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving
-                        </>
-                      ) : (
-                        "Let's do it!"
-                      )}
-                    </Button>
-                  </motion.div>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <FieldError message={form.formState.errors.age?.message}>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="Age"
+                        aria-invalid={!!form.formState.errors.age}
+                        {...form.register("age")}
+                      />
+                    </FieldError>
+                    <FieldError message={form.formState.errors.weight?.message}>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.1"
+                        placeholder="Weight kg"
+                        aria-invalid={!!form.formState.errors.weight}
+                        {...form.register("weight")}
+                      />
+                    </FieldError>
+                    <FieldError message={form.formState.errors.height?.message}>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        placeholder="Height cm"
+                        aria-invalid={!!form.formState.errors.height}
+                        {...form.register("height")}
+                      />
+                    </FieldError>
+                  </div>
+                  <div className="rounded-3xl border bg-card p-5 shadow-xs">
+                    <p className="text-lg font-extrabold text-balance">
+                      That is enough for your first baseline.
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-muted-foreground text-pretty">
+                      You can refine preferences later. For now, I can match the
+                      plan to your goal and where you train.
+                    </p>
+                  </div>
                 </div>
               )}
-            </motion.div>
-          </AnimatePresence>
-        </section>
+          </div>
 
-        {step > 0 && step !== 1 && !isLastStep && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="mt-8 flex items-center justify-between"
-          >
-            <Button type="button" variant="ghost" onClick={goBack}>
-              Back
-            </Button>
-            <Button type="button" onClick={goNext}>
-              Next
-            </Button>
-          </motion.div>
-        )}
-      </div>
+          {step > 0 && (
+            <footer className="mt-8 flex items-center justify-between gap-3 border-t pt-5">
+              <Button type="button" variant="ghost" onClick={goBack}>
+                <ArrowLeft className="size-4" />
+                Back
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                className="min-w-32"
+                onClick={isLastStep ? submitOnboarding : goNext}
+                disabled={finishMutation.isPending}
+              >
+                {finishMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Saving
+                  </>
+                ) : isLastStep ? (
+                  <>
+                    Start training
+                    <ArrowRight className="size-4" />
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </Button>
+            </footer>
+          )}
+        </div>
+      </section>
     </main>
   );
+}
+
+function FieldError({
+  children,
+  message,
+}: {
+  children: React.ReactNode;
+  message?: string;
+}) {
+  return (
+    <label className="block space-y-2">
+      {children}
+      <InlineError message={message} />
+    </label>
+  );
+}
+
+function InlineError({ message }: { message?: string }) {
+  if (!message) return null;
+
+  return <p className="text-sm font-bold text-destructive">{message}</p>;
 }

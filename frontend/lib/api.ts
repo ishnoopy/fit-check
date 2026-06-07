@@ -2,16 +2,6 @@ import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
 
 
-/**
- * Determines the backend URL:
- * - In development, use the backend container/port (3000 frontend, 4000 backend)
- * - In production, use relative paths (Nginx reverse proxy)
- */
-const BASE_URL =
-  process.env.NODE_ENV === "development"
-    ? process.env.NEXT_PUBLIC_API_URL || "http://backend:4000"
-    : "";
-
 /** Fetch options */
 interface FetchOptions extends RequestInit {
   credentials?: RequestCredentials;
@@ -28,7 +18,7 @@ async function refreshAuthToken(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const refreshRes = await fetch(`${BASE_URL}/api/auth/refresh`, {
+        const refreshRes = await fetch("/api/auth/refresh", {
           method: "POST",
           credentials: "include",
           headers: {
@@ -83,16 +73,17 @@ export async function apiFetch<T = unknown>(
   const maxRetries = 3;
   const isRefreshEndpoint = url === "/api/auth/refresh";
 
+  const isFormData = options.body instanceof FormData;
   const config: FetchOptions = {
     ...options,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...options.headers,
     },
   };
 
-  const res = await fetch(`${BASE_URL}${url}`, config);
+  const res = await fetch(url, config);
 
   // Handle unauthorized responses by refreshing once, regardless of the backend's
   // exact 401 message ("Unauthorized", "Token expired", "Invalid token", etc.).
@@ -158,5 +149,11 @@ export const api = {
   delete: <T = unknown>(url: string) =>
     apiFetch<T>(url, {
       method: "DELETE",
+    }),
+
+  postForm: <T = unknown>(url: string, data: FormData) =>
+    apiFetch<T>(url, {
+      method: "POST",
+      body: data,
     }),
 };

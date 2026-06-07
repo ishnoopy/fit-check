@@ -29,7 +29,7 @@ import { motion } from "framer-motion";
 import { AlertCircleIcon, FlameIcon, Shield, TargetIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUser } from "../../providers";
 import hero from "@/assets/hero.png"
 
@@ -257,6 +257,30 @@ export default function DashboardPage() {
     gridTemplateRows: `repeat(7, ${ACTIVITY_TILE_SIZE}px)`,
     rowGap: `${ACTIVITY_TILE_GAP}px`,
   };
+
+  const activityScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = activityScrollRef.current;
+    if (!container || activityMonthLabels.length === 0) return;
+
+    const currentYear = new Date().getFullYear();
+    if (selectedActivityYear !== currentYear) return;
+
+    const currentMonthShort = new Date().toLocaleDateString("en-US", {
+      month: "short",
+    });
+    const currentMonthLabel = activityMonthLabels.find(
+      (label) => label.month === currentMonthShort,
+    );
+    if (!currentMonthLabel) return;
+
+    // weekday label column is 2.5rem (40px) + gap-2 (8px) = 48px
+    const labelOffset = 48;
+    const columnWidth = ACTIVITY_TILE_SIZE + ACTIVITY_TILE_GAP;
+    const monthX = labelOffset + (currentMonthLabel.column - 1) * columnWidth;
+    container.scrollLeft = monthX - container.clientWidth / 2;
+  }, [activityMonthLabels, selectedActivityYear]);
 
   // Check if buffer is being used
   const isBufferActive = bufferDaysUsed > 0;
@@ -534,7 +558,7 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="overflow-x-auto pb-1">
+              <div ref={activityScrollRef} className="overflow-x-auto pb-1">
                 <div className="w-max space-y-1">
                   <div className="grid grid-cols-[2.5rem_auto] gap-2">
                     <div />

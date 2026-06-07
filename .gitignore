@@ -21,3 +21,6 @@ npm-debug.log*
 
 # Docker volumes
 mongo_data/
+
+node_modules/
+.playwright-mcp

@@ -96,7 +96,13 @@ export const useGetTodayLogs = (
   >,
 ) => {
   return useQuery({
-    queryKey: ["todayLogs", params.activePlanId, params.activeWorkoutId],
+    queryKey: [
+      "todayLogs",
+      params.activePlanId,
+      params.activeWorkoutId,
+      params.startOfDay.toISOString(),
+      params.endOfDay.toISOString(),
+    ],
     queryFn: () => getTodayLogs(params),
     enabled: !!params.activePlanId && !!params.activeWorkoutId,
     select: (data) => data.data,

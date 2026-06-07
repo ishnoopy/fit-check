@@ -1,7 +1,4 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { config } from "../config.js";
-import { s3 } from "../lib/s3.js";
 import type { IPost } from "../models/post.model.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
 import * as followRepository from "../repositories/follow.repository.js";
@@ -41,12 +38,8 @@ function toMediaKind(mimeType: string): "image" | "gif" | "video" {
   return "image";
 }
 
-async function buildMediaUrl(s3Key: string) {
-  const command = new GetObjectCommand({
-    Bucket: config.AWS_S3_BUCKET_NAME,
-    Key: s3Key,
-  });
-  return getSignedUrl(s3, command, { expiresIn: 3600 });
+function buildMediaUrl(s3Key: string) {
+  return `/api/media/${s3Key}`;
 }
 
 async function enrichPosts(posts: Awaited<ReturnType<typeof postRepository.findByUserId>>, viewerId: string) {
@@ -79,7 +72,7 @@ async function enrichPosts(posts: Awaited<ReturnType<typeof postRepository.findB
       const upload = post.mediaUploadId
         ? uploadsById.get(post.mediaUploadId as string)
         : undefined;
-      const mediaUrl = upload ? await buildMediaUrl(upload.s3Key) : null;
+      const mediaUrl = upload ? buildMediaUrl(upload.s3Key) : null;
 
       return {
         ...post,
@@ -144,7 +137,7 @@ export async function createPostService(
   });
 
   const author = await userRepository.findOne({ id: userId });
-  const mediaUrl = upload ? await buildMediaUrl(upload.s3Key) : null;
+  const mediaUrl = upload ? buildMediaUrl(upload.s3Key) : null;
 
   return {
     ...post,

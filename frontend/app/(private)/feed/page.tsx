@@ -97,41 +97,10 @@ const getUserSearch = (query: string, limit = 8) =>
   );
 
 async function uploadMedia(file: File) {
-  const presignRes = await api.post<{
-    data: { url: string; fields: Record<string, string>; key: string };
-  }>("/api/upload/presign", {
-    fileName: file.name,
-    fileType: file.type,
-    fileSize: file.size,
-  });
-
-  const { url, fields, key } = presignRes.data;
   const formData = new FormData();
-
-  for (const [fieldKey, value] of Object.entries(fields)) {
-    formData.append(fieldKey, value);
-  }
   formData.append("file", file);
-
-  const uploadRes = await fetch(url, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!uploadRes.ok) {
-    throw new Error("Failed to upload media");
-  }
-
-  const fileRecord = await api.post<{
-    data: { id: string };
-  }>("/api/upload/files", {
-    s3Key: key,
-    mimeType: file.type,
-    fileName: file.name,
-    fileSize: file.size,
-  });
-
-  return fileRecord.data.id;
+  const response = await api.postForm<{ data: { id: string } }>("/api/upload", formData);
+  return response.data.id;
 }
 
 export default function FeedPage() {
@@ -200,6 +169,40 @@ export default function FeedPage() {
 
   const heartMutation = useMutation({
     mutationFn: (postId: string) => toggleHeart(postId),
+    onMutate: async (postId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["feed"] });
+
+      const queries = queryClient.getQueriesData<FeedResponse>({
+        queryKey: ["feed"],
+      });
+
+      const previousData = new Map(queries);
+
+      for (const [queryKey, queryValue] of queries) {
+        if (!queryValue) continue;
+
+        const post = queryValue.data.find((p) => p.id === postId);
+        if (!post) continue;
+
+        const newIsHearted = !post.isHeartedByMe;
+        const newHeartCount = newIsHearted ? post.heartCount + 1 : post.heartCount - 1;
+
+        queryClient.setQueryData<FeedResponse>(queryKey, {
+          ...queryValue,
+          data: queryValue.data.map((p) =>
+            p.id === postId
+              ? {
+                ...p,
+                heartCount: newHeartCount,
+                isHeartedByMe: newIsHearted,
+              }
+              : p,
+          ),
+        });
+      }
+
+      return previousData;
+    },
     onSuccess: (response: ToggleHeartResponse) => {
       const { postId, heartCount, isHearted } = response.data;
       const queries = queryClient.getQueriesData<FeedResponse>({
@@ -222,7 +225,12 @@ export default function FeedPage() {
         });
       }
     },
-    onError: (error) => {
+    onError: (error, postId, context) => {
+      if (context instanceof Map) {
+        for (const [queryKey, queryValue] of context) {
+          queryClient.setQueryData(queryKey, queryValue);
+        }
+      }
       toast.error(error instanceof Error ? error.message : "Failed to update heart");
     },
   });

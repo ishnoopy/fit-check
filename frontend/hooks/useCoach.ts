@@ -9,10 +9,6 @@ import type {
 } from "@/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const BASE_URL =
-  process.env.NODE_ENV === "development"
-    ? process.env.NEXT_PUBLIC_API_URL || "http://backend:4000"
-    : "";
 const ACTIVE_CONVERSATION_STORAGE_KEY = "coachActiveConversationId";
 
 interface UseCoachReturn {
@@ -256,7 +252,7 @@ export function useCoach(): UseCoachReturn {
       };
 
       try {
-        const response = await fetch(`${BASE_URL}/api/coach/chat`, {
+        const response = await fetch("/api/coach/chat", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

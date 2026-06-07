@@ -1,5 +1,8 @@
 {
   "scripts": {
-    "dev": "pnpm -r --parallel run dev"
+    "dev": "sh scripts/dev.sh"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["bcrypt", "esbuild", "sharp", "unrs-resolver"]
   }
 }

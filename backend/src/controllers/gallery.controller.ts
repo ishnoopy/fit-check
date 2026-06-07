@@ -1,10 +1,6 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { config } from "../config.js";
-import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
 import * as userRepository from "../repositories/user.repository.js";
 import * as galleryService from "../services/gallery.service.js";
@@ -18,27 +14,14 @@ export async function getGalleryImages(c: Context) {
 
   const fileUploads = await fileUploadRepository.findByUserId(userId);
 
-  const imagesWithUrls = await Promise.all(
-    fileUploads
-      .filter((upload) => upload.mimeType.startsWith("image/"))
-      .map(async (upload) => {
-        const command = new GetObjectCommand({
-          Bucket: config.AWS_S3_BUCKET_NAME,
-          Key: upload.s3Key,
-        });
-
-        const downloadUrl = await getSignedUrl(s3, command, {
-          expiresIn: 3600,
-        });
-
-        return {
-          id: upload.id,
-          url: downloadUrl,
-          caption: upload.fileName,
-          createdAt: upload.createdAt,
-        };
-      }),
-  );
+  const imagesWithUrls = fileUploads
+    .filter((upload) => upload.mimeType.startsWith("image/"))
+    .map((upload) => ({
+      id: upload.id,
+      url: `/api/media/${upload.s3Key}`,
+      caption: upload.fileName,
+      createdAt: upload.createdAt,
+    }));
 
   return c.json(
     {
@@ -77,27 +60,14 @@ export async function getGalleryImagesByUsername(c: Context) {
 
   const fileUploads = await fileUploadRepository.findByUserId(user.id);
 
-  const imagesWithUrls = await Promise.all(
-    fileUploads
-      .filter((upload) => upload.mimeType.startsWith("image/"))
-      .map(async (upload) => {
-        const command = new GetObjectCommand({
-          Bucket: config.AWS_S3_BUCKET_NAME,
-          Key: upload.s3Key,
-        });
-
-        const downloadUrl = await getSignedUrl(s3, command, {
-          expiresIn: 3600,
-        });
-
-        return {
-          id: upload.id,
-          url: downloadUrl,
-          caption: upload.fileName,
-          createdAt: upload.createdAt,
-        };
-      }),
-  );
+  const imagesWithUrls = fileUploads
+    .filter((upload) => upload.mimeType.startsWith("image/"))
+    .map((upload) => ({
+      id: upload.id,
+      url: `/api/media/${upload.s3Key}`,
+      caption: upload.fileName,
+      createdAt: upload.createdAt,
+    }));
 
   return c.json(
     {

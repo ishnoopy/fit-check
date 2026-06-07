@@ -1,3 +1,14 @@
+# --- Dev Stage ---
+FROM node:20-alpine AS dev
+WORKDIR /app
+
+RUN npm install -g pnpm@9.15.0
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+CMD ["pnpm", "dev"]
+
 # --- Builder Stage ---
 FROM node:20-alpine AS builder
 WORKDIR /app
@@ -12,9 +23,8 @@ RUN pnpm install --frozen-lockfile
 # Copy source code and build
 COPY . .
 
-
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG API_URL
+ENV API_URL=$API_URL
 
 RUN pnpm build
 

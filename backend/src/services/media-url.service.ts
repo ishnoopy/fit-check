@@ -1,8 +1,3 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { config } from "../config.js";
-import { s3 } from "../lib/s3.js";
-
 function isS3Key(value: string) {
   return value.startsWith("uploads/");
 }
@@ -16,10 +11,5 @@ export async function resolveMediaUrl(value?: string | null) {
     return value;
   }
 
-  const command = new GetObjectCommand({
-    Bucket: config.AWS_S3_BUCKET_NAME,
-    Key: value,
-  });
-
-  return getSignedUrl(s3, command, { expiresIn: 3600 });
+  return `/api/media/${value}`;
 }

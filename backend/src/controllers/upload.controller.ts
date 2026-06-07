@@ -1,9 +1,10 @@
-import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
-import { z } from "zod";
 import { config } from "../config.js";
 import { s3 } from "../lib/s3.js";
 import * as fileUploadRepository from "../repositories/file-upload.repository.js";
@@ -12,19 +13,6 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "../utils/errors.js";
-
-const presignSchema = z.object({
-  fileName: z.string(),
-  fileType: z.string(),
-  fileSize: z.number().positive().optional(),
-});
-
-const createFileUploadSchema = z.object({
-  s3Key: z.string(),
-  mimeType: z.string(),
-  fileName: z.string(),
-  fileSize: z.number().positive().optional(),
-});
 
 const DEFAULT_POST_MEDIA_MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED_UPLOAD_TYPES = [
@@ -86,92 +74,87 @@ function getPostMediaMaxBytes() {
 }
 
 /**
- * Generate a presigned URL for uploading a file to S3
+ * Accept a multipart file upload, store it in MinIO, and record it in the database.
  */
-export async function generatePresignedUploadUrl(c: Context) {
-  const body = await c.req.json();
-  const validation = await presignSchema.safeParseAsync(body);
-
-  if (!validation.success) {
-    throw new BadRequestError(validation.error);
-  }
-
+export async function uploadFile(c: Context) {
   const userId = c.get("user").id;
-  const { fileName, fileType, fileSize } = validation.data;
   const maxFileSize = getPostMediaMaxBytes();
 
-  if (!ALLOWED_UPLOAD_TYPES.includes(fileType)) {
-    return c.json({ message: "Invalid file type" }, 400);
+  const body = await c.req.parseBody();
+  const file = body["file"];
+
+  if (!(file instanceof File)) {
+    throw new BadRequestError("A file field is required");
   }
 
-  if (fileSize && fileSize > maxFileSize) {
-    return c.json({ message: "File size exceeds the allowed 5MB limit" }, 400);
+  if (!ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+    throw new BadRequestError("Invalid file type");
   }
 
-  const safeFileName = sanitizeFileName(fileName);
+  if (file.size > maxFileSize) {
+    throw new BadRequestError("File size exceeds the allowed 5MB limit");
+  }
+
+  const safeFileName = sanitizeFileName(file.name);
   const key = `${getUserUploadPrefix(userId)}${crypto.randomUUID()}-${safeFileName}`;
 
-  const presignedPost = await createPresignedPost(s3, {
-    Bucket: config.AWS_S3_BUCKET_NAME,
-    Key: key,
-    Conditions: [
-      ["content-length-range", 0, maxFileSize],
-      ["eq", "$Content-Type", fileType],
-    ],
-    Fields: {
-      "Content-Type": fileType,
-    },
-    Expires: 60,
+  const arrayBuffer = await file.arrayBuffer();
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: config.AWS_S3_BUCKET_NAME,
+      Key: key,
+      Body: Buffer.from(arrayBuffer),
+      ContentType: file.type,
+      ContentLength: file.size,
+    }),
+  );
+
+  const fileUpload = await fileUploadRepository.createFileUpload({
+    userId,
+    s3Key: key,
+    fileName: file.name,
+    mimeType: file.type,
+    fileSize: file.size,
   });
 
-  return c.json(
-    {
-      success: true,
-      data: {
-        url: presignedPost.url,
-        fields: presignedPost.fields,
-        key,
-      },
-    },
-    StatusCodes.OK,
-  );
+  return c.json({ success: true, data: fileUpload }, StatusCodes.CREATED);
 }
 
 /**
- * Generate a presigned URL for downloading a file from S3
+ * Stream a file from MinIO by its S3 key. Public — no auth required.
  */
-export async function generatePresignedDownloadUrl(c: Context) {
-  const userId = c.get("user").id;
-  const key = c.req.param("key");
+export async function serveMedia(c: Context) {
+  const key = decodeURIComponent(c.req.path.replace("/api/media/", ""));
 
-  if (!key) {
-    throw new BadRequestError("Missing required parameter: key");
+  if (!key.startsWith("uploads/") || key.includes("..")) {
+    throw new NotFoundError("Media not found");
   }
 
-  const upload = await getOwnedUploadByKey(userId, key);
-
-  const command = new GetObjectCommand({
-    Bucket: config.AWS_S3_BUCKET_NAME,
-    Key: upload.s3Key,
-  });
-
-  const downloadUrl = await getSignedUrl(s3, command, {
-    expiresIn: 60,
-  });
-
-  return c.json(
-    {
-      success: true,
-      data: {
-        downloadUrl,
-      },
-    },
-    StatusCodes.OK,
+  const response = await s3.send(
+    new GetObjectCommand({
+      Bucket: config.AWS_S3_BUCKET_NAME,
+      Key: key,
+    }),
   );
+
+  if (!response.Body) {
+    throw new NotFoundError("Media not found");
+  }
+
+  const stream = response.Body.transformToWebStream();
+
+  return c.body(stream, StatusCodes.OK, {
+    "Content-Type": response.ContentType ?? "application/octet-stream",
+    "Cache-Control": "public, max-age=31536000, immutable",
+    ...(response.ContentLength
+      ? { "Content-Length": String(response.ContentLength) }
+      : {}),
+  });
 }
 
 /**
- * Delete a file from S3 and remove its metadata from the database
+ * Delete a file from MinIO and remove its metadata from the database.
  */
 export async function deleteFile(c: Context) {
   const userId = c.get("user").id;
@@ -183,66 +166,14 @@ export async function deleteFile(c: Context) {
 
   const upload = await getOwnedUploadByKey(userId, key);
 
-  const command = new DeleteObjectCommand({
-    Bucket: config.AWS_S3_BUCKET_NAME,
-    Key: upload.s3Key,
-  });
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: config.AWS_S3_BUCKET_NAME,
+      Key: upload.s3Key,
+    }),
+  );
 
-  await s3.send(command);
   await fileUploadRepository.deleteByS3Key(upload.s3Key);
 
-  return c.json(
-    {
-      success: true,
-      message: "File deleted successfully",
-    },
-    StatusCodes.OK,
-  );
-}
-
-/**
- * Create a file upload record in the database after a successful S3 upload
- */
-export async function createFileUpload(c: Context) {
-  const body = await c.req.json();
-  const validation = await createFileUploadSchema.safeParseAsync(body);
-
-  if (!validation.success) {
-    throw new BadRequestError(validation.error);
-  }
-
-  const userId = c.get("user").id;
-  const { s3Key, mimeType, fileName, fileSize } = validation.data;
-  const maxFileSize = getPostMediaMaxBytes();
-  const decodedS3Key = decodeURIComponent(s3Key);
-
-  if (!decodedS3Key.startsWith(getUserUploadPrefix(userId))) {
-    throw new ForbiddenError(
-      "You can only register files from your own upload scope",
-    );
-  }
-
-  if (!ALLOWED_UPLOAD_TYPES.includes(mimeType)) {
-    throw new BadRequestError("Invalid file type");
-  }
-
-  if (fileSize && fileSize > maxFileSize) {
-    throw new BadRequestError("File size exceeds the allowed 5MB limit");
-  }
-
-  const fileUpload = await fileUploadRepository.createFileUpload({
-    userId,
-    s3Key: decodedS3Key,
-    fileName,
-    mimeType,
-    fileSize,
-  });
-
-  return c.json(
-    {
-      success: true,
-      data: fileUpload,
-    },
-    StatusCodes.CREATED,
-  );
+  return c.json({ success: true, message: "File deleted successfully" }, StatusCodes.OK);
 }

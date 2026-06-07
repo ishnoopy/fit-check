@@ -1,5 +1,6 @@
 "use client";
 
+import postSessionMascot from "@/assets/hero-post-session.png";
 import { PageHeader } from "@/components/PageHeader";
 import {
   Accordion,
@@ -48,7 +49,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { formatInTimeZone, toZonedTime } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlertCircleIcon,
   CheckCircle2,
@@ -59,7 +61,9 @@ import {
   Timer,
   XIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -133,6 +137,100 @@ const DEFAULT_SETS = [
   },
 ];
 
+const CHEER_MESSAGES = [
+  "Set logged. You chose strength today.",
+  "You moved the needle. Stronger is the new baseline.",
+  "That lift had your name on it. Respect.",
+  "You showed up and did the work. Champion energy.",
+  "Another rep in the bank. Future you is flexing.",
+  "That was clean. Be proud of that effort.",
+  "You didn't just train, you leveled up.",
+  "Own that finish. You earned it.",
+];
+
+type CheerMoment = {
+  id: number;
+  message: string;
+};
+
+function PostSessionCheer({ cheer }: { cheer: CheerMoment | null }) {
+  const shouldReduceMotion = useReducedMotion();
+
+  return (
+    <AnimatePresence>
+      {cheer && (
+        <motion.div
+          key={cheer.id}
+          data-testid="post-session-cheer"
+          className="pointer-events-none fixed left-1 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-[70] flex max-w-[calc(100vw-0.5rem)] items-end gap-1 sm:left-5 sm:bottom-5 sm:gap-3"
+          initial={
+            shouldReduceMotion
+              ? { opacity: 0 }
+              : { opacity: 0, x: -76, y: 28, rotate: -8, scale: 0.88 }
+          }
+          animate={
+            shouldReduceMotion
+              ? { opacity: 1 }
+              : {
+                  opacity: 1,
+                  x: 0,
+                  y: [0, -8, 0],
+                  rotate: [-4, 2, 0],
+                  scale: [1, 1.035, 1],
+                }
+          }
+          exit={
+            shouldReduceMotion
+              ? { opacity: 0 }
+              : { opacity: 0, x: -62, y: 34, rotate: -10, scale: 0.9 }
+          }
+          transition={
+            shouldReduceMotion
+              ? { duration: 0.18 }
+              : {
+                  duration: 0.72,
+                  ease: [0.16, 1, 0.3, 1],
+                  y: { duration: 1.1, repeat: 1, ease: "easeInOut" },
+                  scale: { duration: 0.7, ease: "easeOut" },
+                }
+          }
+        >
+          <div className="relative h-[37vw] max-h-48 min-h-36 w-[25vw] min-w-24 max-w-32 shrink-0">
+            <Image
+              src={postSessionMascot}
+              alt="TUFF mascot celebrating"
+              fill
+              sizes="(max-width: 640px) 25vw, 128px"
+              className="object-contain drop-shadow-[0_18px_22px_rgb(29_26_20_/_0.22)]"
+              priority={false}
+            />
+          </div>
+
+          <motion.div
+            className="mb-10 max-w-[15rem] rounded-2xl border-2 border-secondary bg-card px-3 py-2 shadow-lg sm:mb-14 sm:max-w-[16rem] sm:px-4 sm:py-3"
+            initial={
+              shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.82 }
+            }
+            animate={
+              shouldReduceMotion
+                ? { opacity: 1 }
+                : { opacity: 1, scale: [1, 1.06, 1] }
+            }
+            exit={
+              shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }
+            }
+            transition={{ delay: shouldReduceMotion ? 0 : 0.14, duration: 0.3 }}
+          >
+            <p className="text-sm font-black leading-tight text-foreground sm:text-base">
+              {cheer.message}
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function SortableExerciseItem({
   id,
   children,
@@ -175,8 +273,11 @@ function SortableExerciseItem({
 }
 
 export default function LogPage() {
+  const pathname = usePathname();
   const { isTimerRunning, startRestTime } = useTimer();
   const hapticsRef = useRef<WebHaptics | null>(null);
+  const cheerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [cheer, setCheer] = useState<CheerMoment | null>(null);
   const [activePlanId] = useState<string>(
     getItemFromLocalStorage("activePlanId") || "",
   );
@@ -205,8 +306,30 @@ export default function LogPage() {
     return () => {
       hapticsRef.current?.destroy();
       hapticsRef.current = null;
+      if (cheerTimeoutRef.current) {
+        clearTimeout(cheerTimeoutRef.current);
+      }
     };
   }, []);
+
+  const showPostSessionCheer = () => {
+    const message =
+      CHEER_MESSAGES[Math.floor(Math.random() * CHEER_MESSAGES.length)];
+
+    setCheer({
+      id: Date.now(),
+      message,
+    });
+
+    if (cheerTimeoutRef.current) {
+      clearTimeout(cheerTimeoutRef.current);
+    }
+
+    cheerTimeoutRef.current = setTimeout(() => {
+      setCheer(null);
+      cheerTimeoutRef.current = null;
+    }, 3000);
+  };
 
   const triggerErrorHapticFeedback = () => {
     void hapticsRef.current?.trigger("error");
@@ -322,17 +445,33 @@ export default function LogPage() {
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(nowInUserTz);
     endOfDay.setHours(23, 59, 59, 999);
-    return { startOfDay, endOfDay };
+    return {
+      startOfDay: fromZonedTime(startOfDay, userTimezone),
+      endOfDay: fromZonedTime(endOfDay, userTimezone),
+    };
   };
 
   const { startOfDay, endOfDay } = getTodayDateRange();
 
-  const { data: todayLogs } = useGetTodayLogs({
-    activePlanId,
-    activeWorkoutId,
-    startOfDay,
-    endOfDay,
-  });
+  const { data: todayLogs, refetch: refetchTodayLogs } = useGetTodayLogs(
+    {
+      activePlanId,
+      activeWorkoutId,
+      startOfDay,
+      endOfDay,
+    },
+    {
+      refetchOnMount: "always",
+    },
+  );
+
+  useEffect(() => {
+    if (pathname !== "/log" || !activePlanId || !activeWorkoutId) {
+      return;
+    }
+
+    void refetchTodayLogs();
+  }, [pathname, activePlanId, activeWorkoutId, refetchTodayLogs]);
 
   const { data: latestLogs } = useGetLatestLogs({
     exerciseIds: activeExerciseIds,
@@ -369,6 +508,7 @@ export default function LogPage() {
       }
 
       toast.success("Log created successfully");
+      showPostSessionCheer();
 
       // remove the key from the local storage
       const draftDocumentCollection = getItemFromLocalStorage("logFormDrafts")
@@ -603,6 +743,8 @@ export default function LogPage() {
 
   return (
     <div className="min-h-screen pb-24">
+      <PostSessionCheer cheer={cheer} />
+
       <div className="p-4 max-w-2xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <PageHeader title="Log" subtitle="Finish one exercise at a time" />
