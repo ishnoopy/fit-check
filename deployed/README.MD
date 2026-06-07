@@ -1,199 +1,160 @@
-# Deployment Guide 🚀
+# Deployment Guide
 
-This guide walks you through deploying the Fit-Check application on an AWS EC2 instance with Docker and SSL, _and automating future deployments using GitHub Actions_.
+This guide walks you through deploying the application on an AWS EC2 instance using Docker and Caddy (which handles HTTPS automatically), and automating future deployments via GitHub Actions.
 
 ## Prerequisites
 
-- AWS Account
-- Domain name (e.g., from NameCheap)
-- SSH access to your server
-- [dnschecker.org](https://dnschecker.org) — Check if your DNS is propagated
+- AWS account with an EC2 instance (Ubuntu recommended)
+- A domain name with an A record pointing to your EC2 public IP
+- DNS fully propagated before starting — check with [dnschecker.org](https://dnschecker.org)
 
 ---
 
-## Step 0: Build & Push Docker Images (Mac Users)
+## Step 0: Build & Push Docker Images
 
-**⚠️ Note:** If you're building on Mac (ARM64), you need to build for Linux (AMD64) architecture.
-
-### Build and push frontend image
+If you're building on Mac (Apple Silicon), you need to target Linux AMD64 explicitly.
 
 ```bash
+# Frontend
 docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-frontend:latest --push ./frontend
-```
 
-### Build and push backend image
-
-```bash
+# Backend
 docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-backend:latest --push ./backend
-```
 
-### Verify the images
-
-```bash
-# Check backend image
-docker buildx imagetools inspect ishnoopy/fit-check-backend:latest
-
-# Check frontend image
+# Verify
 docker buildx imagetools inspect ishnoopy/fit-check-frontend:latest
+docker buildx imagetools inspect ishnoopy/fit-check-backend:latest
 ```
 
 ---
 
 ## Step 1: Setup EC2 Instance
 
-### 1.1 Configure Security Rules
+### 1.1 Configure Security Group Inbound Rules
 
-1. Launch an EC2 instance (Ubuntu recommended)
-2. Navigate to **Security Groups** > **Inbound Rules**
-3. Add the following rules:
-   - **Port 22** (SSH)
-   - **Port 80** (HTTP)
-   - **Port 443** (HTTPS)
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 22   | TCP      | SSH     |
+| 80   | TCP      | HTTP (required for SSL challenge) |
+| 443  | TCP      | HTTPS   |
 
-### 1.2 Install Docker & Docker Compose
+### 1.2 Install Docker
 
 SSH into your instance and run:
 
 ```bash
-# Update system
 sudo apt update && sudo apt upgrade -y
-
-# Install Docker prerequisites
 sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
 
-# Add Docker's official GPG key and repository
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Install Docker
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io
 
-# Install Docker Compose
 DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
 sudo curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
-# Enable and start Docker
 sudo systemctl enable docker
 sudo systemctl start docker
-
-# Add your user to docker group
 sudo usermod -aG docker $USER
 newgrp docker
-
-# Verify installation
-docker run hello-world
 ```
 
-**⚠️ Important:** Log out and log back in for group permissions to take effect.
+Log out and back in for group permissions to take effect.
 
 ---
 
-## Step 2: Configure DNS
+## Step 2: Whitelist VPS IP in MongoDB Atlas
 
-1. Go to your domain provider (e.g., **NameCheap**)
-2. Navigate to **Domain List** > **Manage** > **Advanced DNS**
-3. Add an **A Record**:
-   - **Host:** `@` (or your subdomain)
-   - **Value:** Your EC2 instance's public IPv4 address
-   - **TTL:** Automatic
+1. Go to [MongoDB Atlas](https://cloud.mongodb.com) and open your project
+2. Navigate to **Security > Network Access**
+3. Click **Add IP Address**
+4. Enter your EC2 public IP address
+5. Click **Confirm**
+
+Without this, the backend will fail to connect to the database.
 
 ---
 
-## Step 3: Setup Application Files
+## Step 4: Configure DNS
 
-### 3.1 Create Directory Structure
+In your domain provider (e.g. Namecheap), add an A record:
+
+- **Host:** `@` or your subdomain
+- **Value:** EC2 public IPv4 address
+- **TTL:** Automatic
+
+Wait for DNS to propagate before proceeding.
+
+---
+
+## Step 5: Setup Application Files on the Server
 
 ```bash
-mkdir -p ~/app/fit-check/nginx/{conf.d,certs,certbot}
-cd ~/app/fit-check
+mkdir -p ~/app/fit-check && cd ~/app/fit-check
 ```
 
-### 3.2 Create Environment File
+Create the three required files:
 
 ```bash
 nano .env
 ```
-
-Copy the contents from `deployed/env.template` and fill in the values:
-
-- Run `sh scripts/generate-secrets.sh` locally to generate secure secrets
-- Update all placeholder values in `.env`
-
-### 3.3 Create Docker Compose File
+Copy `deployed/env.template` and fill in all values.
 
 ```bash
 nano docker-compose.yml
 ```
-
-Copy the contents from `deployed/docker-compose.yml`
-
-### 3.4 Create Initial Nginx Configuration
+Copy the contents of `deployed/docker-compose.yml`.
 
 ```bash
-nano nginx/conf.d/fit-check.conf
+nano Caddyfile
 ```
-
-Copy the contents from `deployed/nginx.conf` (this is for initial setup without SSL)
+Copy the contents of `deployed/Caddyfile`.
 
 ---
 
-## Step 4: Deploy & Install SSL
+## Step 6: Deploy
 
-### 4.1 Start Services
+Before starting, confirm your domain is fully propagated — check with [dnschecker.org](https://dnschecker.org). Caddy requests an SSL certificate on first start and will fail if the domain doesn't resolve to your server yet.
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-### 4.2 Install SSL Certificate
+Caddy will automatically obtain and configure a Let's Encrypt SSL certificate on first start. No manual SSL setup needed.
 
+To check logs:
 ```bash
-docker compose run --rm certbot
-```
-
-Follow the prompts to install Let's Encrypt SSL certificate.
-
-### 4.3 Update Nginx for HTTPS
-
-```bash
-nano nginx/conf.d/fit-check.conf
-```
-
-Replace the contents with `deployed/nginx-after-installing-ssl.conf`
-
-### 4.4 Reload Nginx
-
-```bash
-docker exec -it nginx nginx -s reload
+docker compose logs -f caddy
 ```
 
 ---
 
-## Step 5: Automated Deployment with GitHub Actions
+## Step 7: Automated Deployment with GitHub Actions
 
-You can automate deployments to your EC2 server using the included GitHub Actions workflow.
+The workflow in `.github/workflows/ci.yml` automatically deploys on push to `main` via SSH.
 
-1. **Open your repository on GitHub.**
-2. Go to **Settings > Secrets and variables > Actions > Repository secrets**.
-3. Add the following secrets (provided by your EC2 setup):
-   - `EC2_HOST` &nbsp; &rarr; your EC2 instance public IP or DNS name
-   - `EC2_USERNAME` &nbsp; &rarr; your SSH username (e.g., `ubuntu`)
-   - `EC2_KEY` &nbsp; &rarr; your **private SSH key** (contents of your `.pem` file; keep this secret!)
+Add these secrets in **GitHub > Settings > Secrets and variables > Actions**:
 
-**Note:** The deployment workflow will run automatically when you push to the `main` branch. The workflow file is at `.github/workflows/ci.yml` and uses SSH to pull the latest images and restart the application via docker-compose.
-
-_You can customize the workflow as desired. For example, you could add build steps or notifications._
+| Secret | Value |
+|--------|-------|
+| `EC2_HOST` | EC2 public IP or DNS |
+| `EC2_USERNAME` | SSH username (e.g. `ubuntu`) |
+| `EC2_KEY` | Contents of your `.pem` private key file |
 
 ---
-
-## 🎉 Done
-
-Your application should now be running at `https://yourdomain.com`
 
 ## Troubleshooting
 
-- **Check logs:** `docker-compose logs -f`
-- **Restart services:** `docker-compose restart`
-- **SSL renewal:** Certbot auto-renews, but you can manually run: `docker compose run --rm certbot renew`
+```bash
+# View all logs
+docker compose logs -f
+
+# Restart all services
+docker compose restart
+
+# Check Caddy specifically
+docker compose logs caddy
+```

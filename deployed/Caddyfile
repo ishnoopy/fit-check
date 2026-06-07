@@ -23,7 +23,13 @@ tuff.ishnoopy.space {
 
     header @html Cache-Control "no-cache"
 
-    reverse_proxy frontend:3000
+    handle /api/* {
+        reverse_proxy backend:4000
+    }
+
+    handle {
+        reverse_proxy frontend:3000
+    }
 
     log {
         output stdout

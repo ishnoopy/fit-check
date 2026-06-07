@@ -34,7 +34,8 @@ services:
       minio:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
+      test:
+        ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
       interval: 30s
       timeout: 3s
       retries: 5
@@ -82,6 +83,9 @@ services:
     depends_on:
       frontend:
         condition: service_started
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     ports:
       - "80:80"
       - "443:443"
