@@ -31,7 +31,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "../../providers";
-import hero from "@/assets/hero.png"
+import hero from "@/assets/hero.png";
 
 const container = {
   hidden: { opacity: 0 },
@@ -72,12 +72,6 @@ const patchNotesDetails = [
       <p className="text-sm text-muted-foreground">
         Update Profile Picture to your own.
       </p>
-    ),
-  },
-  {
-    date: "2026-03-30",
-    element: (
-      <p className="text-sm text-muted-foreground">Revamped profile page.</p>
     ),
   },
 ];
