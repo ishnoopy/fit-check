@@ -12,18 +12,32 @@ This guide walks you through deploying the application on an AWS EC2 instance us
 
 ## Step 0: Build & Push Docker Images
 
+> **Run these from the repository ROOT, not from inside `frontend/` or `backend/`.**
+> Both images build from the workspace root so they share the single root
+> `pnpm-lock.yaml`. The build context is the final `.`, and `-f` points at the
+> service's Dockerfile. (`cd frontend && docker build .` will NOT work anymore —
+> the context must be the repo root.)
+
 If you're building on Mac (Apple Silicon), you need to target Linux AMD64 explicitly.
 
 ```bash
-# Frontend (built from the workspace root so it uses the single root lockfile)
+# From the repo root:
+
+# Frontend
 docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-frontend:latest -f frontend/Dockerfile --push .
 
-# Backend (also built from the workspace root)
+# Backend
 docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-backend:latest -f backend/Dockerfile --push .
 
 # Verify
 docker buildx imagetools inspect ishnoopy/fit-check-frontend:latest
 docker buildx imagetools inspect ishnoopy/fit-check-backend:latest
+```
+
+Or build and push both at once:
+
+```bash
+sh scripts/build-and-push.sh
 ```
 
 ---
