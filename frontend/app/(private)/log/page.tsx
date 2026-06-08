@@ -1329,6 +1329,11 @@ export default function LogPage() {
                                       className="flex-1"
                                       value={set.reps}
                                       items={REP_ITEMS}
+                                      onActivate={() =>
+                                        void hapticsRef.current?.trigger([
+                                          { duration: 20 },
+                                        ])
+                                      }
                                       onChange={(val) => {
                                         setEditSets((prev) =>
                                           prev.map((existingSet, setIndex) =>
@@ -1355,6 +1360,11 @@ export default function LogPage() {
                                         Number.isInteger(v)
                                           ? String(v)
                                           : v.toFixed(1)
+                                      }
+                                      onActivate={() =>
+                                        void hapticsRef.current?.trigger([
+                                          { duration: 20 },
+                                        ])
                                       }
                                       onChange={(val) => {
                                         setEditSets((prev) =>
@@ -1557,6 +1567,9 @@ export default function LogPage() {
                                                       className="flex-1"
                                                       value={set.reps}
                                                       items={REP_ITEMS}
+                                                      onActivate={() =>
+                                                        void hapticsRef.current?.trigger([{ duration: 20 }])
+                                                      }
                                                       onChange={(val) => {
                                                         const sets = field.value?.slice() || [];
                                                         sets[idx] = { ...sets[idx], setNumber: idx + 1, reps: val };
@@ -1575,6 +1588,9 @@ export default function LogPage() {
                                                       value={set.weight}
                                                       items={WEIGHT_ITEMS}
                                                       formatValue={(v) => (Number.isInteger(v) ? String(v) : v.toFixed(1))}
+                                                      onActivate={() =>
+                                                        void hapticsRef.current?.trigger([{ duration: 20 }])
+                                                      }
                                                       onChange={(val) => {
                                                         const sets = field.value?.slice() || [];
                                                         sets[idx] = { ...sets[idx], weight: val };
