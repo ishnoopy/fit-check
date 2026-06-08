@@ -7,10 +7,6 @@ export async function findAll(where: FilterQuery<IWorkout> = {}) {
   const workouts = await WorkoutModel.find(query)
     .populate("exercises.exercise")
     .lean();
-  console.log(
-    "🚀 ~ workout.repository.ts:8 ~ findAll ~ workouts:",
-    JSON.stringify(workouts, null, 2),
-  );
   return toCamelCase(workouts) as IWorkout[];
 }
 

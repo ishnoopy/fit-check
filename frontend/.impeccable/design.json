@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-08T00:00:00.000Z",
+  "title": "Design System: TUFF",
+  "extensions": {
+    "colorMeta": {
+      "champion-gold": {
+        "role": "primary",
+        "displayName": "Champion Gold",
+        "canonical": "oklch(0.84 0.16 86)",
+        "tonalRamp": [
+          "oklch(0.30 0.07 86)",
+          "oklch(0.42 0.10 86)",
+          "oklch(0.54 0.13 86)",
+          "oklch(0.66 0.15 86)",
+          "oklch(0.78 0.16 86)",
+          "oklch(0.84 0.16 86)",
+          "oklch(0.90 0.10 86)",
+          "oklch(0.96 0.04 86)"
+        ]
+      },
+      "espresso-ink": {
+        "role": "neutral",
+        "displayName": "Espresso Ink",
+        "canonical": "oklch(0.18 0.015 75)",
+        "tonalRamp": [
+          "oklch(0.14 0.015 75)",
+          "oklch(0.18 0.015 75)",
+          "oklch(0.26 0.02 75)",
+          "oklch(0.36 0.02 75)",
+          "oklch(0.49 0.02 75)",
+          "oklch(0.62 0.02 75)",
+          "oklch(0.78 0.02 78)",
+          "oklch(0.92 0.015 80)"
+        ]
+      },
+      "chalk-cream": {
+        "role": "neutral",
+        "displayName": "Chalk Cream",
+        "canonical": "oklch(0.955 0.022 83)",
+        "tonalRamp": [
+          "oklch(0.40 0.03 83)",
+          "oklch(0.55 0.035 83)",
+          "oklch(0.70 0.035 83)",
+          "oklch(0.82 0.03 83)",
+          "oklch(0.89 0.035 83)",
+          "oklch(0.93 0.025 83)",
+          "oklch(0.955 0.022 83)",
+          "oklch(0.982 0.018 83)"
+        ]
+      },
+      "ember-orange": {
+        "role": "secondary",
+        "displayName": "Ember Orange",
+        "canonical": "oklch(0.62 0.18 38)",
+        "tonalRamp": [
+          "oklch(0.28 0.09 38)",
+          "oklch(0.38 0.12 38)",
+          "oklch(0.48 0.15 38)",
+          "oklch(0.55 0.17 38)",
+          "oklch(0.62 0.18 38)",
+          "oklch(0.72 0.15 40)",
+          "oklch(0.83 0.10 44)",
+          "oklch(0.93 0.04 50)"
+        ]
+      },
+      "rep-green": {
+        "role": "tertiary",
+        "displayName": "Rep Green",
+        "canonical": "oklch(0.58 0.13 146)",
+        "tonalRamp": [
+          "oklch(0.28 0.06 146)",
+          "oklch(0.38 0.09 146)",
+          "oklch(0.48 0.11 146)",
+          "oklch(0.58 0.13 146)",
+          "oklch(0.68 0.12 146)",
+          "oklch(0.78 0.09 146)",
+          "oklch(0.87 0.06 146)",
+          "oklch(0.94 0.03 146)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles and empty-state headlines. Inter black (900), tight leading." },
+      "title": { "displayName": "Title", "purpose": "Exercise names, section labels, button text. The most common heavy element." },
+      "body": { "displayName": "Body", "purpose": "Notes and supporting copy. Inter medium (500)." },
+      "label": { "displayName": "Label", "purpose": "Tiny badges and set-index chips at 10-11px, black weight." },
+      "numeric": { "displayName": "Numeric", "purpose": "Rest timer and all live rep/weight readouts. IBM Plex Mono, tabular-nums." }
+    },
+    "shadows": [
+      { "name": "lift", "value": "0 10px 24px -18px rgb(29 26 20 / 0.24)", "purpose": "Card rest state. Barely-there separation from the cream paper." },
+      { "name": "raised", "value": "0 16px 36px -24px rgb(29 26 20 / 0.28)", "purpose": "Popovers and the cheer speech bubble." },
+      { "name": "floating", "value": "0 28px 64px -32px rgb(29 26 20 / 0.36)", "purpose": "Dialogs and sheets that sit clearly above the page." }
+    ],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default easing for entrances and the celebration. Soft, no bounce." },
+      { "name": "rise", "value": "560ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Session rows and reveals rising into place." },
+      { "name": "cheer-hold-ms", "value": "6000", "purpose": "How long the finished-exercise mascot lingers before exiting." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action on a surface.",
+      "html": "<button class=\"ds-btn-primary\">Save changes</button>",
+      "css": ".ds-btn-primary { background: oklch(0.84 0.16 86); color: oklch(0.18 0.015 75); font-family: Inter, system-ui, sans-serif; font-weight: 900; font-size: 0.75rem; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; transition: background 0.2s ease, filter 0.2s ease; } .ds-btn-primary:hover { filter: brightness(0.96); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(0.84 0.16 86); outline-offset: 2px; }"
+    },
+    {
+      "name": "Add Set Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Additive optional action, signalled by a dashed border.",
+      "html": "<button class=\"ds-btn-add\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>Add Set</button>",
+      "css": ".ds-btn-add { display: inline-flex; align-items: center; gap: 4px; background: oklch(0.982 0.018 83); color: oklch(0.18 0.015 75); font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 0.75rem; padding: 8px 16px; border: 1px dashed oklch(0.85 0.035 82); border-radius: 10px; cursor: pointer; transition: background 0.2s ease; } .ds-btn-add:hover { background: oklch(0.89 0.035 83); }"
+    },
+    {
+      "name": "Rest Timer Pill",
+      "kind": "chip",
+      "refersTo": "pill-timer",
+      "description": "Glanceable rest countdown. Mono digits on espresso so they read fast mid-set.",
+      "html": "<button class=\"ds-pill-timer\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"12\" cy=\"13\" r=\"8\"/><path d=\"M12 9v4l2 2M9 2h6\"/></svg><span>1:30</span></button>",
+      "css": ".ds-pill-timer { display: inline-flex; align-items: center; gap: 6px; background: oklch(0.18 0.015 75); color: oklch(0.84 0.16 86); padding: 6px 10px; border: 1px solid oklch(0.18 0.015 75); border-radius: 9999px; cursor: pointer; } .ds-pill-timer span { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.75rem; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Set Done Check",
+      "kind": "chip",
+      "refersTo": "chip-set-done",
+      "description": "Marks a set complete. Fill plus check icon carry the state together so it survives color blindness. Disabled until reps > 0.",
+      "html": "<button class=\"ds-check ds-check--done\" aria-label=\"Set done\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg></button>",
+      "css": ".ds-check { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid oklch(0.85 0.035 82); background: transparent; color: transparent; cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; } .ds-check:hover { border-color: oklch(0.58 0.13 146 / 0.5); } .ds-check--done { background: oklch(0.58 0.13 146); border-color: oklch(0.58 0.13 146); color: oklch(0.982 0.018 83); } .ds-check:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Exercise Card",
+      "kind": "card",
+      "refersTo": "card-exercise",
+      "description": "The core log container. Pronounced 24px radius, 2px structural border, soft warm lift.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card__head\"><span class=\"ds-card__idx\">1</span><span class=\"ds-card__name\">Back Squat</span></div></div>",
+      "css": ".ds-card { background: oklch(0.982 0.018 83); border: 2px solid oklch(0.85 0.035 82); border-radius: 24px; padding: 12px; box-shadow: 0 10px 24px -18px rgb(29 26 20 / 0.24); } .ds-card__head { display: flex; align-items: center; gap: 8px; } .ds-card__idx { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; background: oklch(0.89 0.035 83); color: oklch(0.49 0.02 75); font-family: Inter, system-ui, sans-serif; font-weight: 900; font-size: 10px; } .ds-card__name { font-family: Inter, system-ui, sans-serif; font-weight: 900; font-size: 0.875rem; color: oklch(0.62 0.18 38); }"
+    },
+    {
+      "name": "Progress Bar",
+      "kind": "custom",
+      "refersTo": "progress",
+      "description": "Glanceable session progress. Fills with champion gold per completed set.",
+      "html": "<div class=\"ds-progress\"><span class=\"ds-progress__label\">Progress</span><div class=\"ds-progress__track\"><div class=\"ds-progress__fill\" style=\"width:60%\"></div></div><span class=\"ds-progress__pct\">60%</span></div>",
+      "css": ".ds-progress { display: flex; align-items: center; gap: 8px; background: oklch(0.982 0.018 83); border-radius: 9999px; padding: 8px 12px; } .ds-progress__label, .ds-progress__pct { font-family: Inter, system-ui, sans-serif; font-weight: 900; font-size: 0.75rem; color: oklch(0.18 0.015 75); } .ds-progress__pct { color: oklch(0.49 0.02 75); } .ds-progress__track { flex: 1; height: 6px; background: oklch(0.89 0.035 83); border-radius: 9999px; overflow: hidden; } .ds-progress__fill { height: 100%; background: oklch(0.84 0.16 86); border-radius: 9999px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Gym Chalk Notebook",
+    "overview": "TUFF looks like a well-worn training log left open on a chalk-dusted bench, not a fitness app. The surface is warm cream paper; ink is dark espresso; the one color that shines is a champion gold, the color of a medal and of effort under good light. It is unapologetically physical and warm, reads at a glance with tired eyes in bad gym lighting, then rewards a finished set with a real jolt of pride. The system rejects the three traps strength apps fall into: neon dark-mode tactical-LED apps, cold corporate SaaS dashboards, and clinical white-and-teal health products. Warmth is the whole point.",
+    "keyCharacteristics": [
+      "Warm cream + espresso ground, champion gold as the rare reward color.",
+      "Heavy Inter (900) for labels and headings; IBM Plex Mono for all live numerics.",
+      "Soft, warm, downward shadows that lift cards gently off the paper, never hard edges.",
+      "Generous one-handed tap targets; compact vertical rhythm.",
+      "Motion and color are earned by real effort, gated behind prefers-reduced-motion."
+    ],
+    "rules": [
+      { "name": "The Gold-Is-Earned Rule", "body": "Champion gold never decorates. It marks the active thing or a primary action and stays under ~10% of any screen. If gold is everywhere, it means nothing.", "section": "colors" },
+      { "name": "The Green-Means-Done Rule", "body": "Rep green is reserved exclusively for completion and always travels with a check icon or shape so the state survives color blindness.", "section": "colors" },
+      { "name": "The No-True-Black Rule", "body": "The darkest value is Espresso Ink (L 0.18, tinted warm), never #000. Every neutral is tinted toward the warm hue.", "section": "colors" },
+      { "name": "The Black-Weight Rule", "body": "Structural and motivational text is font-black (900), not semibold. Hierarchy comes from weight and size contrast, not color.", "section": "typography" },
+      { "name": "The Mono-For-Numbers Rule", "body": "Every live or comparative number uses IBM Plex Mono with tabular-nums and never reflows as it ticks.", "section": "typography" },
+      { "name": "The Warm-Light Rule", "body": "Shadows are espresso-tinted and always cast downward and soft. A hard, gray, or upward shadow is forbidden.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep champion gold under ~10% of the screen, on the active thing or the one primary action.",
+      "Do reserve rep green for completion only, always paired with a check icon.",
+      "Do set all live numbers in IBM Plex Mono with tabular-nums.",
+      "Do use font-black (900) Inter for structure and labels; let weight and space carry hierarchy.",
+      "Do cast soft, warm, downward espresso-tinted shadows for depth.",
+      "Do keep tap targets >=44px where the thumb lands, and gate every animation behind prefers-reduced-motion.",
+      "Do celebrate a finished exercise loudly. The win is the point."
+    ],
+    "donts": [
+      "Don't ship a neon dark-mode gym look: no black grounds, electric green/blue glow, or glowing cards.",
+      "Don't drift into a corporate SaaS dashboard: no cold gray KPI grids or Material chrome.",
+      "Don't go clinical white-and-teal or strip out warmth to look trustworthy.",
+      "Don't use #000 or #fff; the darkest is Espresso Ink, every neutral tinted warm.",
+      "Don't use a border-left/border-right over 1px as a colored accent stripe.",
+      "Don't use gradient text or decorative glassmorphism.",
+      "Don't rely on color alone for the done state, and never let a live number reflow as it changes."
+    ]
+  }
+}

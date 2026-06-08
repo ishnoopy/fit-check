@@ -17,7 +17,6 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -32,7 +31,7 @@ import {
   formatSecondsToMinutesSeconds,
   getItemFromLocalStorage,
 } from "@/lib/utils";
-import { ILog } from "@/types";
+import { ILog, ISetData } from "@/types";
 import {
   closestCenter,
   DndContext,
@@ -53,17 +52,20 @@ import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlertCircleIcon,
+  Check,
   CheckCircle2,
   GripVertical,
   HistoryIcon,
   InfoIcon,
+  Pencil,
+  Play,
   PlusIcon,
   Timer,
   XIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -85,12 +87,28 @@ import {
   useGetLatestLogs,
   useGetSettings,
   useGetTodayLogs,
+  useUpdateLog,
 } from "@/hooks/query/useLog";
 import {
   useGetAllWorkouts,
   useReorderWorkoutExercises,
 } from "@/hooks/query/useWorkout";
 import ExerciseHistoryDialog from "./ExerciseHistoryDialog";
+import { DrumPicker } from "@/components/DrumPicker";
+import {
+  finishSession,
+  formatDuration,
+  getActiveSession,
+  startSession,
+  summarizeSession,
+  type WorkoutSession,
+} from "@/lib/workoutSession";
+
+const REP_ITEMS = Array.from({ length: 51 }, (_, repIndex) => repIndex);
+const WEIGHT_ITEMS = Array.from(
+  { length: 501 },
+  (_, weightIndex) => Math.round(weightIndex * 0.5 * 10) / 10,
+);
 
 const formSchema = z.object({
   planId: z.string().min(1, { message: "Plan is required" }),
@@ -190,24 +208,24 @@ function PostSessionCheer({ cheer }: { cheer: CheerMoment | null }) {
               : {
                   duration: 0.72,
                   ease: [0.16, 1, 0.3, 1],
-                  y: { duration: 1.1, repeat: 1, ease: "easeInOut" },
+                  y: { duration: 1.1, repeat: 3, ease: "easeInOut" },
                   scale: { duration: 0.7, ease: "easeOut" },
                 }
           }
         >
-          <div className="relative h-[37vw] max-h-48 min-h-36 w-[25vw] min-w-24 max-w-32 shrink-0">
+          <div className="relative h-[54vw] max-h-72 min-h-52 w-[38vw] min-w-36 max-w-52 shrink-0">
             <Image
               src={postSessionMascot}
               alt="TUFF mascot celebrating"
               fill
-              sizes="(max-width: 640px) 25vw, 128px"
-              className="object-contain drop-shadow-[0_18px_22px_rgb(29_26_20_/_0.22)]"
+              sizes="(max-width: 640px) 38vw, 208px"
+              className="object-contain drop-shadow-[0_22px_28px_rgb(29_26_20_/_0.26)]"
               priority={false}
             />
           </div>
 
           <motion.div
-            className="mb-10 max-w-[15rem] rounded-2xl border-2 border-secondary bg-card px-3 py-2 shadow-lg sm:mb-14 sm:max-w-[16rem] sm:px-4 sm:py-3"
+            className="mb-14 max-w-[17rem] rounded-2xl border-2 border-secondary bg-card px-3 py-2.5 shadow-lg sm:mb-20 sm:max-w-[19rem] sm:px-4 sm:py-3.5"
             initial={
               shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.82 }
             }
@@ -221,7 +239,7 @@ function PostSessionCheer({ cheer }: { cheer: CheerMoment | null }) {
             }
             transition={{ delay: shouldReduceMotion ? 0 : 0.14, duration: 0.3 }}
           >
-            <p className="text-sm font-black leading-tight text-foreground sm:text-base">
+            <p className="text-base font-black leading-tight text-foreground sm:text-lg">
               {cheer.message}
             </p>
           </motion.div>
@@ -274,7 +292,9 @@ function SortableExerciseItem({
 
 export default function LogPage() {
   const pathname = usePathname();
-  const { isTimerRunning, startRestTime } = useTimer();
+  const router = useRouter();
+  const { isTimerRunning, timerExerciseId, startRestTime, stopRestTime } = useTimer();
+  const [checkedSets, setCheckedSets] = useState<Record<string, number[]>>({});
   const hapticsRef = useRef<WebHaptics | null>(null);
   const cheerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [cheer, setCheer] = useState<CheerMoment | null>(null);
@@ -297,8 +317,19 @@ export default function LogPage() {
   const [pendingFormValues, setPendingFormValues] = useState<FormValues | null>(
     null,
   );
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(
+    null,
+  );
+  const [editSets, setEditSets] = useState<ISetData[]>([]);
+  const [editNotes, setEditNotes] = useState<string>("");
+  const [invalidSets, setInvalidSets] = useState<Record<string, number[]>>({});
+  const [workoutSession, setWorkoutSession] = useState<WorkoutSession | null>(
+    null,
+  );
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
 
   const { data: settings } = useGetSettings();
+
 
   useEffect(() => {
     hapticsRef.current = new WebHaptics();
@@ -311,6 +342,31 @@ export default function LogPage() {
       }
     };
   }, []);
+
+  // Restore an in-progress workout session for the selected workout.
+  useEffect(() => {
+    const active = getActiveSession();
+    setWorkoutSession(
+      active && active.workoutId === activeWorkoutId ? active : null,
+    );
+  }, [activeWorkoutId]);
+
+  // Tick the live workout duration while a session is running.
+  useEffect(() => {
+    if (!workoutSession || workoutSession.workoutId !== activeWorkoutId) {
+      setElapsedSeconds(0);
+      return;
+    }
+
+    const updateElapsed = () =>
+      setElapsedSeconds(
+        Math.floor((Date.now() - workoutSession.startedAt) / 1000),
+      );
+
+    updateElapsed();
+    const intervalId = setInterval(updateElapsed, 1000);
+    return () => clearInterval(intervalId);
+  }, [workoutSession, activeWorkoutId]);
 
   const showPostSessionCheer = () => {
     const message =
@@ -328,7 +384,7 @@ export default function LogPage() {
     cheerTimeoutRef.current = setTimeout(() => {
       setCheer(null);
       cheerTimeoutRef.current = null;
-    }, 3000);
+    }, 6000);
   };
 
   const triggerErrorHapticFeedback = () => {
@@ -477,24 +533,48 @@ export default function LogPage() {
     exerciseIds: activeExerciseIds,
   });
 
+  const formValues = form.watch();
+  const watchedSets = formValues.sets;
+
   const progress = useMemo(() => {
-    if (!todayLogs || activeExerciseIds.length === 0) {
+    if (activeExerciseIds.length === 0) {
       return 0;
     }
 
     const activeExerciseIdSet = new Set(activeExerciseIds);
-    const completedExerciseIds = new Set(
-      todayLogs
+    const loggedExerciseIds = new Set(
+      (todayLogs ?? [])
         .map((log) => log.exerciseId?.id)
         .filter((exerciseId): exerciseId is string => Boolean(exerciseId))
         .filter((exerciseId) => activeExerciseIdSet.has(exerciseId)),
     );
 
+    let completedExercises = 0;
+    for (const exerciseId of activeExerciseIds) {
+      if (loggedExerciseIds.has(exerciseId)) {
+        completedExercises += 1;
+        continue;
+      }
+
+      // Partial credit for sets marked done on the exercise being worked on.
+      if (
+        exerciseId === activeExerciseId &&
+        Array.isArray(watchedSets) &&
+        watchedSets.length > 0
+      ) {
+        const doneSetCount = Math.min(
+          (checkedSets[exerciseId] ?? []).length,
+          watchedSets.length,
+        );
+        completedExercises += doneSetCount / watchedSets.length;
+      }
+    }
+
     return Math.min(
       100,
-      Math.round((completedExerciseIds.size / activeExerciseIds.length) * 100),
+      Math.round((completedExercises / activeExerciseIds.length) * 100),
     );
-  }, [todayLogs, activeExerciseIds]);
+  }, [todayLogs, activeExerciseIds, activeExerciseId, checkedSets, watchedSets]);
 
   const createLogMutation = useCreateLog({
     onSuccess: () => {
@@ -506,6 +586,13 @@ export default function LogPage() {
           return updated;
         });
       }
+
+      // Clear the per-set "done" marks now that the exercise is logged.
+      setCheckedSets((prev) => {
+        const updated = { ...prev };
+        delete updated[activeExerciseId];
+        return updated;
+      });
 
       toast.success("Log created successfully");
       showPostSessionCheer();
@@ -529,6 +616,53 @@ export default function LogPage() {
     },
   });
 
+  const updateLogMutation = useUpdateLog({
+    onSuccess: () => {
+      triggerSuccessHapticFeedback();
+      toast.success("Log updated");
+      setEditingExerciseId(null);
+      setEditSets([]);
+      setEditNotes("");
+    },
+    onError: (error: Error) => {
+      console.error("Failed to update log", error);
+      triggerErrorHapticFeedback();
+      toast.error("Failed to update log. Please try again.");
+    },
+  });
+
+  const startEditingLog = (log: ILog) => {
+    setEditingExerciseId(log.exerciseId?.id ?? null);
+    setEditSets(
+      (log.sets ?? []).map((set, index) => ({
+        setNumber: index + 1,
+        reps: set.reps,
+        weight: set.weight,
+        notes: set.notes ?? "",
+      })),
+    );
+    setEditNotes(log.notes ?? "");
+  };
+
+  const cancelEditingLog = () => {
+    setEditingExerciseId(null);
+    setEditSets([]);
+    setEditNotes("");
+  };
+
+  const saveEditedLog = (logId: string) => {
+    updateLogMutation.mutate({
+      id: logId,
+      sets: editSets.map((set, index) => ({
+        setNumber: index + 1,
+        reps: set.reps,
+        weight: set.weight,
+        notes: set.notes,
+      })),
+      notes: editNotes,
+    });
+  };
+
   const handleExerciseChange = (value: string) => {
     setActiveExerciseId(value);
     localStorage.setItem("activeExerciseId", value);
@@ -539,8 +673,30 @@ export default function LogPage() {
     localStorage.setItem("activeWorkoutId", value);
   };
 
+  const isSessionActive =
+    workoutSession !== null && workoutSession.workoutId === activeWorkoutId;
+
+  const hasLoggedToday = (todayLogs?.length ?? 0) > 0;
+  const isWorkoutCompletedToday = progress === 100;
+  const completedStats = useMemo(
+    () => summarizeSession(todayLogs ?? [], 0),
+    [todayLogs],
+  );
+
+  const handleStartWorkout = () => {
+    if (!activeWorkoutId || activeExerciseIds.length === 0) return;
+    setWorkoutSession(startSession(activePlanId, activeWorkoutId));
+    triggerSuccessHapticFeedback();
+  };
+
+  const handleFinishWorkout = () => {
+    finishSession();
+    setWorkoutSession(null);
+    triggerSuccessHapticFeedback();
+    router.push("/log/summary");
+  };
+
   // Save form draft to local storage on change
-  const formValues = form.watch();
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const DRAFT_SAVE_DELAY_MS = 800;
@@ -623,25 +779,24 @@ export default function LogPage() {
       form.setValue("notes", draftFormData.notes || "");
     } else {
       const DEFAULT_NUMBER_OF_SETS = 3;
+      const previousSets = previousLogForExercise?.sets;
       const numberOfSetsToResetTo =
-        previousLogForExercise?.sets?.length || DEFAULT_NUMBER_OF_SETS;
+        previousSets?.length || DEFAULT_NUMBER_OF_SETS;
 
-      const createEmptySets = (
-        numberOfSets: number = DEFAULT_NUMBER_OF_SETS,
-      ) => {
-        return Array.from({ length: numberOfSets }, (_, index) => ({
+      const prefillSets = Array.from(
+        { length: numberOfSetsToResetTo },
+        (_, index) => ({
           setNumber: index + 1,
-          reps: 0,
-          weight: 0,
+          reps: previousSets?.[index]?.reps ?? 0,
+          weight: previousSets?.[index]?.weight ?? 0,
           notes: "",
-        }));
-      };
+        }),
+      );
 
-      // Reset to defaults if no log data exists
       form.setValue("exerciseId", activeExerciseId);
       form.setValue("planId", activePlanId || "");
       form.setValue("workoutId", activeWorkoutId || "");
-      form.setValue("sets", createEmptySets(numberOfSetsToResetTo));
+      form.setValue("sets", prefillSets);
       form.setValue("rateOfPerceivedExertion", undefined);
       form.setValue("notes", "");
     }
@@ -662,6 +817,56 @@ export default function LogPage() {
 
   const onSubmitInvalid = () => {
     triggerErrorHapticFeedback();
+    flagInvalidSets(activeExerciseId);
+  };
+
+  /**
+   * Marks the sets blocking completion (reps still 0) so they can be shown in
+   * red instead of a generic error message. A set with reps > 0 is always valid,
+   * even at 0kg (bodyweight).
+   */
+  const flagInvalidSets = (exerciseId: string) => {
+    if (!exerciseId) return;
+
+    const currentSets = form.getValues("sets") ?? [];
+    const invalidIndices = currentSets
+      .map((set, index) => (set.reps <= 0 ? index : -1))
+      .filter((index) => index >= 0);
+
+    setInvalidSets((prev) => {
+      const updated = { ...prev };
+      if (invalidIndices.length > 0) {
+        updated[exerciseId] = invalidIndices;
+      } else {
+        delete updated[exerciseId];
+      }
+      return updated;
+    });
+  };
+
+  const clearInvalidSet = (exerciseId: string, setIndex: number) => {
+    setInvalidSets((prev) => {
+      const current = prev[exerciseId];
+      if (!current || !current.includes(setIndex)) return prev;
+
+      const remaining = current.filter((index) => index !== setIndex);
+      const updated = { ...prev };
+      if (remaining.length > 0) {
+        updated[exerciseId] = remaining;
+      } else {
+        delete updated[exerciseId];
+      }
+      return updated;
+    });
+  };
+
+  const clearInvalidSetsForExercise = (exerciseId: string) => {
+    setInvalidSets((prev) => {
+      if (!prev[exerciseId]) return prev;
+      const updated = { ...prev };
+      delete updated[exerciseId];
+      return updated;
+    });
   };
 
   const handleRpeSelection = (rpe: number) => {
@@ -745,7 +950,7 @@ export default function LogPage() {
     <div className="min-h-screen pb-24">
       <PostSessionCheer cheer={cheer} />
 
-      <div className="p-4 max-w-2xl mx-auto space-y-4">
+      <div className="p-4 max-w-2xl mx-auto space-y-3">
         <div className="flex items-center justify-between">
           <PageHeader title="Log" subtitle="Finish one exercise at a time" />
           {/* Action Buttons */}
@@ -761,8 +966,9 @@ export default function LogPage() {
         <Select
           onValueChange={handleWorkoutChange}
           value={activeWorkoutId || ""}
+          disabled={isSessionActive}
         >
-          <SelectTrigger className="h-11 cursor-pointer rounded-full border-border bg-card px-4 font-black">
+          <SelectTrigger className="h-11 cursor-pointer rounded-full border-border bg-card px-4 font-black disabled:opacity-100">
             <SelectValue placeholder="Select workout" />
           </SelectTrigger>
           <SelectContent>
@@ -774,15 +980,112 @@ export default function LogPage() {
           </SelectContent>
         </Select>
 
-        <div className="flex items-center gap-2 rounded-full bg-card px-3 py-2 text-xs">
-          <span className="font-black text-foreground">Progress</span>
-          <Progress value={progress} className="flex-1 h-1.5" />
-          <span className="text-muted-foreground font-black min-w-10 text-right">
-            {progress}%
-          </span>
-        </div>
-        <Accordion
-          type="single"
+        {!isSessionActive && !hasLoggedToday ? (
+          <div className="space-y-3">
+            <div className="rounded-[24px] border-2 border-border bg-card p-6 text-center shadow-sm">
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                Ready to train
+              </p>
+              <h2 className="mt-1.5 text-2xl font-black leading-tight">
+                {workoutData?.title ?? "Your workout"}
+              </h2>
+              <p className="mt-1 text-sm font-medium text-muted-foreground">
+                {activeExerciseIds.length}{" "}
+                {activeExerciseIds.length === 1 ? "exercise" : "exercises"}
+              </p>
+              <Button
+                onClick={handleStartWorkout}
+                disabled={!activeWorkoutId || activeExerciseIds.length === 0}
+                className="mt-5 h-12 w-full rounded-full text-base font-black"
+              >
+                <Play className="h-5 w-5" />
+                Start workout
+              </Button>
+            </div>
+
+            {orderedActiveExercisesList.length > 0 && (
+              <div className="space-y-1.5 select-none opacity-55">
+                {orderedActiveExercisesList.map((exerciseItem, previewIndex) => (
+                  <div
+                    key={exerciseItem.exercise.id}
+                    className="flex items-center gap-2 rounded-[24px] border-2 border-border bg-card px-3 py-3"
+                  >
+                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-[10px] font-black text-muted-foreground">
+                      {previewIndex + 1}
+                    </span>
+                    <span className="text-sm font-black">
+                      {exerciseItem.exercise.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {isSessionActive ? (
+              <div className="sticky top-2 z-20 flex items-center gap-2.5 rounded-full border-2 border-border bg-card px-3 py-2 shadow-sm">
+                <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
+                  {formatDuration(elapsedSeconds)}
+                </span>
+                <Progress value={progress} className="h-1.5 flex-1" />
+                <span className="shrink-0 text-[11px] font-black tabular-nums text-muted-foreground">
+                  {progress}%
+                </span>
+                <Button
+                  onClick={handleFinishWorkout}
+                  size="sm"
+                  className="h-7 shrink-0 rounded-full px-3 text-[11px] font-black"
+                >
+                  Finish
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-[24px] border-2 border-border bg-card p-4 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2
+                    className={cn(
+                      "h-5 w-5 shrink-0",
+                      isWorkoutCompletedToday ? "text-chart-4" : "text-accent",
+                    )}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-black leading-tight">
+                      {isWorkoutCompletedToday
+                        ? "Completed today"
+                        : "Workout in progress"}
+                    </p>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {completedStats.totalSets}{" "}
+                      {completedStats.totalSets === 1 ? "set" : "sets"} ·{" "}
+                      {completedStats.totalVolume.toLocaleString()} kg
+                      {!isWorkoutCompletedToday && ` · ${progress}%`}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 flex-1 rounded-full text-xs font-black"
+                    onClick={() => router.push("/log/summary")}
+                  >
+                    View summary
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-9 flex-1 rounded-full text-xs font-black"
+                    onClick={handleStartWorkout}
+                  >
+                    {isWorkoutCompletedToday ? "Train again" : "Continue"}
+                  </Button>
+                </div>
+              </div>
+            )}
+            <Accordion
+              type="single"
           collapsible
           className="w-full"
           value={activeExerciseId ?? ""}
@@ -835,7 +1138,7 @@ export default function LogPage() {
                       <AccordionItem
                         value={exercise.id}
                         className={cn(
-                          "mb-2 overflow-hidden rounded-[24px] border-2 border-border bg-card shadow-sm",
+                          "mb-1.5 overflow-hidden rounded-[24px] border-2 border-border bg-card shadow-sm",
                           isDragging && "bg-muted",
                         )}
                       >
@@ -931,129 +1234,295 @@ export default function LogPage() {
                             </Dialog>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className="px-3 py-3 space-y-2.5">
-                          {hasRestTime && !isLogged && isActiveExercise && (
-                            <button
-                              onClick={() => {
-                                startRestTime(
-                                  exercise.id,
-                                  exercise.name,
-                                  exerciseItem.restTime || 0,
-                                );
-                              }}
-                              disabled={isTimerRunning}
-                              className={cn(
-                                "flex items-center gap-1.5 px-2 py-1 rounded-full border transition-colors shrink-0",
-                                isTimerRunning
-                                  ? "bg-muted/20 border-border/30 text-muted-foreground/50 cursor-not-allowed"
-                                  : "bg-secondary border-secondary text-primary hover:bg-secondary/90 cursor-pointer",
-                              )}
-                              aria-label={`Start ${formatSecondsToMinutesSeconds(exerciseItem.restTime ?? 0)} timer for ${exercise.name}`}
-                            >
-                              <Timer className="h-3.5 w-3.5 shrink-0" />
-                              <span className="text-xs font-mono font-semibold tabular-nums">
-                                {formatSecondsToMinutesSeconds(
-                                  exerciseItem.restTime ?? 0,
-                                )}
-                              </span>
-                            </button>
-                          )}
-                          {/* Last Performance */}
-                          {latestExerciseLog && !isLogged && (
-                            <div className="text-[11px] space-y-1 pb-2 border-b rounded-md p-2">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <HistoryIcon className="h-3 w-3 shrink-0 " />
-                                <span className="font-medium ">
-                                  {formatInTimeZone(
-                                    new Date(latestExerciseLog.createdAt),
-                                    userTimezone,
-                                    "MMM d",
-                                  )}
-                                </span>
-                                <span className="opacity-40">•</span>
-                                {latestExerciseLog.sets
-                                  ?.slice(0, 3)
-                                  .map(
-                                    (
-                                      s: { reps: number; weight: number },
-                                      idx: number,
-                                    ) => (
-                                      <span
-                                        key={idx}
-                                        className="inline-flex px-1 py-0.5 rounded bg-chart-4/15 text-chart-4 font-medium"
-                                      >
-                                        {s.reps}×{s.weight}kg
+                        <AccordionContent className="px-3 py-2.5 space-y-2">
+                          {!isLogged &&
+                            (latestExerciseLog ||
+                              (hasRestTime && isActiveExercise)) && (
+                              <div className="flex items-start gap-2">
+                                {latestExerciseLog && (
+                                  <div className="min-w-0 flex-1 space-y-1 py-1 text-[11px]">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <HistoryIcon className="h-3 w-3 shrink-0" />
+                                      <span className="font-medium">
+                                        {formatInTimeZone(
+                                          new Date(latestExerciseLog.createdAt),
+                                          userTimezone,
+                                          "MMM d",
+                                        )}
                                       </span>
-                                    ),
-                                  )}
-                                {latestExerciseLog.sets &&
-                                  latestExerciseLog.sets.length > 3 && (
-                                    <span className="opacity-40">
-                                      +{latestExerciseLog.sets.length - 3}
-                                    </span>
-                                  )}
-                              </div>
-                              {latestExerciseLog.notes && (
-                                <p className="text-[11px] italic truncate pl-4">
-                                  &ldquo;{latestExerciseLog.notes}&rdquo;
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {isLogged && logData ? (
-                            <div className="space-y-2.5">
-                              {/* Sets Display */}
-                              <div className="space-y-1.5">
-                                <div className="space-y-1">
-                                  {logData.sets &&
-                                    logData.sets.length > 0 &&
-                                    logData.sets.map((set, idx) => (
-                                      <div
-                                        key={idx}
-                                        className="flex gap-2 items-center py-1.5 px-2 bg-muted/30 rounded border border-border/50"
-                                      >
-                                        <div className="flex items-center justify-center w-6 h-6 rounded bg-muted text-foreground font-semibold text-[10px] shrink-0">
-                                          {idx + 1}
-                                        </div>
-                                        <span className="text-xs font-medium text-foreground w-12 text-center">
-                                          {set.reps}×
-                                        </span>
-                                        <span className="text-xs font-medium text-foreground w-14 text-center">
-                                          {set.weight}kg
-                                        </span>
-                                        {set.notes && (
-                                          <span className="text-[11px] text-muted-foreground flex-1 truncate">
-                                            {set.notes}
+                                      <span className="opacity-40">•</span>
+                                      {latestExerciseLog.sets
+                                        ?.slice(0, 3)
+                                        .map(
+                                          (
+                                            s: {
+                                              reps: number;
+                                              weight: number;
+                                            },
+                                            idx: number,
+                                          ) => (
+                                            <span
+                                              key={idx}
+                                              className="inline-flex px-1 py-0.5 rounded bg-chart-4/15 text-chart-4 font-medium"
+                                            >
+                                              {s.reps}×{s.weight}kg
+                                            </span>
+                                          ),
+                                        )}
+                                      {latestExerciseLog.sets &&
+                                        latestExerciseLog.sets.length > 3 && (
+                                          <span className="opacity-40">
+                                            +{latestExerciseLog.sets.length - 3}
                                           </span>
                                         )}
-                                        <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                                      </div>
-                                    ))}
+                                    </div>
+                                    {latestExerciseLog.notes && (
+                                      <p className="text-[11px] italic truncate pl-4">
+                                        &ldquo;{latestExerciseLog.notes}&rdquo;
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {hasRestTime && isActiveExercise && (
+                                  <button
+                                    onClick={() => {
+                                      startRestTime(
+                                        exercise.id,
+                                        exercise.name,
+                                        exerciseItem.restTime || 0,
+                                      );
+                                    }}
+                                    disabled={isTimerRunning}
+                                    className={cn(
+                                      "ml-auto flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 transition-colors",
+                                      isTimerRunning
+                                        ? "bg-muted/20 border-border/30 text-muted-foreground/50 cursor-not-allowed"
+                                        : "bg-secondary border-secondary text-primary hover:bg-secondary/90 cursor-pointer",
+                                    )}
+                                    aria-label={`Start ${formatSecondsToMinutesSeconds(exerciseItem.restTime ?? 0)} timer for ${exercise.name}`}
+                                  >
+                                    <Timer className="h-3.5 w-3.5 shrink-0" />
+                                    <span className="text-xs font-mono font-semibold tabular-nums">
+                                      {formatSecondsToMinutesSeconds(
+                                        exerciseItem.restTime ?? 0,
+                                      )}
+                                    </span>
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                          {isLogged && logData ? (
+                            editingExerciseId === exercise.id ? (
+                              <div className="space-y-1.5">
+                                {editSets.map((set, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center gap-1 px-2 py-0.5 bg-muted/20 border border-border/50 rounded-2xl"
+                                  >
+                                    <span className="w-5 h-5 flex items-center justify-center rounded-full bg-muted text-[10px] font-black text-muted-foreground shrink-0">
+                                      {idx + 1}
+                                    </span>
+
+                                    <DrumPicker
+                                      className="flex-1"
+                                      value={set.reps}
+                                      items={REP_ITEMS}
+                                      onChange={(val) => {
+                                        setEditSets((prev) =>
+                                          prev.map((existingSet, setIndex) =>
+                                            setIndex === idx
+                                              ? { ...existingSet, reps: val }
+                                              : existingSet,
+                                          ),
+                                        );
+                                        void hapticsRef.current?.trigger([
+                                          { duration: 10 },
+                                        ]);
+                                      }}
+                                    />
+
+                                    <span className="text-muted-foreground/40 text-xs font-black shrink-0">
+                                      ×
+                                    </span>
+
+                                    <DrumPicker
+                                      className="flex-1"
+                                      value={set.weight}
+                                      items={WEIGHT_ITEMS}
+                                      formatValue={(v) =>
+                                        Number.isInteger(v)
+                                          ? String(v)
+                                          : v.toFixed(1)
+                                      }
+                                      onChange={(val) => {
+                                        setEditSets((prev) =>
+                                          prev.map((existingSet, setIndex) =>
+                                            setIndex === idx
+                                              ? { ...existingSet, weight: val }
+                                              : existingSet,
+                                          ),
+                                        );
+                                        void hapticsRef.current?.trigger([
+                                          { duration: 10 },
+                                        ]);
+                                      }}
+                                    />
+
+                                    <span className="text-muted-foreground/50 text-[10px] font-black shrink-0">
+                                      kg
+                                    </span>
+
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 shrink-0"
+                                      disabled={editSets.length <= 1}
+                                      onClick={() => {
+                                        setEditSets((prev) =>
+                                          prev
+                                            .filter(
+                                              (_, setIndex) => setIndex !== idx,
+                                            )
+                                            .map((existingSet, setIndex) => ({
+                                              ...existingSet,
+                                              setNumber: setIndex + 1,
+                                            })),
+                                        );
+                                      }}
+                                    >
+                                      <XIcon className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+
+                                <Textarea
+                                  placeholder="Notes"
+                                  value={editNotes}
+                                  onChange={(event) =>
+                                    setEditNotes(event.target.value)
+                                  }
+                                  rows={2}
+                                  className="text-xs resize-none"
+                                />
+
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full h-8 text-xs border-dashed"
+                                  onClick={() => {
+                                    setEditSets((prev) => {
+                                      const lastSet = prev[prev.length - 1];
+                                      return [
+                                        ...prev,
+                                        {
+                                          setNumber: prev.length + 1,
+                                          reps: lastSet?.reps ?? 0,
+                                          weight: lastSet?.weight ?? 0,
+                                          notes: "",
+                                        },
+                                      ];
+                                    });
+                                  }}
+                                >
+                                  <PlusIcon className="h-3.5 w-3.5 mr-1" />
+                                  Add Set
+                                </Button>
+
+                                <div className="flex gap-2 pt-1">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 h-8 text-xs"
+                                    onClick={cancelEditingLog}
+                                    disabled={updateLogMutation.isPending}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    className="flex-1 h-8 text-xs"
+                                    onClick={() => saveEditedLog(logData.id)}
+                                    disabled={
+                                      updateLogMutation.isPending ||
+                                      editSets.length === 0
+                                    }
+                                  >
+                                    Save changes
+                                  </Button>
                                 </div>
                               </div>
-
-                              {/* Notes Display */}
-                              {logData.notes && (
-                                <div className="flex gap-2 pt-1 border-t">
-                                  <div className="text-[11px] text-muted-foreground flex-1 truncate">
-                                    {logData.notes}
+                            ) : (
+                              <div className="space-y-2">
+                                {/* Sets Display */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-end">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-[11px] text-muted-foreground hover:text-accent"
+                                      onClick={() => startEditingLog(logData)}
+                                    >
+                                      <Pencil className="h-3 w-3 mr-1" />
+                                      Edit
+                                    </Button>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {logData.sets &&
+                                      logData.sets.length > 0 &&
+                                      logData.sets.map((set, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="flex gap-2 items-center py-1.5 px-2 bg-muted/30 rounded border border-border/50"
+                                        >
+                                          <div className="flex items-center justify-center w-6 h-6 rounded bg-muted text-foreground font-semibold text-[10px] shrink-0">
+                                            {idx + 1}
+                                          </div>
+                                          <span className="text-xs font-medium text-foreground w-12 text-center">
+                                            {set.reps}×
+                                          </span>
+                                          <span className="text-xs font-medium text-foreground w-14 text-center">
+                                            {set.weight}kg
+                                          </span>
+                                          {set.notes && (
+                                            <span className="text-[11px] text-muted-foreground flex-1 truncate">
+                                              {set.notes}
+                                            </span>
+                                          )}
+                                          <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                                        </div>
+                                      ))}
                                   </div>
                                 </div>
-                              )}
-                            </div>
+
+                                {/* Notes Display */}
+                                {logData.notes && (
+                                  <div className="flex gap-2 pt-1 border-t">
+                                    <div className="text-[11px] text-muted-foreground flex-1 truncate">
+                                      {logData.notes}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
                           ) : (
                             <Form {...form} key={exercise.id}>
                               <fieldset
                                 disabled={isLogged}
-                                className="space-y-2.5"
+                                className="space-y-2"
                               >
                                 <form
                                   onSubmit={form.handleSubmit(
                                     onSubmit,
                                     onSubmitInvalid,
                                   )}
-                                  className="space-y-2.5"
+                                  className="space-y-2"
                                 >
                                   <FormField
                                     control={form.control}
@@ -1065,117 +1534,169 @@ export default function LogPage() {
                                             {field.value &&
                                               Array.isArray(field.value) &&
                                               field.value.length > 0 &&
-                                              field.value.map((set, idx) => (
-                                                <div
-                                                  key={idx}
-                                                  className="flex gap-1.5 items-center p-1.5 bg-muted/20 border border-border/50 rounded hover:bg-muted/30 transition-colors"
-                                                >
-                                                  <div className="flex items-center justify-center w-6 h-6 rounded bg-muted text-foreground font-semibold text-[10px] shrink-0">
-                                                    {idx + 1}
-                                                  </div>
-                                                  <Input
-                                                    type="number"
-                                                    placeholder="R"
-                                                    value={set.reps || ""}
-                                                    min={0}
-                                                    onChange={(e) => {
-                                                      const sets =
-                                                        field.value?.slice() ||
-                                                        [];
-                                                      sets[idx] = {
-                                                        ...sets[idx],
-                                                        setNumber: idx + 1,
-                                                        reps:
-                                                          Number(
-                                                            e.target.value,
-                                                          ) || 0,
-                                                      };
-                                                      field.onChange(sets);
-                                                    }}
-                                                    className="w-14 h-8 text-center text-xs font-medium p-0"
-                                                  />
-                                                  <span className="text-[10px] text-muted-foreground">
-                                                    ×
-                                                  </span>
-                                                  <Input
-                                                    type="number"
-                                                    step="0.5"
-                                                    min={0}
-                                                    placeholder="W"
-                                                    value={set.weight ?? ""}
-                                                    onFocus={(e) => {
-                                                      if (
-                                                        e.target.value === "0"
-                                                      ) {
-                                                        e.target.value = "";
-                                                      }
-                                                    }}
-                                                    onBlur={(e) => {
-                                                      // remove leading zeros
-                                                      e.target.value =
-                                                        e.target.value.replace(
-                                                          /^0+/,
-                                                          "",
-                                                        );
-                                                      if (
-                                                        e.target.value === ""
-                                                      ) {
-                                                        e.target.value = "0";
-                                                      }
-                                                    }}
-                                                    onChange={(e) => {
-                                                      const sets =
-                                                        field.value?.slice() ||
-                                                        [];
-                                                      sets[idx] = {
-                                                        ...sets[idx],
-                                                        weight:
-                                                          Number(
-                                                            e.target.value,
-                                                          ) || 0,
-                                                      };
-                                                      field.onChange(sets);
-                                                    }}
-                                                    className="w-16 h-8 text-center text-xs font-medium p-0"
-                                                  />
-                                                  <span className="text-[10px] text-muted-foreground">
-                                                    kg
-                                                  </span>
-                                                  <Input
-                                                    placeholder="Notes"
-                                                    value={set.notes || ""}
-                                                    onChange={(e) => {
-                                                      const sets =
-                                                        field.value?.slice() ||
-                                                        [];
-                                                      sets[idx] = {
-                                                        ...sets[idx],
-                                                        notes: e.target.value,
-                                                      };
-                                                      field.onChange(sets);
-                                                    }}
-                                                    className="flex-1 min-w-0 h-8 text-[11px]"
-                                                  />
-                                                  <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-7 w-7 shrink-0"
-                                                    onClick={() => {
-                                                      const sets =
-                                                        field.value?.slice() ||
-                                                        [];
-                                                      sets.splice(idx, 1);
-                                                      sets.forEach((s, i) => {
-                                                        s.setNumber = i + 1;
-                                                      });
-                                                      field.onChange(sets);
-                                                    }}
+                                              field.value.map((set, idx) => {
+                                                const isThisSetChecked =
+                                                  (checkedSets[exercise.id] ?? []).includes(idx);
+                                                const isThisSetInvalid =
+                                                  (invalidSets[exercise.id] ?? []).includes(idx);
+                                                return (
+                                                  <div
+                                                    key={idx}
+                                                    className={cn(
+                                                      "flex items-center gap-1 px-2 py-0.5 rounded-2xl border",
+                                                      isThisSetInvalid
+                                                        ? "border-destructive bg-destructive/10"
+                                                        : "border-border/50 bg-muted/20",
+                                                    )}
                                                   >
-                                                    <XIcon className="h-3.5 w-3.5" />
-                                                  </Button>
-                                                </div>
-                                              ))}
+                                                    <span className="w-5 h-5 flex items-center justify-center rounded-full bg-muted text-[10px] font-black text-muted-foreground shrink-0">
+                                                      {idx + 1}
+                                                    </span>
+
+                                                    <DrumPicker
+                                                      className="flex-1"
+                                                      value={set.reps}
+                                                      items={REP_ITEMS}
+                                                      onChange={(val) => {
+                                                        const sets = field.value?.slice() || [];
+                                                        sets[idx] = { ...sets[idx], setNumber: idx + 1, reps: val };
+                                                        field.onChange(sets);
+                                                        if (val > 0) {
+                                                          clearInvalidSet(exercise.id, idx);
+                                                        }
+                                                        void hapticsRef.current?.trigger([{ duration: 10 }]);
+                                                      }}
+                                                    />
+
+                                                    <span className="text-muted-foreground/40 text-xs font-black shrink-0">×</span>
+
+                                                    <DrumPicker
+                                                      className="flex-1"
+                                                      value={set.weight}
+                                                      items={WEIGHT_ITEMS}
+                                                      formatValue={(v) => (Number.isInteger(v) ? String(v) : v.toFixed(1))}
+                                                      onChange={(val) => {
+                                                        const sets = field.value?.slice() || [];
+                                                        sets[idx] = { ...sets[idx], weight: val };
+                                                        field.onChange(sets);
+                                                        void hapticsRef.current?.trigger([{ duration: 10 }]);
+                                                      }}
+                                                    />
+
+                                                    <span className="text-muted-foreground/50 text-[10px] font-black shrink-0">kg</span>
+
+                                                    <button
+                                                      type="button"
+                                                      disabled={!isThisSetChecked && set.reps <= 0}
+                                                      aria-label={isThisSetChecked ? "Mark set not done" : "Mark set done"}
+                                                      className={cn(
+                                                        "w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center transition-all",
+                                                        isThisSetChecked
+                                                          ? "bg-chart-4 border-chart-4 text-card cursor-pointer"
+                                                          : set.reps <= 0
+                                                            ? "border-border/40 text-transparent opacity-40 cursor-not-allowed"
+                                                            : "border-border text-transparent hover:border-chart-4/50 cursor-pointer",
+                                                      )}
+                                                      onClick={() => {
+                                                        const totalSets = field.value?.length ?? 0;
+                                                        const currentChecked = checkedSets[exercise.id] ?? [];
+                                                        let nextChecked: number[];
+
+                                                        if (isThisSetChecked) {
+                                                          if (isTimerRunning && timerExerciseId === exercise.id) {
+                                                            stopRestTime();
+                                                          }
+                                                          nextChecked = currentChecked.filter((i) => i !== idx);
+                                                        } else {
+                                                          nextChecked = [...currentChecked, idx];
+
+                                                          // Skip the rest timer on the set that completes the
+                                                          // whole workout (100%): there is nothing left to rest for.
+                                                          const willCompleteExercise =
+                                                            totalSets > 0 &&
+                                                            nextChecked.length >= totalSets;
+                                                          const loggedExerciseIds = new Set(
+                                                            (todayLogs ?? [])
+                                                              .map((log) => log.exerciseId?.id)
+                                                              .filter((id): id is string => Boolean(id)),
+                                                          );
+                                                          const otherExercisesAllLogged = activeExerciseIds
+                                                            .filter((id) => id !== exercise.id)
+                                                            .every((id) => loggedExerciseIds.has(id));
+                                                          const willReachFullProgress =
+                                                            willCompleteExercise && otherExercisesAllLogged;
+
+                                                          if (hasRestTime && !willReachFullProgress) {
+                                                            startRestTime(
+                                                              exercise.id,
+                                                              exercise.name,
+                                                              exerciseItem.restTime || 0,
+                                                            );
+                                                          }
+                                                        }
+
+                                                        setCheckedSets((prev) => ({
+                                                          ...prev,
+                                                          [exercise.id]: nextChecked,
+                                                        }));
+                                                        void hapticsRef.current?.trigger([{ duration: 20 }]);
+
+                                                        const sets = field.value ?? [];
+                                                        const blockingSets = sets
+                                                          .map((s, i) => (s.reps <= 0 ? i : -1))
+                                                          .filter((i) => i >= 0);
+                                                        const completableSets = sets
+                                                          .map((s, i) => (s.reps > 0 ? i : -1))
+                                                          .filter((i) => i >= 0);
+                                                        const allCompletableDone =
+                                                          completableSets.length > 0 &&
+                                                          completableSets.every((i) =>
+                                                            nextChecked.includes(i),
+                                                          );
+
+                                                        if (
+                                                          nextChecked.length >= totalSets &&
+                                                          totalSets > 0
+                                                        ) {
+                                                          // Every set is done: log it.
+                                                          clearInvalidSetsForExercise(exercise.id);
+                                                          void form.handleSubmit(onSubmit, onSubmitInvalid)();
+                                                        } else if (
+                                                          !isThisSetChecked &&
+                                                          allCompletableDone &&
+                                                          blockingSets.length > 0
+                                                        ) {
+                                                          // Done with everything fillable, but empty sets
+                                                          // are blocking completion: flag them red.
+                                                          setInvalidSets((prev) => ({
+                                                            ...prev,
+                                                            [exercise.id]: blockingSets,
+                                                          }));
+                                                          triggerErrorHapticFeedback();
+                                                        }
+                                                      }}
+                                                    >
+                                                      <Check className="w-3 h-3" />
+                                                    </button>
+
+                                                    <Button
+                                                      type="button"
+                                                      variant="ghost"
+                                                      size="icon"
+                                                      className="h-6 w-6 shrink-0"
+                                                      onClick={() => {
+                                                        const sets = field.value?.slice() || [];
+                                                        sets.splice(idx, 1);
+                                                        sets.forEach((s, i) => { s.setNumber = i + 1; });
+                                                        field.onChange(sets);
+                                                        clearInvalidSetsForExercise(exercise.id);
+                                                      }}
+                                                    >
+                                                      <XIcon className="h-3 w-3" />
+                                                    </Button>
+                                                  </div>
+                                                );
+                                              })}
 
                                             {/* Notes */}
                                             <div className="pt-1">
@@ -1199,49 +1720,46 @@ export default function LogPage() {
                                             </div>
 
                                             {!isLogged && (
-                                              <div className="space-y-2 pt-1">
-                                                <div className="flex gap-2">
-                                                  <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="flex-1 h-8 text-xs border-dashed"
-                                                    onClick={() => {
-                                                      const currentSets =
-                                                        Array.isArray(
-                                                          field.value,
-                                                        )
-                                                          ? field.value.slice()
-                                                          : [];
-                                                      field.onChange([
-                                                        ...currentSets,
-                                                        {
-                                                          setNumber:
-                                                            currentSets.length +
-                                                            1,
-                                                          reps: 0,
-                                                          weight: 0,
-                                                          notes: "",
-                                                        },
-                                                      ]);
-                                                    }}
-                                                  >
-                                                    <PlusIcon className="h-3.5 w-3.5 mr-1" />
-                                                    Add Set
-                                                  </Button>
-                                                  <Button
-                                                    type="submit"
-                                                    size="sm"
-                                                    className="flex-1 h-8 text-xs"
-                                                  >
-                                                    Submit
-                                                  </Button>
-                                                </div>
+                                              <div className="flex gap-2 pt-1">
+                                                <Button
+                                                  type="button"
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="flex-1 h-8 text-xs border-dashed"
+                                                  onClick={() => {
+                                                    const currentSets =
+                                                      Array.isArray(field.value)
+                                                        ? field.value.slice()
+                                                        : [];
+                                                    const lastSet =
+                                                      currentSets[
+                                                        currentSets.length - 1
+                                                      ];
+                                                    field.onChange([
+                                                      ...currentSets,
+                                                      {
+                                                        setNumber:
+                                                          currentSets.length + 1,
+                                                        reps:
+                                                          lastSet?.reps ?? 0,
+                                                        weight:
+                                                          lastSet?.weight ?? 0,
+                                                        notes: "",
+                                                      },
+                                                    ]);
+                                                    clearInvalidSetsForExercise(
+                                                      exercise.id,
+                                                    );
+                                                  }}
+                                                >
+                                                  <PlusIcon className="h-3.5 w-3.5 mr-1" />
+                                                  Add Set
+                                                </Button>
                                                 <Button
                                                   type="button"
                                                   variant="ghost"
                                                   size="sm"
-                                                  className="w-full h-8 text-xs text-muted-foreground hover:text-destructive"
+                                                  className="flex-1 h-8 text-xs text-muted-foreground hover:text-destructive"
                                                   onClick={() => {
                                                     const DEFAULT_NUMBER_OF_SETS = 3;
                                                     const previousLogForExercise =
@@ -1282,6 +1800,16 @@ export default function LogPage() {
                                                       undefined,
                                                     );
                                                     form.setValue("notes", "");
+                                                    clearInvalidSetsForExercise(
+                                                      activeExerciseId,
+                                                    );
+                                                    setCheckedSets((prev) => {
+                                                      const updated = { ...prev };
+                                                      delete updated[
+                                                        activeExerciseId
+                                                      ];
+                                                      return updated;
+                                                    });
 
                                                     // Remove draft from local storage
                                                     const draftDocumentCollection =
@@ -1314,7 +1842,6 @@ export default function LogPage() {
                                             )}
                                           </div>
                                         </FormControl>
-                                        <FormMessage />
                                       </FormItem>
                                     )}
                                   />
@@ -1331,11 +1858,19 @@ export default function LogPage() {
             </SortableContext>
           </DndContext>
         </Accordion>
+          </>
+        )}
       </div>
 
-      {/* RPE Selection Dialog */}
-      <Dialog open={showRpeDialog} onOpenChange={setShowRpeDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[640px] p-4 sm:p-5 space-y-4">
+      {/* RPE Selection Dialog — must pick an effort level, cannot be dismissed */}
+      <Dialog open={showRpeDialog}>
+        <DialogContent
+          showCloseButton={false}
+          onEscapeKeyDown={(event) => event.preventDefault()}
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+          className="max-w-[95vw] sm:max-w-[640px] p-4 sm:p-5 space-y-4"
+        >
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-center">
               How did that feel?
@@ -1396,18 +1931,6 @@ export default function LogPage() {
               </button>
             ))}
           </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full"
-            onClick={() => {
-              setShowRpeDialog(false);
-              setPendingFormValues(null);
-            }}
-          >
-            Cancel
-          </Button>
         </DialogContent>
       </Dialog>
     </div>

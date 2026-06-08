@@ -33,6 +33,18 @@ interface CreateLogPayload {
   notes?: string;
 }
 
+interface UpdateLogPayload {
+  id: string;
+  sets?: Array<{
+    setNumber: number;
+    reps: number;
+    weight: number;
+    notes?: string;
+  }>;
+  rateOfPerceivedExertion?: number;
+  notes?: string;
+}
+
 interface GetTodayLogsParams {
   activePlanId: string;
   activeWorkoutId: string;
@@ -181,6 +193,41 @@ export const getExerciseHistory = async (exerciseId: string) => {
  */
 const createLog = async (values: CreateLogPayload) => {
   return api.post("/api/logs", values);
+};
+
+/**
+ * Updates an existing log entry.
+ */
+const updateLog = async ({ id, ...payload }: UpdateLogPayload) => {
+  return api.patch(`/api/logs/${id}`, payload);
+};
+
+/**
+ * Hook to update a log entry.
+ */
+export const useUpdateLog = (
+  options?: Omit<
+    UseMutationOptions<unknown, Error, UpdateLogPayload>,
+    "mutationFn" | "onSuccess"
+  > & {
+    onSuccess?: () => void;
+  },
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateLog,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todayLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["latestLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["recentLogs"] });
+
+      if (options?.onSuccess) {
+        options.onSuccess();
+      }
+    },
+    onError: options?.onError,
+  });
 };
 
 /**

@@ -85,12 +85,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startRestTime = (exerciseId: string, exerciseName: string, restTime: number) => {
-    // Prevent starting a new timer if one is already running
-    if (isTimerRunning) {
-      toast.error("A timer is already running");
-      return;
-    }
-
     if (restTime <= 0) {
       toast.error("No rest time set for this exercise");
       return;
