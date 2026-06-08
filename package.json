@@ -3,6 +3,13 @@
     "dev": "sh scripts/dev.sh"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["bcrypt", "esbuild", "sharp", "unrs-resolver"]
+    "onlyBuiltDependencies": ["bcrypt", "esbuild", "sharp", "unrs-resolver"],
+    "packageExtensions": {
+      "@hookform/resolvers": {
+        "peerDependencies": {
+          "zod": "*"
+        }
+      }
+    }
   }
 }
