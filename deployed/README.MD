@@ -15,8 +15,8 @@ This guide walks you through deploying the application on an AWS EC2 instance us
 If you're building on Mac (Apple Silicon), you need to target Linux AMD64 explicitly.
 
 ```bash
-# Frontend
-docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-frontend:latest --push ./frontend
+# Frontend (built from the workspace root so it uses the single root lockfile)
+docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-frontend:latest -f frontend/Dockerfile --push .
 
 # Backend
 docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-backend:latest --push ./backend
