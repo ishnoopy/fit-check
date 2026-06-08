@@ -1,69 +1,47 @@
-# Dev stage
-FROM node:20-alpine AS dev
+# Build context is the WORKSPACE ROOT (not backend/).
+# Build with: docker build -f backend/Dockerfile .
+# This uses the single root pnpm-lock.yaml so dev and prod resolve identical deps.
 
-WORKDIR /app
-
-RUN corepack enable && \
-    corepack prepare pnpm@9.15.0 --activate
-
-RUN apk add --no-cache python3 make g++
-
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-CMD ["pnpm", "dev"]
-
-# Builder stage
+# --- Builder Stage ---
 FROM node:20-alpine AS builder
-
-# Set working directory
 WORKDIR /app
 
-# Enable pnpm and pin version
-RUN corepack enable && \
-    corepack prepare pnpm@9.15.0 --activate
+RUN npm install -g pnpm@10.28.1
 
-# Install dependencies for native modules (bcrypt needs these)
+# Native build toolchain for bcrypt (node-gyp).
 RUN apk add --no-cache python3 make g++
 
-# Copy package files and install dependencies
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile && \
-    pnpm store prune
+# Copy only the manifests needed to resolve the frozen lockfile, for layer caching.
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY frontend/package.json ./frontend/package.json
+COPY backend/package.json ./backend/package.json
 
-# Copy source code
-COPY . .
+# Install only the backend workspace's dependencies (builds bcrypt here).
+RUN pnpm install --frozen-lockfile --filter backend
 
-# Build the application
-RUN pnpm build
+# Copy the backend source and build.
+COPY backend ./backend
+RUN pnpm --filter backend build
 
-# Production stage
+# Produce a self-contained, production-pruned bundle (native deps already built).
+RUN pnpm --filter backend deploy --prod --legacy /app/deploy
+
+# --- Production Stage ---
 FROM node:20-alpine AS runner
 
-# Create a non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Set working directory
 WORKDIR /app
 
-# Enable pnpm and pin version
-RUN corepack enable && \
-    corepack prepare pnpm@9.15.0 --activate
+# Copy the pruned node_modules + manifest and the compiled output. No install,
+# no build toolchain needed in the runtime image.
+COPY --from=builder --chown=nodejs:nodejs /app/deploy/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/deploy/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs /app/backend/dist ./dist
 
-# Copy package files and install production dependencies only
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --frozen-lockfile && \
-    pnpm store prune
-
-# Copy built application from builder
-COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
-
-# Use non-root user
 USER nodejs
 
-# Expose port
 EXPOSE 4000
 
-# Start the application
 CMD ["node", "dist/index.js"]

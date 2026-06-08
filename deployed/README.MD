@@ -18,8 +18,8 @@ If you're building on Mac (Apple Silicon), you need to target Linux AMD64 explic
 # Frontend (built from the workspace root so it uses the single root lockfile)
 docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-frontend:latest -f frontend/Dockerfile --push .
 
-# Backend
-docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-backend:latest --push ./backend
+# Backend (also built from the workspace root)
+docker buildx build --platform linux/amd64 -t ishnoopy/fit-check-backend:latest -f backend/Dockerfile --push .
 
 # Verify
 docker buildx imagetools inspect ishnoopy/fit-check-frontend:latest
