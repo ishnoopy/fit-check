@@ -40,6 +40,8 @@ COPY --from=builder --chown=nodejs:nodejs /app/deploy/node_modules ./node_module
 COPY --from=builder --chown=nodejs:nodejs /app/deploy/package.json ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/backend/dist ./dist
 
+RUN mkdir -p /app/logs && chown nodejs:nodejs /app/logs
+
 USER nodejs
 
 EXPOSE 4000

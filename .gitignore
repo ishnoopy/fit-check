@@ -17,6 +17,7 @@ deployed/certbot/
 # Logs
 *.log
 logs/
+!logs/.gitkeep
 npm-debug.log*
 
 # Docker volumes

@@ -28,6 +28,8 @@ services:
       - MINIO_ENDPOINT=${MINIO_ENDPOINT}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - REDIS_URL=${REDIS_URL}
+    volumes:
+      - backend_logs:/app/logs
     expose:
       - "4000"
     healthcheck:
@@ -72,3 +74,4 @@ services:
 
 volumes:
   minio_data:
+  backend_logs:

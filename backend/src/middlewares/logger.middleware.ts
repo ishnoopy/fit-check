@@ -1,4 +1,5 @@
 import type { Context, Next } from "hono";
+import { logger } from "../utils/logger.js";
 
 const SENSITIVE_KEYS = [
   "password",
@@ -72,12 +73,9 @@ export const loggerMiddleware = async (c: Context, next: Next) => {
   const maskedPayload =
     payload !== undefined ? maskSensitiveData(payload) : undefined;
 
-  console.log(
-    `✨[${uuid}] ${method} ${url}`,
-    maskedPayload !== undefined
-      ? { payload: JSON.stringify(maskedPayload, null, 2) }
-      : {},
-  );
+  logger.info(`[${uuid}] ${method} ${url}`, {
+    ...(maskedPayload !== undefined && { payload: maskedPayload }),
+  });
 
   await next();
 
@@ -85,9 +83,10 @@ export const loggerMiddleware = async (c: Context, next: Next) => {
   const status = c.res.status ?? 0;
   const isError = status >= 400;
 
-  const logLabel = isError ? "🚨 ERROR" : "🚀 OK";
+  const logFn = isError ? logger.error.bind(logger) : logger.info.bind(logger);
 
-  console.log(
-    `[${uuid}] ${method} ${url} -> ${status} ${logLabel} (${durationMs}ms)`,
-  );
+  logFn(`[${uuid}] ${method} ${url} -> ${status} (${durationMs}ms)`, {
+    status,
+    durationMs,
+  });
 };
