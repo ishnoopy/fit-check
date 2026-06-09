@@ -28,6 +28,8 @@ services:
       - MINIO_ENDPOINT=${MINIO_ENDPOINT}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - REDIS_URL=${REDIS_URL}
+    volumes:
+      - backend_logs:/app/logs
     expose:
       - "4000"
     depends_on:
@@ -98,3 +100,4 @@ volumes:
   minio_data:
   caddy_data:
   caddy_config:
+  backend_logs:
