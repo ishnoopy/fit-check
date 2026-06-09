@@ -180,7 +180,7 @@ function PostSessionCheer({ cheer }: { cheer: CheerMoment | null }) {
         <motion.div
           key={cheer.id}
           data-testid="post-session-cheer"
-          className="pointer-events-none fixed left-1 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-[70] flex max-w-[calc(100vw-0.5rem)] items-end gap-1 sm:left-5 sm:bottom-5 sm:gap-3"
+          className="pointer-events-none fixed left-1 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-70 flex max-w-[calc(100vw-0.5rem)] items-end gap-1 sm:left-5 sm:bottom-5 sm:gap-3"
           initial={
             shouldReduceMotion
               ? { opacity: 0 }
@@ -219,13 +219,13 @@ function PostSessionCheer({ cheer }: { cheer: CheerMoment | null }) {
               alt="TUFF mascot celebrating"
               fill
               sizes="(max-width: 640px) 38vw, 208px"
-              className="object-contain drop-shadow-[0_22px_28px_rgb(29_26_20_/_0.26)]"
+              className="object-contain drop-shadow-[0_22px_28px_rgb(29_26_20/0.26)]"
               priority={false}
             />
           </div>
 
           <motion.div
-            className="mb-14 max-w-[17rem] rounded-2xl border-2 border-secondary bg-card px-3 py-2.5 shadow-lg sm:mb-20 sm:max-w-[19rem] sm:px-4 sm:py-3.5"
+            className="mb-14 max-w-68 rounded-2xl border-2 border-secondary bg-card px-3 py-2.5 shadow-lg sm:mb-20 sm:max-w-76 sm:px-4 sm:py-3.5"
             initial={
               shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.82 }
             }
@@ -982,7 +982,7 @@ export default function LogPage() {
 
         {!isSessionActive && !hasLoggedToday ? (
           <div className="space-y-3">
-            <div className="rounded-[24px] border-2 border-border bg-card p-6 text-center shadow-sm">
+            <div className="rounded-3xl border-2 border-border bg-card p-6 text-center shadow-sm">
               <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
                 Ready to train
               </p>
@@ -1008,7 +1008,7 @@ export default function LogPage() {
                 {orderedActiveExercisesList.map((exerciseItem, previewIndex) => (
                   <div
                     key={exerciseItem.exercise.id}
-                    className="flex items-center gap-2 rounded-[24px] border-2 border-border bg-card px-3 py-3"
+                    className="flex items-center gap-2 rounded-3xl border-2 border-border bg-card px-3 py-3"
                   >
                     <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-[10px] font-black text-muted-foreground">
                       {previewIndex + 1}
@@ -1041,7 +1041,7 @@ export default function LogPage() {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-[24px] border-2 border-border bg-card p-4 shadow-sm">
+              <div className="rounded-3xl border-2 border-border bg-card p-4 shadow-sm">
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2
                     className={cn(
@@ -1138,7 +1138,7 @@ export default function LogPage() {
                       <AccordionItem
                         value={exercise.id}
                         className={cn(
-                          "mb-1.5 overflow-hidden rounded-[24px] border-2 border-border bg-card shadow-sm",
+                          "mb-1.5 overflow-hidden rounded-3xl border-2 border-border bg-card shadow-sm",
                           isDragging && "bg-muted",
                         )}
                       >
@@ -1869,7 +1869,7 @@ export default function LogPage() {
           onEscapeKeyDown={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
           onInteractOutside={(event) => event.preventDefault()}
-          className="max-w-[95vw] sm:max-w-[640px] p-4 sm:p-5 space-y-4"
+          className="max-w-[95vw] sm:max-w-160 p-4 sm:p-5 space-y-4"
         >
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-center">
