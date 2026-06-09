@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "dev": "sh scripts/dev.sh"
+    "dev": "sh scripts/dev.sh",
+    "build": "sh scripts/build.sh"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["bcrypt", "esbuild", "sharp", "unrs-resolver"],
