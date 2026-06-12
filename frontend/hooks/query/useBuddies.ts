@@ -395,11 +395,70 @@ export function useEstablishBuddy(username?: string) {
 
   return useMutation({
     mutationFn: (targetUserId: string) => establishBuddy(targetUserId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mutuals", username] });
+    onMutate: async (targetUserId) => {
+      await queryClient.cancelQueries({ queryKey: ["mutuals", username] });
+
+      const previous = queryClient.getQueryData<MutualItem[]>([
+        "mutuals",
+        username,
+      ]);
+
+      // Optimistically mark the target as a buddy
+      queryClient.setQueryData<MutualItem[]>(
+        ["mutuals", username],
+        (old) => {
+          if (!old) return old;
+          return old.map((m) => {
+            if (m.user.id !== targetUserId) return m;
+            return {
+              ...m,
+              isBuddy: true,
+              buddyId: "pending", // placeholder, replaced on success
+              streak: {
+                currentCount: 0,
+                longestCount: 0,
+                lastActiveDate: null,
+              },
+              nudgeStatus: {
+                iNudgedToday: false,
+                theyNudgedToday: false,
+                today: new Date().toISOString(),
+              },
+            };
+          });
+        },
+      );
+
+      return { previous };
+    },
+    onSuccess: (response, targetUserId) => {
+      // Update with real server data
+      queryClient.setQueryData<MutualItem[]>(
+        ["mutuals", username],
+        (old) => {
+          if (!old) return old;
+          return old.map((m) => {
+            if (m.user.id !== targetUserId) return m;
+            return {
+              ...m,
+              isBuddy: true,
+              buddyId: response.data.id,
+              streak: response.data.streak,
+              nudgeStatus: {
+                iNudgedToday: true, // the act of establishing counts as a nudge
+                theyNudgedToday: false,
+                today: new Date().toISOString(),
+              },
+            };
+          });
+        },
+      );
       toast.success("Gym buddy added! 🎉");
     },
-    onError: (error) => {
+    onError: (error, _targetUserId, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["mutuals", username], context.previous);
+      }
       toast.error(
         error instanceof Error ? error.message : "Failed to add gym buddy",
       );
