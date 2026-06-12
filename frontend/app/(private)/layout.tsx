@@ -1,5 +1,6 @@
 import BottomNav from "@/components/BottomNav";
 import { OnboardingGuard } from "@/components/OnboardingGuard";
+import { PendingNudgeMascotWrapper } from "@/components/PendingNudgeMascotWrapper";
 import { TimerPill } from "@/components/TimerPill";
 import { TimerProvider } from "@/contexts/TimerContext";
 import type { Metadata } from "next";
@@ -30,6 +31,7 @@ export default async function RootLayout({
       >
         <OnboardingGuard>
           <TimerPill />
+          <PendingNudgeMascotWrapper />
           <div className="flex-1 relative z-10">{children}</div>
           <BottomNav className="" />
         </OnboardingGuard>

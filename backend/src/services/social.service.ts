@@ -4,6 +4,7 @@ import * as postRepository from "../repositories/post.repository.js";
 import * as userRepository from "../repositories/user.repository.js";
 import { resolveMediaUrl } from "./media-url.service.js";
 import { BadRequestError, NotFoundError } from "../utils/errors.js";
+import { endBuddiesByUserIds } from "../repositories/buddy.repository.js";
 
 function normalizeUsernameOrThrow(username: string) {
   const normalized = username.trim().toLowerCase();
@@ -107,6 +108,10 @@ export async function unfollowUserByUsername(
   }
 
   await followRepository.unfollowUser(currentUserId, targetUserId);
+
+  // End any active gym buddy relationship between these users
+  await endBuddiesByUserIds(currentUserId, targetUserId);
+
   return { success: true };
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { BuddyRow } from "@/components/BuddyRow";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -241,6 +242,8 @@ export default function FeedPage() {
   return (
     <div className="relative p-4 pb-28 max-w-2xl mx-auto space-y-5">
       <PageHeader title="Feed" subtitle="Training updates from the crew" />
+
+      <BuddyRow />
 
       <section className="space-y-2">
         <div className="relative">

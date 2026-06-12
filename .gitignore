@@ -25,3 +25,5 @@ mongo_data/
 
 node_modules/
 .playwright-mcp
+
+reasonix.toml

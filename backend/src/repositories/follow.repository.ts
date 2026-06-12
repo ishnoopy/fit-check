@@ -47,6 +47,17 @@ export async function findFollowerIdsByFolloweeId(followeeId: string) {
   return docs.map((doc) => doc.follower_id.toString());
 }
 
+export async function areMutualFollowers(
+  userAId: string,
+  userBId: string,
+) {
+  const [aFollowsB, bFollowsA] = await Promise.all([
+    isFollowing(userAId, userBId),
+    isFollowing(userBId, userAId),
+  ]);
+  return aFollowsB && bFollowsA;
+}
+
 export async function findFolloweeIdsByFollowerId(followerId: string) {
   const docs = await FollowModel.find({ follower_id: followerId })
     .sort({ created_at: -1 })
